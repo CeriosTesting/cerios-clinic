@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"types": ["vite/client"],
+		"noEmit": true,
+		"paths": {
+			"@clinic/shared-types": ["../../packages/shared-types/dist/index.d.ts"]
+		}
+	},
+	"include": ["src"]
+}

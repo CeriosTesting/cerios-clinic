@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	body {
+		@apply bg-brand-bg text-gray-800 antialiased;
+	}
+}
+
+@layer components {
+	.btn-primary {
+		@apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand-orange text-white font-semibold px-4 py-2 text-sm
+    hover:bg-brand-orange-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+	}
+	.btn-outline {
+		@apply inline-flex items-center justify-center gap-2 rounded-lg border-2 border-brand-orange text-brand-orange font-semibold px-4 py-2 text-sm
+    hover:bg-brand-orange hover:text-white transition-colors;
+	}
+	.btn-ghost {
+		@apply inline-flex items-center justify-center gap-2 rounded-lg text-gray-600 font-medium px-4 py-2 text-sm
+    hover:bg-gray-100 transition-colors;
+	}
+	.card {
+		@apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+	}
+	.badge-scheduled {
+		@apply text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800;
+	}
+	.badge-confirmed {
+		@apply text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-800;
+	}
+	.badge-completed {
+		@apply text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600;
+	}
+	.badge-cancelled {
+		@apply text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-100 text-red-800;
+	}
+	.form-input {
+		@apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange;
+	}
+	.form-label {
+		@apply block text-sm font-medium text-gray-600 mb-1;
+	}
+}

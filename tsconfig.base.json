@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"ignoreDeprecations": "6.0",
+		"target": "ES2022",
+		"module": "Node16",
+		"moduleResolution": "node16",
+		"esModuleInterop": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"outDir": "dist",
+		"paths": {
+			"@clinic/api-common": ["./packages/api-common/src/index.ts"],
+			"@clinic/database": ["./packages/database/src/index.ts"],
+			"@clinic/shared-types": ["./packages/shared-types/src/index.ts"]
+		}
+	}
+}

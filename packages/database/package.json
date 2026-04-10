@@ -1,0 +1,33 @@
+{
+	"name": "@clinic/database",
+	"version": "1.0.0",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"publishConfig": {
+		"main": "dist/index.js",
+		"types": "dist/index.d.ts"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"generate": "dotenv -e ../../.env -- prisma generate",
+		"migrate:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+		"migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
+		"migrate:reset": "dotenv -e ../../.env -- prisma migrate reset --force",
+		"postinstall": "prisma generate",
+		"seed": "dotenv -e ../../.env -- ts-node src/seed.ts",
+		"studio": "dotenv -e ../../.env -- prisma studio",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.7.0",
+		"@prisma/client": "^7.7.0",
+		"@types/pg": "^8.20.0",
+		"pg": "^8.20.0"
+	},
+	"devDependencies": {
+		"@types/node": "^25.5.2",
+		"prisma": "^7.7.0",
+		"ts-node": "^10.9.2",
+		"typescript": "^6.0.2"
+	}
+}

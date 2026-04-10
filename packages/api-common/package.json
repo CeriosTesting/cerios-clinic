@@ -1,0 +1,32 @@
+{
+	"name": "@clinic/api-common",
+	"version": "1.0.0",
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"publishConfig": {
+		"main": "dist/index.js",
+		"types": "dist/index.d.ts"
+	},
+	"scripts": {
+		"build": "tsc",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@clinic/database": "workspace:*",
+		"@prisma/adapter-pg": "^7.7.0",
+		"helmet": "^8.0.0"
+	},
+	"devDependencies": {
+		"@nestjs/common": "^11.1.18",
+		"@nestjs/core": "^11.1.18",
+		"@nestjs/passport": "^11.0.5",
+		"@nestjs/swagger": "^11.2.6",
+		"typescript": "^6.0.2"
+	},
+	"peerDependencies": {
+		"@nestjs/common": "^11.0.0",
+		"@nestjs/core": "^11.0.0",
+		"@nestjs/passport": "^11.0.0",
+		"@nestjs/swagger": "^11.0.0"
+	}
+}

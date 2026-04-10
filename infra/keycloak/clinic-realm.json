@@ -1,0 +1,119 @@
+{
+	"realm": "clinic",
+	"enabled": true,
+	"displayName": "Clinic Portal",
+	"registrationAllowed": true,
+	"registrationEmailAsUsername": true,
+	"loginWithEmailAllowed": true,
+	"duplicateEmailsAllowed": false,
+	"resetPasswordAllowed": true,
+	"editUsernameAllowed": false,
+	"bruteForceProtected": true,
+	"smtpServer": {
+		"host": "mailpit",
+		"port": "1025",
+		"from": "noreply@clinic.local",
+		"fromDisplayName": "Clinic System",
+		"ssl": "false",
+		"starttls": "false",
+		"auth": "false"
+	},
+	"roles": {
+		"realm": [
+			{ "name": "patient", "description": "Patient user" },
+			{ "name": "doctor", "description": "Doctor user" },
+			{ "name": "assistant", "description": "Medical assistant user" },
+			{ "name": "admin", "description": "System administrator" }
+		]
+	},
+	"clients": [
+		{
+			"clientId": "patient-portal-client",
+			"name": "Patient Portal",
+			"enabled": true,
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"directAccessGrantsEnabled": false,
+			"redirectUris": ["http://localhost:5173/*"],
+			"webOrigins": ["http://localhost:5173"],
+			"attributes": {
+				"pkce.code.challenge.method": "S256"
+			},
+			"defaultClientScopes": ["openid", "profile", "email", "roles"],
+			"protocolMappers": [
+				{
+					"name": "patient-portal-audience",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"consentRequired": false,
+					"config": {
+						"included.client.audience": "patient-portal-client",
+						"id.token.claim": "false",
+						"lightweight.claim": "false",
+						"access.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"clientId": "staff-portal-client",
+			"name": "Staff Portals",
+			"enabled": true,
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"directAccessGrantsEnabled": false,
+			"redirectUris": ["http://localhost:5174/*", "http://localhost:5175/*"],
+			"webOrigins": ["http://localhost:5174", "http://localhost:5175"],
+			"attributes": {
+				"pkce.code.challenge.method": "S256"
+			},
+			"defaultClientScopes": ["openid", "profile", "email", "roles"],
+			"protocolMappers": [
+				{
+					"name": "staff-portal-audience",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"consentRequired": false,
+					"config": {
+						"included.client.audience": "staff-portal-client",
+						"id.token.claim": "false",
+						"lightweight.claim": "false",
+						"access.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"clientId": "api-service-client",
+			"name": "API Services (backend)",
+			"enabled": true,
+			"publicClient": false,
+			"serviceAccountsEnabled": true,
+			"standardFlowEnabled": false,
+			"directAccessGrantsEnabled": true,
+			"secret": "api_service_secret_change_in_prod",
+			"defaultClientScopes": ["openid", "profile", "email", "roles"]
+		}
+	],
+	"users": [
+		{
+			"username": "admin@clinic.local",
+			"email": "admin@clinic.local",
+			"firstName": "System",
+			"lastName": "Admin",
+			"enabled": true,
+			"emailVerified": true,
+			"credentials": [
+				{
+					"type": "password",
+					"value": "Admin1234!",
+					"temporary": false
+				}
+			],
+			"realmRoles": ["admin", "doctor"]
+		}
+	],
+	"defaultRoles": ["patient"]
+}

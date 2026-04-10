@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  patient
+  doctor
+  assistant
+  admin
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id          String    @id @default(uuid())
+  keycloakId  String    @unique @map("keycloak_id")
+  email       String    @unique
+  firstName   String    @map("first_name")
+  lastName    String    @map("last_name")
+  role        UserRole
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  patient   Patient?
+  doctor    Doctor?
+  assistant Assistant?
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Patient {
+  id              String  @id @default(uuid())
+  userId          String  @unique @map("user_id")
+  dateOfBirth     DateTime? @map("date_of_birth")
+  phone           String?
+  insuranceNumber String? @map("insurance_number")
+  photo           String?
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+
+  @@map("patients")
+}
+
+model Doctor {
+  id             String  @id @default(uuid())
+  userId         String  @unique @map("user_id")
+  specialization String?
+  licenseNumber  String? @map("license_number")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+
+  @@map("doctors")
+}
+
+model Assistant {
+  id         String  @id @default(uuid())
+  userId     String  @unique @map("user_id")
+  department String?
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  appointments Appointment[]
+
+  @@map("assistants")
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  patientId   String            @map("patient_id")
+  doctorId    String            @map("doctor_id")
+  assistantId String?           @map("assistant_id")
+  scheduledAt DateTime          @map("scheduled_at")
+  status      AppointmentStatus @default(SCHEDULED)
+  notes       String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  patient   Patient    @relation(fields: [patientId], references: [id])
+  doctor    Doctor     @relation(fields: [doctorId], references: [id])
+  assistant Assistant? @relation(fields: [assistantId], references: [id])
+
+  statusHistory AppointmentStatusChange[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([doctorId, scheduledAt])
+  @@map("appointments")
+}
+
+model AppointmentStatusChange {
+  id                  String             @id @default(uuid())
+  appointmentId       String             @map("appointment_id")
+  previousStatus      AppointmentStatus? @map("previous_status")
+  newStatus           AppointmentStatus  @map("new_status")
+  changedByKeycloakId String             @map("changed_by_keycloak_id")
+  changedAt           DateTime           @default(now()) @map("changed_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([appointmentId])
+  @@map("appointment_status_changes")
+}

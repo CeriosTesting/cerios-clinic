@@ -1,0 +1,23 @@
+{
+	"options": {
+		"typeAware": true
+	},
+	"plugins": ["promise", "vitest", "eslint", "typescript"],
+	"rules": {
+		"eslint/complexity": ["error", { "max": 15 }],
+		"eslint/eqeqeq": "error",
+		"eslint/no-var": "error",
+		"eslint/prefer-const": "error",
+		"promise/catch-or-return": "error",
+		"promise/no-return-in-finally": "error",
+		"promise/param-names": "error",
+		"typescript/explicit-function-return-type": "error",
+		"typescript/no-deprecated": "warn",
+		"typescript/no-explicit-any": "error",
+		"typescript/no-misused-promises": "error",
+		"typescript/no-unnecessary-type-assertion": "error",
+		"typescript/prefer-nullish-coalescing": "error",
+		"typescript/require-await": "error"
+	},
+	"ignorePatterns": ["**/dist", "**/node_modules"]
+}

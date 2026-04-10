@@ -1,0 +1,41 @@
+{
+	"name": "clinic-monorepo",
+	"version": "1.0.0",
+	"private": true,
+	"author": "Ronald Veth - Cerios",
+	"scripts": {
+		"build": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" build",
+		"db:migrate": "pnpm --filter database migrate:dev",
+		"db:reset": "pnpm --filter database migrate:reset",
+		"db:seed": "pnpm --filter database seed",
+		"db:studio": "pnpm --filter database studio",
+		"dev": "concurrently --kill-others --kill-others-on-fail --kill-timeout 3000 -n \"api-patient,api-doctor,api-assistant,patient-portal,doctor-portal,assistant-portal\" -c \"blue,cyan,green,magenta,yellow,red\" \"pnpm --filter api-patient dev\" \"pnpm --filter api-doctor dev\" \"pnpm --filter api-assistant dev\" \"pnpm --filter patient-portal dev\" \"pnpm --filter doctor-portal dev\" \"pnpm --filter assistant-portal dev\"",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check",
+		"infra:down": "docker compose -f infra/docker-compose.yml down",
+		"infra:up": "docker compose -f infra/docker-compose.yml up -d",
+		"lint": "oxlint --type-aware",
+		"lint:fix": "oxlint --type-aware --fix",
+		"predev": "node -e \"const k=require('kill-port');Promise.allSettled([k(3001),k(3002),k(3003),k(5173),k(5174),k(5175)]).then(()=>process.exit(0))\"",
+		"typecheck": "pnpm --filter \"./packages/*\" typecheck && pnpm --filter \"./apps/*\" typecheck",
+		"update-all-packages": "pnpm npm-check-updates -u -w --packageManager pnpm --reject class-validator,tailwindcss && pnpm install"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.7.0",
+		"@types/pg": "^8.20.0",
+		"dotenv": "^17.4.1",
+		"pg": "^8.20.0"
+	},
+	"devDependencies": {
+		"@types/node": "^25.5.2",
+		"concurrently": "^9.2.1",
+		"dotenv-cli": "^11.0.0",
+		"kill-port": "^2.0.1",
+		"npm-check-updates": "^20.0.0",
+		"oxfmt": "^0.44.0",
+		"oxlint": "^1.59.0",
+		"oxlint-tsgolint": "^0.20.0",
+		"ts-node-dev": "^2.0.0",
+		"typescript": "^6.0.2"
+	}
+}

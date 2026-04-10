@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"types": ["node"],
+		"rootDir": "src",
+		"outDir": "dist",
+		"paths": {
+			"@clinic/database": ["./packages/database/dist/index.d.ts"],
+			"@clinic/shared-types": ["./packages/shared-types/dist/index.d.ts"]
+		}
+	},
+	"include": ["src/**/*"]
+}
