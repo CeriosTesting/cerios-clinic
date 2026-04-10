@@ -1,13 +1,4 @@
-import {
-	Controller,
-	Post,
-	Body,
-	UseGuards,
-	HttpCode,
-	HttpStatus,
-	ConflictException,
-	BadRequestException,
-} from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { IsEmail, IsString, MinLength, IsOptional, IsDateString, Matches } from "class-validator";
 
