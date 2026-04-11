@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api";
+import { formatShortDate } from "../utils/formatDate";
 
 export default function MedicalHistoryPage(): React.ReactElement {
 	const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -44,9 +45,7 @@ export default function MedicalHistoryPage(): React.ReactElement {
 										</p>
 										{a.doctor?.specialization && <p className="text-sm text-gray-400">{a.doctor.specialization}</p>}
 									</div>
-									<span className="text-xs text-gray-400 whitespace-nowrap ml-4">
-										{date.toLocaleDateString("en-NL", { day: "numeric", month: "short", year: "numeric" })}
-									</span>
+									<span className="text-xs text-gray-400 whitespace-nowrap ml-4">{formatShortDate(date)}</span>
 								</div>
 								{a.notes ? (
 									<p className="text-sm text-gray-600 whitespace-pre-wrap mt-2 border-t border-gray-100 pt-2">

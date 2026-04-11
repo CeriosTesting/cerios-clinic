@@ -146,9 +146,20 @@ export interface AppointmentStatusChange {
 	appointmentId: string;
 	previousStatus?: AppointmentStatus | null;
 	newStatus: AppointmentStatus;
+	previousScheduledAt?: string | null;
+	newScheduledAt?: string | null;
 	changedByKeycloakId: string;
 	changedByName?: string | null;
 	changedAt: string;
+}
+
+export interface RescheduleAppointmentDto {
+	scheduledAt: string;
+}
+
+export interface DoctorSlotAvailability {
+	date: string;
+	slots: string[];
 }
 
 export interface AppointmentStats {

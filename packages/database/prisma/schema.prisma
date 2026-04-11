@@ -102,17 +102,22 @@ model Appointment {
   @@index([doctorId])
   @@index([scheduledAt])
   @@index([status])
+  @@index([assistantId])
+  @@index([patientId, status])
+  @@index([patientId, scheduledAt])
   @@index([doctorId, scheduledAt])
   @@map("appointments")
 }
 
 model AppointmentStatusChange {
-  id                  String             @id @default(uuid())
-  appointmentId       String             @map("appointment_id")
-  previousStatus      AppointmentStatus? @map("previous_status")
-  newStatus           AppointmentStatus  @map("new_status")
-  changedByKeycloakId String             @map("changed_by_keycloak_id")
-  changedAt           DateTime           @default(now()) @map("changed_at")
+  id                   String             @id @default(uuid())
+  appointmentId        String             @map("appointment_id")
+  previousStatus       AppointmentStatus? @map("previous_status")
+  newStatus            AppointmentStatus  @map("new_status")
+  previousScheduledAt  DateTime?          @map("previous_scheduled_at")
+  newScheduledAt       DateTime?          @map("new_scheduled_at")
+  changedByKeycloakId  String             @map("changed_by_keycloak_id")
+  changedAt            DateTime           @default(now()) @map("changed_at")
 
   appointment Appointment @relation(fields: [appointmentId], references: [id])
 

@@ -1,7 +1,10 @@
 import { Logger, Type, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import compression from "compression";
 import helmet from "helmet";
+
+import { PrismaExceptionFilter } from "./prisma-exception.filter";
 
 export interface BootstrapApiOptions {
 	appModule: Type<unknown>;
@@ -19,9 +22,14 @@ export async function bootstrapApi(options: BootstrapApiOptions): Promise<void> 
 	app.enableShutdownHooks();
 
 	app.use(helmet());
+	app.use(compression({ threshold: 1024 }));
+	// Limit request body to 1 MB to prevent payload-based DoS
+	app.use(require("express").json({ limit: "1mb" }));
+	app.use(require("express").urlencoded({ limit: "1mb", extended: true }));
 	app.enableCors({ origin: options.corsOrigins, credentials: true });
 	const prefix = options.globalPrefix ?? "api";
 	app.setGlobalPrefix(prefix);
+	app.useGlobalFilters(new PrismaExceptionFilter());
 	app.useGlobalPipes(
 		new ValidationPipe({
 			whitelist: true,

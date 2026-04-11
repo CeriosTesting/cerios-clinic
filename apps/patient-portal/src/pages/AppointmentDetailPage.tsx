@@ -1,8 +1,10 @@
 import type { Appointment } from "@clinic/shared-types";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
 import api from "../api";
+import RescheduleModal from "../components/RescheduleModal";
+import { formatDate, formatTime, isSameUTCDay } from "../utils/formatDate";
 
 const STATUS_STYLES: Record<string, string> = {
 	SCHEDULED: "bg-blue-100 text-blue-800",
@@ -11,7 +13,7 @@ const STATUS_STYLES: Record<string, string> = {
 	COMPLETED: "bg-gray-100 text-gray-600",
 };
 
-const CANCELLABLE = ["SCHEDULED", "CONFIRMED"];
+const ACTIONABLE = ["SCHEDULED", "CONFIRMED"];
 
 export default function AppointmentDetailPage(): React.ReactElement {
 	const { id } = useParams<{ id: string }>();
@@ -20,14 +22,21 @@ export default function AppointmentDetailPage(): React.ReactElement {
 	const [error, setError] = useState("");
 	const [cancelling, setCancelling] = useState(false);
 	const [showConfirm, setShowConfirm] = useState(false);
+	const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+	const [rescheduleSuccess, setRescheduleSuccess] = useState(false);
 
-	useEffect(() => {
+	const fetchAppointment = useCallback(() => {
+		setLoading(true);
 		void api
 			.get<{ data: Appointment }>(`/appointments/${id}`)
 			.then(r => setAppointment(r.data.data))
 			.catch(() => setError("Could not load appointment."))
 			.finally(() => setLoading(false));
 	}, [id]);
+
+	useEffect(() => {
+		fetchAppointment();
+	}, [fetchAppointment]);
 
 	const handleCancel = async (): Promise<void> => {
 		setCancelling(true);
@@ -36,11 +45,18 @@ export default function AppointmentDetailPage(): React.ReactElement {
 			const r = await api.patch<{ data: Appointment }>(`/appointments/${id}/cancel`);
 			setAppointment(r.data.data);
 			setShowConfirm(false);
-		} catch {
-			setError("Could not cancel appointment. Please try again.");
+		} catch (err: unknown) {
+			const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+			setError(msg ?? "Could not cancel appointment. Please try again.");
 		} finally {
 			setCancelling(false);
 		}
+	};
+
+	const handleRescheduleSuccess = (): void => {
+		setShowRescheduleModal(false);
+		setRescheduleSuccess(true);
+		fetchAppointment();
 	};
 
 	if (loading) return <div className="text-center py-16 text-gray-400">Loading...</div>;
@@ -65,96 +81,145 @@ export default function AppointmentDetailPage(): React.ReactElement {
 
 	const date = new Date(appointment.scheduledAt);
 	const doctor = appointment.doctor?.user;
-	const canCancel = CANCELLABLE.includes(appointment.status);
+	const isActionable = ACTIONABLE.includes(appointment.status);
+	const isToday = isSameUTCDay(date, new Date());
 
 	return (
-		<div className="max-w-2xl mx-auto">
-			<Link to="/appointments" className="text-brand-orange hover:underline text-sm font-medium mb-6 inline-block">
-				← Back to appointments
-			</Link>
-			<div className="card">
-				<div className="flex items-start justify-between mb-6">
-					<h1 className="text-2xl font-bold text-brand-navy">Appointment details</h1>
-					<span className={`text-xs font-semibold px-3 py-1 rounded-full ${STATUS_STYLES[appointment.status]}`}>
-						{appointment.status}
-					</span>
-				</div>
+		<>
+			<div className="max-w-2xl mx-auto">
+				<Link to="/appointments" className="text-brand-orange hover:underline text-sm font-medium mb-6 inline-block">
+					← Back to appointments
+				</Link>
+				<div className="card">
+					<div className="flex items-start justify-between mb-6">
+						<h1 className="text-2xl font-bold text-brand-navy">Appointment details</h1>
+						<span className={`text-xs font-semibold px-3 py-1 rounded-full ${STATUS_STYLES[appointment.status]}`}>
+							{appointment.status}
+						</span>
+					</div>
 
-				<dl className="space-y-4">
-					<Row label="Doctor">
-						Dr. {doctor?.firstName} {doctor?.lastName}
-					</Row>
-					<Row label="Specialization">{appointment.doctor?.specialization ?? "—"}</Row>
-					<Row label="Date">
-						{date.toLocaleDateString("en-NL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-					</Row>
-					<Row label="Time">{date.toLocaleTimeString("en-NL", { hour: "2-digit", minute: "2-digit" })}</Row>
-					{appointment.notes && (
-						<Row label="Doctor's Notes">
-							<span className="whitespace-pre-wrap">{appointment.notes}</span>
-						</Row>
+					{rescheduleSuccess && (
+						<div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg">
+							Your appointment has been rescheduled successfully.
+						</div>
 					)}
-				</dl>
 
-				{error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+					<dl className="space-y-4">
+						<Row label="Doctor">
+							Dr. {doctor?.firstName} {doctor?.lastName}
+						</Row>
+						<Row label="Specialization">{appointment.doctor?.specialization ?? "—"}</Row>
+						<Row label="Date">{formatDate(date)}</Row>
+						<Row label="Time">{formatTime(date)}</Row>
+						{appointment.notes && (
+							<Row label="Doctor's Notes">
+								<span className="whitespace-pre-wrap">{appointment.notes}</span>
+							</Row>
+						)}
+					</dl>
 
-				<CancelSection
-					canCancel={canCancel}
-					showConfirm={showConfirm}
-					cancelling={cancelling}
-					onRequestCancel={() => setShowConfirm(true)}
-					onConfirmCancel={() => {
-						void handleCancel();
-					}}
-					onKeep={() => setShowConfirm(false)}
-				/>
+					{error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+
+					<ActionSection
+						isActionable={isActionable}
+						isToday={isToday}
+						showConfirm={showConfirm}
+						cancelling={cancelling}
+						onRequestCancel={() => {
+							setShowConfirm(true);
+							setError("");
+						}}
+						onConfirmCancel={() => {
+							void handleCancel();
+						}}
+						onKeep={() => setShowConfirm(false)}
+						onReschedule={() => setShowRescheduleModal(true)}
+					/>
+				</div>
 			</div>
-		</div>
+
+			{showRescheduleModal && appointment.doctor && (
+				<RescheduleModal
+					appointmentId={appointment.id}
+					doctorId={appointment.doctorId}
+					currentScheduledAt={appointment.scheduledAt}
+					onClose={() => setShowRescheduleModal(false)}
+					onSuccess={handleRescheduleSuccess}
+				/>
+			)}
+		</>
 	);
 }
 
-function CancelSection({
-	canCancel,
+function ActionSection({
+	isActionable,
+	isToday,
 	showConfirm,
 	cancelling,
 	onRequestCancel,
 	onConfirmCancel,
 	onKeep,
+	onReschedule,
 }: {
-	canCancel: boolean;
+	isActionable: boolean;
+	isToday: boolean;
 	showConfirm: boolean;
 	cancelling: boolean;
 	onRequestCancel: () => void;
 	onConfirmCancel: () => void;
 	onKeep: () => void;
+	onReschedule: () => void;
 }): React.ReactElement | null {
-	if (!canCancel) return null;
+	if (!isActionable) return null;
+
 	return (
-		<div className="mt-6 pt-4 border-t border-gray-100">
+		<div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
+			{/* Reschedule button — always shown when actionable */}
 			{!showConfirm && (
 				<button
-					onClick={onRequestCancel}
-					className="text-red-600 border border-red-300 hover:bg-red-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+					onClick={onReschedule}
+					className="text-brand-orange border border-brand-orange hover:bg-orange-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
 				>
-					Cancel appointment
+					Reschedule appointment
 				</button>
 			)}
-			{showConfirm && (
-				<div>
-					<p className="text-sm text-gray-600 mb-3">Are you sure you want to cancel this appointment?</p>
-					<div className="flex gap-3">
-						<button
-							onClick={onConfirmCancel}
-							disabled={cancelling}
-							className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-						>
-							{cancelling ? "Cancelling..." : "Yes, cancel it"}
-						</button>
-						<button onClick={onKeep} disabled={cancelling} className="btn-outline text-sm px-4 py-2">
-							Keep appointment
-						</button>
-					</div>
+
+			{/* Cancel section */}
+			{isToday ? (
+				<div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+					<span className="text-amber-500 mt-0.5">ℹ</span>
+					<p className="text-sm text-amber-800">
+						Your appointment is today. If you need to cancel, please <strong>call the clinic directly</strong>.
+					</p>
 				</div>
+			) : (
+				<>
+					{!showConfirm && (
+						<button
+							onClick={onRequestCancel}
+							className="text-red-600 border border-red-300 hover:bg-red-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors ml-2"
+						>
+							Cancel appointment
+						</button>
+					)}
+					{showConfirm && (
+						<div>
+							<p className="text-sm text-gray-600 mb-3">Are you sure you want to cancel this appointment?</p>
+							<div className="flex gap-3">
+								<button
+									onClick={onConfirmCancel}
+									disabled={cancelling}
+									className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+								>
+									{cancelling ? "Cancelling..." : "Yes, cancel it"}
+								</button>
+								<button onClick={onKeep} disabled={cancelling} className="btn-outline text-sm px-4 py-2">
+									Keep appointment
+								</button>
+							</div>
+						</div>
+					)}
+				</>
 			)}
 		</div>
 	);

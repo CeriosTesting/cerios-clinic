@@ -86,6 +86,35 @@
 			]
 		},
 		{
+			"clientId": "patient-mobile-client",
+			"name": "Patient Mobile App",
+			"enabled": true,
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"directAccessGrantsEnabled": false,
+			"redirectUris": ["com.cerios.patient://oauth2redirect"],
+			"webOrigins": [],
+			"attributes": {
+				"pkce.code.challenge.method": "S256"
+			},
+			"defaultClientScopes": ["openid", "profile", "email", "roles"],
+			"protocolMappers": [
+				{
+					"name": "patient-mobile-audience",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"consentRequired": false,
+					"config": {
+						"included.client.audience": "patient-mobile-client",
+						"id.token.claim": "false",
+						"lightweight.claim": "false",
+						"access.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
 			"clientId": "api-service-client",
 			"name": "API Services (backend)",
 			"enabled": true,

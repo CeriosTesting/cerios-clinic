@@ -96,4 +96,13 @@ export class KeycloakAdminService {
 
 		return keycloakId;
 	}
+
+	async disableUser(keycloakId: string): Promise<void> {
+		const token = await this.getAdminToken();
+		await fetch(`${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}`, {
+			method: "PUT",
+			headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+			body: JSON.stringify({ enabled: false }),
+		});
+	}
 }

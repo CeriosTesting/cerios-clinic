@@ -4,6 +4,7 @@ import {
 	Get,
 	Put,
 	Param,
+	ParseUUIDPipe,
 	Body,
 	Query,
 	UseGuards,
@@ -12,7 +13,7 @@ import {
 	BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
-import { Prisma, AppointmentStatusChange } from "@prisma/client";
+import { Prisma, AppointmentStatus as AppointmentStatusEnum, AppointmentStatusChange } from "@prisma/client";
 import { IsString, IsOptional, IsEnum, IsDateString } from "class-validator";
 
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -45,7 +46,7 @@ type EnrichedStatusChange = AppointmentStatusChange & {
 
 class UpdateAppointmentDto {
 	@IsOptional()
-	@IsEnum(["SCHEDULED", "CONFIRMED", "CANCELLED", "COMPLETED"])
+	@IsEnum(AppointmentStatusEnum)
 	status?: AppointmentStatus;
 
 	@IsOptional() @IsString() notes?: string;
@@ -64,12 +65,18 @@ export class AppointmentsController {
 	@ApiQuery({ name: "status", required: false })
 	@ApiQuery({ name: "from", required: false })
 	@ApiQuery({ name: "to", required: false })
+	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)" })
+	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)" })
 	async findAll(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("status") status?: string,
 		@Query("from") from?: string,
-		@Query("to") to?: string
-	): Promise<{ data: ApptWithPatientAssistant[] }> {
+		@Query("to") to?: string,
+		@Query("limit") limitRaw?: string,
+		@Query("offset") offsetRaw?: string
+	): Promise<{ data: ApptWithPatientAssistant[]; total: number }> {
+		const take = Math.min(Number(limitRaw) || 50, 200);
+		const skip = Math.max(Number(offsetRaw) || 0, 0);
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
@@ -79,21 +86,28 @@ export class AppointmentsController {
 		const where: Record<string, unknown> = { doctorId: dbUser.doctor.id };
 		if (status) where["status"] = status;
 		if (from || to) {
+			if (from && isNaN(new Date(from).getTime())) throw new BadRequestException("Invalid 'from' date");
+			if (to && isNaN(new Date(to).getTime())) throw new BadRequestException("Invalid 'to' date");
 			where["scheduledAt"] = {
 				...(from && { gte: new Date(from) }),
 				...(to && { lte: new Date(to) }),
 			};
 		}
 
-		const appointments = await this.prisma.appointment.findMany({
-			where,
-			include: {
-				patient: { include: { user: true } },
-				assistant: { include: { user: true } },
-			},
-			orderBy: { scheduledAt: "asc" },
-		});
-		return { data: appointments };
+		const [appointments, total] = await Promise.all([
+			this.prisma.appointment.findMany({
+				where,
+				include: {
+					patient: { include: { user: true } },
+					assistant: { include: { user: true } },
+				},
+				orderBy: { scheduledAt: "asc" },
+				take,
+				skip,
+			}),
+			this.prisma.appointment.count({ where }),
+		]);
+		return { data: appointments, total };
 	}
 
 	@Get("stats")
@@ -143,7 +157,10 @@ export class AppointmentsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get appointment detail" })
-	async findOne(@Param("id") id: string, @CurrentUser() user: KeycloakTokenPayload): Promise<{ data: ApptWithAll }> {
+	async findOne(
+		@Param("id", ParseUUIDPipe) id: string,
+		@CurrentUser() user: KeycloakTokenPayload
+	): Promise<{ data: ApptWithAll }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
@@ -166,11 +183,11 @@ export class AppointmentsController {
 	@Get(":id/history")
 	@ApiOperation({ summary: "Get status change history for an appointment" })
 	async getHistory(
-		@Param("id") id: string,
+		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
 	): Promise<{ data: EnrichedStatusChange[] }> {
 		const dbUser = await this.prisma.user.findUnique({
-			where: { keycloakId: user.sub },
+			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
 		});
 		if (!dbUser?.doctor) throw new NotFoundException("Doctor profile not found");
@@ -206,7 +223,7 @@ export class AppointmentsController {
 	@Put(":id")
 	@ApiOperation({ summary: "Update appointment status and/or notes" })
 	async update(
-		@Param("id") id: string,
+		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAppointmentDto,
 		@CurrentUser() user: KeycloakTokenPayload
 	): Promise<{ data: ApptWithAll }> {

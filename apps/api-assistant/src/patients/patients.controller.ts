@@ -4,6 +4,7 @@ import {
 	Get,
 	NotFoundException,
 	Param,
+	ParseUUIDPipe,
 	Patch,
 	Query,
 	UploadedFile,
@@ -13,8 +14,11 @@ import {
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiTags, ApiBearerAuth } from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
+import { IsOptional, IsString, MaxLength } from "class-validator";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -24,9 +28,17 @@ type PatientWithUser = Prisma.PatientGetPayload<{ include: { user: true } }>;
 type DoctorWithUser = Prisma.DoctorGetPayload<{ include: { user: true } }>;
 type UserWithPatient = Prisma.UserGetPayload<{ include: { patient: true } }>;
 
+class SearchPatientsQuery {
+	@IsOptional()
+	@IsString()
+	@MaxLength(100)
+	q?: string;
+}
+
 @ApiTags("patients")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("assistant", "admin")
 @Controller("patients")
 export class PatientsController {
 	constructor(private readonly prisma: PrismaService) {}
@@ -34,7 +46,8 @@ export class PatientsController {
 	@Get()
 	@ApiOperation({ summary: "Search patients by name or email" })
 	@ApiQuery({ name: "q", required: false, description: "Search by name or email" })
-	async search(@Query("q") q?: string): Promise<{ data: PatientWithUser[] }> {
+	async search(@Query() query: SearchPatientsQuery): Promise<{ data: PatientWithUser[] }> {
+		const q = query.q;
 		let whereClause: object;
 		if (q) {
 			const parts = q.trim().split(/\s+/);
@@ -85,7 +98,7 @@ export class PatientsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get patient detail by user ID" })
-	async getById(@Param("id") id: string): Promise<{ data: UserWithPatient }> {
+	async getById(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: UserWithPatient }> {
 		const user = await this.prisma.user.findFirst({
 			where: { id, role: "patient", deletedAt: null },
 			include: { patient: true },
@@ -105,7 +118,7 @@ export class PatientsController {
 	})
 	@UseInterceptors(FileInterceptor("photo", { limits: { fileSize: MAX_FILE_BYTES } }))
 	async uploadPhoto(
-		@Param("id") id: string,
+		@Param("id", ParseUUIDPipe) id: string,
 		@UploadedFile() file: { mimetype: string; size: number; buffer: Buffer }
 	): Promise<{ data: { photo: string } }> {
 		if (!file) throw new BadRequestException("No file uploaded");

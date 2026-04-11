@@ -6,6 +6,7 @@
 	"scripts": {
 		"build": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" build",
 		"db:migrate": "pnpm --filter database migrate:dev",
+		"db:migrate:deploy": "pnpm --filter database migrate:deploy",
 		"db:reset": "pnpm --filter database migrate:reset",
 		"db:seed": "pnpm --filter database seed",
 		"db:studio": "pnpm --filter database studio",
@@ -16,6 +17,8 @@
 		"infra:up": "docker compose -f infra/docker-compose.yml up -d",
 		"lint": "oxlint --type-aware",
 		"lint:fix": "oxlint --type-aware --fix",
+		"mobile:android": "npm --prefix apps/patient-mobile run android",
+		"mobile:start": "npm --prefix apps/patient-mobile start",
 		"predev": "node -e \"const k=require('kill-port');Promise.allSettled([k(3001),k(3002),k(3003),k(5173),k(5174),k(5175)]).then(()=>process.exit(0))\"",
 		"typecheck": "pnpm --filter \"./packages/*\" typecheck && pnpm --filter \"./apps/*\" typecheck",
 		"update-all-packages": "pnpm npm-check-updates -u -w --packageManager pnpm --reject class-validator,tailwindcss && pnpm install"

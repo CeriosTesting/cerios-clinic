@@ -6,13 +6,14 @@ import {
 	Delete,
 	Body,
 	Param,
+	ParseUUIDPipe,
 	UseGuards,
 	NotFoundException,
 	ConflictException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
-import { IsString, IsEmail, IsOptional, MinLength } from "class-validator";
+import { IsString, IsEmail, IsNotEmpty, IsOptional, MinLength } from "class-validator";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -23,11 +24,11 @@ import { KeycloakAdminService } from "./keycloak-admin.service";
 
 class CreateDoctorDto {
 	@IsEmail() email: string;
-	@IsString() firstName: string;
-	@IsString() lastName: string;
+	@IsString() @IsNotEmpty() firstName: string;
+	@IsString() @IsNotEmpty() lastName: string;
 	@IsOptional() @IsString() specialization?: string;
 	@IsOptional() @IsString() licenseNumber?: string;
-	@IsString() @MinLength(8) password: string;
+	@IsString() @IsNotEmpty() @MinLength(8) password: string;
 }
 
 class UpdateDoctorDto {
@@ -39,10 +40,10 @@ class UpdateDoctorDto {
 
 class CreateAssistantDto {
 	@IsEmail() email: string;
-	@IsString() firstName: string;
-	@IsString() lastName: string;
+	@IsString() @IsNotEmpty() firstName: string;
+	@IsString() @IsNotEmpty() lastName: string;
 	@IsOptional() @IsString() department?: string;
-	@IsString() @MinLength(8) password: string;
+	@IsString() @IsNotEmpty() @MinLength(8) password: string;
 }
 
 class UpdateAssistantDto {
@@ -97,28 +98,36 @@ export class AdminController {
 			roles: ["doctor"],
 		});
 
-		const user = await this.prisma.user.create({
-			data: {
-				keycloakId,
-				email: dto.email,
-				firstName: dto.firstName,
-				lastName: dto.lastName,
-				role: "doctor",
-				doctor: {
-					create: {
-						specialization: dto.specialization,
-						licenseNumber: dto.licenseNumber,
+		try {
+			const user = await this.prisma.user.create({
+				data: {
+					keycloakId,
+					email: dto.email,
+					firstName: dto.firstName,
+					lastName: dto.lastName,
+					role: "doctor",
+					doctor: {
+						create: {
+							specialization: dto.specialization,
+							licenseNumber: dto.licenseNumber,
+						},
 					},
 				},
-			},
-			include: { doctor: true },
-		});
-		return { data: user, message: "Doctor created successfully" };
+				include: { doctor: true },
+			});
+			return { data: user, message: "Doctor created successfully" };
+		} catch (err) {
+			await this.keycloakAdmin.disableUser(keycloakId).catch(() => undefined);
+			throw err;
+		}
 	}
 
 	@Put("doctors/:id")
 	@ApiOperation({ summary: "[Admin] Update a doctor" })
-	async updateDoctor(@Param("id") id: string, @Body() dto: UpdateDoctorDto): Promise<{ data: DoctorWithUser }> {
+	async updateDoctor(
+		@Param("id", ParseUUIDPipe) id: string,
+		@Body() dto: UpdateDoctorDto
+	): Promise<{ data: DoctorWithUser }> {
 		const doctor = await this.prisma.doctor.findUnique({
 			where: { id },
 			include: { user: true },
@@ -151,7 +160,7 @@ export class AdminController {
 
 	@Delete("doctors/:id")
 	@ApiOperation({ summary: "[Admin] Soft-delete a doctor (disables Keycloak account)" })
-	async deleteDoctor(@Param("id") id: string): Promise<{ message: string }> {
+	async deleteDoctor(@Param("id", ParseUUIDPipe) id: string): Promise<{ message: string }> {
 		const doctor = await this.prisma.doctor.findUnique({
 			where: { id },
 			include: { user: true },
@@ -182,26 +191,31 @@ export class AdminController {
 			roles: ["assistant"],
 		});
 
-		const user = await this.prisma.user.create({
-			data: {
-				keycloakId,
-				email: dto.email,
-				firstName: dto.firstName,
-				lastName: dto.lastName,
-				role: "assistant",
-				assistant: {
-					create: { department: dto.department },
+		try {
+			const user = await this.prisma.user.create({
+				data: {
+					keycloakId,
+					email: dto.email,
+					firstName: dto.firstName,
+					lastName: dto.lastName,
+					role: "assistant",
+					assistant: {
+						create: { department: dto.department },
+					},
 				},
-			},
-			include: { assistant: true },
-		});
-		return { data: user, message: "Assistant created successfully" };
+				include: { assistant: true },
+			});
+			return { data: user, message: "Assistant created successfully" };
+		} catch (err) {
+			await this.keycloakAdmin.disableUser(keycloakId).catch(() => undefined);
+			throw err;
+		}
 	}
 
 	@Put("assistants/:id")
 	@ApiOperation({ summary: "[Admin] Update an assistant" })
 	async updateAssistant(
-		@Param("id") id: string,
+		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAssistantDto
 	): Promise<{ data: AssistantWithUser }> {
 		const assistant = await this.prisma.assistant.findUnique({
@@ -235,7 +249,7 @@ export class AdminController {
 
 	@Delete("assistants/:id")
 	@ApiOperation({ summary: "[Admin] Soft-delete an assistant" })
-	async deleteAssistant(@Param("id") id: string): Promise<{ message: string }> {
+	async deleteAssistant(@Param("id", ParseUUIDPipe) id: string): Promise<{ message: string }> {
 		const assistant = await this.prisma.assistant.findUnique({
 			where: { id },
 			include: { user: true },

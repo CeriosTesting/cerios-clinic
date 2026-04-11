@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { Controller, Get, Param, ParseUUIDPipe, UseGuards, NotFoundException, ForbiddenException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -15,7 +15,7 @@ export class PatientsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get patient details (for doctors who have an appointment with this patient)" })
-	async findOne(@Param("id") id: string, @CurrentUser() user: KeycloakTokenPayload): Promise<{ data: unknown }> {
+	async findOne(@Param("id", ParseUUIDPipe) id: string, @CurrentUser() user: KeycloakTokenPayload): Promise<{ data: unknown }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },

@@ -10,6 +10,10 @@ export class KeycloakAdminService {
 	private readonly clientId: string;
 	private readonly clientSecret: string;
 
+	/** Cached admin access token */
+	private cachedToken: string | null = null;
+	private tokenExpiresAt = 0;
+
 	constructor() {
 		const env = getApiRuntimeEnv();
 		this.baseUrl = env.keycloak.url;
@@ -19,6 +23,9 @@ export class KeycloakAdminService {
 	}
 
 	private async getAdminToken(): Promise<string> {
+		if (this.cachedToken && Date.now() < this.tokenExpiresAt) {
+			return this.cachedToken;
+		}
 		const params = new URLSearchParams({
 			grant_type: "client_credentials",
 			client_id: this.clientId,
@@ -29,7 +36,11 @@ export class KeycloakAdminService {
 			params.toString(),
 			{ headers: { "Content-Type": "application/x-www-form-urlencoded" } }
 		);
-		return response.data.access_token as string;
+		const expiresIn: number = (response.data.expires_in as number) ?? 300;
+		this.cachedToken = response.data.access_token as string;
+		// Expire 30 seconds early to avoid using a token right at expiry
+		this.tokenExpiresAt = Date.now() + (expiresIn - 30) * 1000;
+		return this.cachedToken;
 	}
 
 	async createUser(data: {
@@ -57,10 +68,16 @@ export class KeycloakAdminService {
 		);
 		const keycloakId = (createResponse.headers["location"] as string).split("/").pop() as string;
 
-		const allRoles = await axios.get(`${this.baseUrl}/admin/realms/${this.realm}/roles`, { headers });
-		const rolesToAssign = (allRoles.data as Array<{ name: string; id: string }>)
-			.filter(r => data.roles.includes(r.name))
-			.map(r => ({ id: r.id, name: r.name }));
+		// Assign realm roles using targeted search to avoid fetching all roles
+		const rolesToAssign = await Promise.all(
+			data.roles.map(async roleName => {
+				const res = await axios.get(
+					`${this.baseUrl}/admin/realms/${this.realm}/roles/${encodeURIComponent(roleName)}`,
+					{ headers }
+				);
+				return { id: res.data.id as string, name: res.data.name as string };
+			})
+		);
 
 		await axios.post(
 			`${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}/role-mappings/realm`,

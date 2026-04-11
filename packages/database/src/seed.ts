@@ -326,14 +326,48 @@ async function main(): Promise<void> {
 	const assistants = assistantUsers.map(u => u.assistant!);
 	const patients = patientUsers.map(u => u.patient!);
 
-	// Create appointments
-	const now = new Date();
+	/**
+	 * Returns a UTC Date that is `daysAhead` working days (Mon–Fri) from today,
+	 * at the given UTC hour and 30-min-aligned minute.
+	 * Negative values step backward through weekdays for past appointments.
+	 */
+	function slotUTC(daysAhead: number, hour: number, minute: 0 | 30): Date {
+		const today = new Date();
+		const base = new Date(
+			Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour, minute, 0, 0)
+		);
+		const step = daysAhead >= 0 ? 1 : -1;
+		let remaining = Math.abs(daysAhead);
+		const cursor = new Date(base);
+		while (remaining > 0) {
+			cursor.setUTCDate(cursor.getUTCDate() + step);
+			const dow = cursor.getUTCDay(); // 0=Sun, 6=Sat
+			if (dow >= 1 && dow <= 5) remaining--;
+		}
+		return cursor;
+	}
+
+	// Clear existing seeded appointments to prevent duplicates on re-seed
+	await prisma.appointmentStatusChange.deleteMany({
+		where: {
+			appointment: {
+				patient: { user: { email: { in: patientList.map(p => p.email) } } },
+			},
+		},
+	});
+	await prisma.appointment.deleteMany({
+		where: {
+			patient: { user: { email: { in: patientList.map(p => p.email) } } },
+		},
+	});
+
 	const appointmentData = [
+		// Today's appointments
 		{
 			patientId: patients[0].id,
 			doctorId: doctors[0].id,
 			assistantId: assistants[0].id,
-			scheduledAt: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(0, 9, 0),
 			status: "SCHEDULED" as const,
 			notes: "Annual check-up",
 		},
@@ -341,7 +375,7 @@ async function main(): Promise<void> {
 			patientId: patients[1].id,
 			doctorId: doctors[1].id,
 			assistantId: assistants[1].id,
-			scheduledAt: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(0, 10, 30),
 			status: "CONFIRMED" as const,
 			notes: "Follow-up ECG review",
 		},
@@ -349,7 +383,7 @@ async function main(): Promise<void> {
 			patientId: patients[2].id,
 			doctorId: doctors[2].id,
 			assistantId: assistants[2].id,
-			scheduledAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(0, 14, 0),
 			status: "SCHEDULED" as const,
 			notes: "MRI results discussion",
 		},
@@ -357,7 +391,40 @@ async function main(): Promise<void> {
 			patientId: patients[3].id,
 			doctorId: doctors[0].id,
 			assistantId: assistants[0].id,
-			scheduledAt: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(0, 15, 30),
+			status: "CONFIRMED" as const,
+			notes: "Blood pressure check",
+		},
+		// Upcoming appointments (N working days ahead, valid 30-min UTC slots)
+		{
+			patientId: patients[0].id,
+			doctorId: doctors[0].id,
+			assistantId: assistants[0].id,
+			scheduledAt: slotUTC(1, 9, 0),
+			status: "SCHEDULED" as const,
+			notes: "Annual check-up",
+		},
+		{
+			patientId: patients[1].id,
+			doctorId: doctors[1].id,
+			assistantId: assistants[1].id,
+			scheduledAt: slotUTC(2, 10, 30),
+			status: "CONFIRMED" as const,
+			notes: "Follow-up ECG review",
+		},
+		{
+			patientId: patients[2].id,
+			doctorId: doctors[2].id,
+			assistantId: assistants[2].id,
+			scheduledAt: slotUTC(3, 14, 0),
+			status: "SCHEDULED" as const,
+			notes: "MRI results discussion",
+		},
+		{
+			patientId: patients[3].id,
+			doctorId: doctors[0].id,
+			assistantId: assistants[0].id,
+			scheduledAt: slotUTC(5, 11, 0),
 			status: "SCHEDULED" as const,
 			notes: "Blood pressure check",
 		},
@@ -365,39 +432,15 @@ async function main(): Promise<void> {
 			patientId: patients[4].id,
 			doctorId: doctors[1].id,
 			assistantId: assistants[1].id,
-			scheduledAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(7, 15, 30),
 			status: "CONFIRMED" as const,
 			notes: "Initial consultation",
-		},
-		{
-			patientId: patients[0].id,
-			doctorId: doctors[2].id,
-			assistantId: assistants[2].id,
-			scheduledAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
-			status: "COMPLETED" as const,
-			notes: "Routine check - all normal",
-		},
-		{
-			patientId: patients[1].id,
-			doctorId: doctors[0].id,
-			assistantId: assistants[0].id,
-			scheduledAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-			status: "COMPLETED" as const,
-			notes: "Headache investigation",
-		},
-		{
-			patientId: patients[2].id,
-			doctorId: doctors[1].id,
-			assistantId: assistants[1].id,
-			scheduledAt: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
-			status: "CANCELLED" as const,
-			notes: "Patient cancelled - rescheduled",
 		},
 		{
 			patientId: patients[3].id,
 			doctorId: doctors[2].id,
 			assistantId: assistants[2].id,
-			scheduledAt: new Date(now.getTime() + 10 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(10, 9, 30),
 			status: "SCHEDULED" as const,
 			notes: "Neurological evaluation",
 		},
@@ -405,9 +448,34 @@ async function main(): Promise<void> {
 			patientId: patients[4].id,
 			doctorId: doctors[0].id,
 			assistantId: assistants[0].id,
-			scheduledAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
+			scheduledAt: slotUTC(14, 13, 0),
 			status: "SCHEDULED" as const,
 			notes: "Vaccination follow-up",
+		},
+		// Past appointments (N working days ago)
+		{
+			patientId: patients[0].id,
+			doctorId: doctors[2].id,
+			assistantId: assistants[2].id,
+			scheduledAt: slotUTC(-3, 10, 0),
+			status: "COMPLETED" as const,
+			notes: "Routine check - all normal",
+		},
+		{
+			patientId: patients[1].id,
+			doctorId: doctors[0].id,
+			assistantId: assistants[0].id,
+			scheduledAt: slotUTC(-7, 9, 0),
+			status: "COMPLETED" as const,
+			notes: "Headache investigation",
+		},
+		{
+			patientId: patients[2].id,
+			doctorId: doctors[1].id,
+			assistantId: assistants[1].id,
+			scheduledAt: slotUTC(-14, 11, 30),
+			status: "CANCELLED" as const,
+			notes: "Patient cancelled - rescheduled",
 		},
 	];
 

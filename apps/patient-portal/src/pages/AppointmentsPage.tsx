@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import api from "../api";
+import { formatDate, formatTime } from "../utils/formatDate";
 
 const STATUS_STYLES: Record<string, string> = {
 	SCHEDULED: "bg-blue-100 text-blue-800",
@@ -100,9 +101,9 @@ function AppointmentCard({ appt }: { appt: Appointment }): React.ReactElement {
 				</p>
 				<p className="text-sm text-gray-500">{appt.doctor?.specialization}</p>
 				<p className="text-sm text-gray-400 mt-1">
-					{date.toLocaleDateString("en-NL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+					{formatDate(date)}
 					{" · "}
-					{date.toLocaleTimeString("en-NL", { hour: "2-digit", minute: "2-digit" })}
+					{formatTime(date)}
 				</p>
 			</div>
 			<span className={`text-xs font-semibold px-3 py-1 rounded-full ${STATUS_STYLES[appt.status]}`}>

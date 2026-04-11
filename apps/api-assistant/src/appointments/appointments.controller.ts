@@ -7,13 +7,19 @@ import {
 	Delete,
 	Body,
 	Param,
+	ParseUUIDPipe,
 	Query,
 	UseGuards,
 	NotFoundException,
 	BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
-import { Prisma, Appointment, AppointmentStatusChange } from "@prisma/client";
+import {
+	Prisma,
+	Appointment,
+	AppointmentStatus as AppointmentStatusEnum,
+	AppointmentStatusChange,
+} from "@prisma/client";
 import { IsString, IsOptional, IsEnum, IsDateString, IsUUID } from "class-validator";
 
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -50,7 +56,7 @@ class CreateAppointmentDto {
 
 class UpdateAppointmentDto {
 	@IsOptional()
-	@IsEnum(["SCHEDULED", "CONFIRMED", "CANCELLED", "COMPLETED"])
+	@IsEnum(AppointmentStatusEnum)
 	status?: AppointmentStatus;
 	@IsOptional() @IsDateString() scheduledAt?: string;
 	@IsOptional() @IsString() notes?: string;
@@ -69,32 +75,45 @@ export class AppointmentsController {
 	@ApiQuery({ name: "doctorId", required: false })
 	@ApiQuery({ name: "from", required: false })
 	@ApiQuery({ name: "to", required: false })
+	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)" })
+	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)" })
 	async findAll(
 		@Query("status") status?: string,
 		@Query("doctorId") doctorId?: string,
 		@Query("from") from?: string,
-		@Query("to") to?: string
-	): Promise<{ data: ApptWithAll[] }> {
+		@Query("to") to?: string,
+		@Query("limit") limitRaw?: string,
+		@Query("offset") offsetRaw?: string
+	): Promise<{ data: ApptWithAll[]; total: number }> {
+		const take = Math.min(Number(limitRaw) || 50, 200);
+		const skip = Math.max(Number(offsetRaw) || 0, 0);
 		const where: Record<string, unknown> = {};
 		if (status) where["status"] = status;
 		if (doctorId) where["doctorId"] = doctorId;
 		if (from || to) {
+			if (from && isNaN(new Date(from).getTime())) throw new BadRequestException("Invalid 'from' date");
+			if (to && isNaN(new Date(to).getTime())) throw new BadRequestException("Invalid 'to' date");
 			where["scheduledAt"] = {
 				...(from && { gte: new Date(from) }),
 				...(to && { lte: new Date(to) }),
 			};
 		}
 
-		const appointments = await this.prisma.appointment.findMany({
-			where,
-			include: {
-				patient: { include: { user: true } },
-				doctor: { include: { user: true } },
-				assistant: { include: { user: true } },
-			},
-			orderBy: { scheduledAt: "asc" },
-		});
-		return { data: appointments };
+		const [appointments, total] = await Promise.all([
+			this.prisma.appointment.findMany({
+				where,
+				include: {
+					patient: { include: { user: true } },
+					doctor: { include: { user: true } },
+					assistant: { include: { user: true } },
+				},
+				orderBy: { scheduledAt: "asc" },
+				take,
+				skip,
+			}),
+			this.prisma.appointment.count({ where }),
+		]);
+		return { data: appointments, total };
 	}
 
 	@Get("stats")
@@ -136,7 +155,7 @@ export class AppointmentsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get appointment detail" })
-	async findOne(@Param("id") id: string): Promise<{ data: ApptWithAll }> {
+	async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: ApptWithAll }> {
 		const appointment = await this.prisma.appointment.findUnique({
 			where: { id },
 			include: {
@@ -151,7 +170,7 @@ export class AppointmentsController {
 
 	@Get(":id/history")
 	@ApiOperation({ summary: "Get status change history for an appointment" })
-	async getHistory(@Param("id") id: string): Promise<{ data: EnrichedStatusChange[] }> {
+	async getHistory(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: EnrichedStatusChange[] }> {
 		const appointment = await this.prisma.appointment.findUnique({ where: { id } });
 		if (!appointment) throw new NotFoundException("Appointment not found");
 
@@ -185,6 +204,14 @@ export class AppointmentsController {
 		@Body() dto: CreateAppointmentDto,
 		@CurrentUser() user: KeycloakTokenPayload
 	): Promise<{ data: ApptWithAll; message: string }> {
+		// Validate that the referenced patient and doctor exist and are not soft-deleted
+		const [patient, doctor] = await Promise.all([
+			this.prisma.patient.findFirst({ where: { id: dto.patientId, user: { deletedAt: null } } }),
+			this.prisma.doctor.findFirst({ where: { id: dto.doctorId, user: { deletedAt: null } } }),
+		]);
+		if (!patient) throw new NotFoundException("Patient not found");
+		if (!doctor) throw new NotFoundException("Doctor not found");
+
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { assistant: true },
@@ -221,7 +248,7 @@ export class AppointmentsController {
 	@Put(":id")
 	@ApiOperation({ summary: "Update an appointment (reschedule or change status)" })
 	async update(
-		@Param("id") id: string,
+		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAppointmentDto,
 		@CurrentUser() user: KeycloakTokenPayload
 	): Promise<{ data: ApptWithAll }> {
@@ -267,14 +294,32 @@ export class AppointmentsController {
 
 	@Delete(":id")
 	@ApiOperation({ summary: "Cancel an appointment" })
-	async cancel(@Param("id") id: string): Promise<{ data: Appointment; message: string }> {
+	async cancel(
+		@Param("id", ParseUUIDPipe) id: string,
+		@CurrentUser() user: KeycloakTokenPayload
+	): Promise<{ data: Appointment; message: string }> {
 		const appointment = await this.prisma.appointment.findUnique({ where: { id } });
 		if (!appointment) throw new NotFoundException("Appointment not found");
+
+		const allowed = ALLOWED_TRANSITIONS[appointment.status as AppointmentStatus];
+		if (!allowed.includes("CANCELLED")) {
+			throw new BadRequestException(`Cannot cancel an appointment with status ${appointment.status}`);
+		}
 
 		const updated = await this.prisma.appointment.update({
 			where: { id },
 			data: { status: "CANCELLED" },
 		});
+
+		await this.prisma.appointmentStatusChange.create({
+			data: {
+				appointmentId: id,
+				previousStatus: appointment.status,
+				newStatus: "CANCELLED",
+				changedByKeycloakId: user.sub,
+			},
+		});
+
 		return { data: updated, message: "Appointment cancelled" };
 	}
 }

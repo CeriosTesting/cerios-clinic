@@ -62,27 +62,33 @@ export class AuthController {
 			password: dto.password,
 		});
 
-		await this.prisma.user.upsert({
-			where: { keycloakId },
-			update: {
-				email: dto.email,
-				firstName: dto.firstName,
-				lastName: dto.lastName,
-			},
-			create: {
-				keycloakId,
-				email: dto.email,
-				firstName: dto.firstName,
-				lastName: dto.lastName,
-				role: "patient",
-				patient: {
-					create: {
-						dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
-						phone: dto.phone ?? null,
+		try {
+			await this.prisma.user.upsert({
+				where: { keycloakId },
+				update: {
+					email: dto.email,
+					firstName: dto.firstName,
+					lastName: dto.lastName,
+				},
+				create: {
+					keycloakId,
+					email: dto.email,
+					firstName: dto.firstName,
+					lastName: dto.lastName,
+					role: "patient",
+					patient: {
+						create: {
+							dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : null,
+							phone: dto.phone ?? null,
+						},
 					},
 				},
-			},
-		});
+			});
+		} catch (err) {
+			// DB write failed — disable the Keycloak user to avoid an orphaned account
+			await this.keycloakAdmin.disableUser(keycloakId).catch(() => undefined);
+			throw err;
+		}
 
 		return { message: "Account created successfully" };
 	}

@@ -18,6 +18,7 @@ This is a full-stack clinic management application consisting of:
 | **Patient API**      | http://localhost:3001/api | NestJS backend for the Patient Portal                 |
 | **Doctor API**       | http://localhost:3002/api | NestJS backend for the Doctor Portal                  |
 | **Assistant API**    | http://localhost:3003/api | NestJS backend for the Assistant Portal               |
+| **Patient Mobile**   | Android device / emulator | React Native app — patients on Android                |
 | **Keycloak**         | http://localhost:8080     | Authentication & user management                      |
 | **PostgreSQL**       | localhost:5432            | Database                                              |
 | **Mailpit**          | http://localhost:8025     | Local email catcher (dev only)                        |
@@ -238,6 +239,12 @@ On a fresh clone this applies all existing migrations automatically without any 
 
 > If the tables already exist from a previous run you can skip this step.
 
+> **Note:** `db:migrate` uses `prisma migrate dev`, which is **interactive** — it will prompt you to name a new migration if one is detected. To apply existing migration files non-interactively (e.g. in CI or when deploying to a shared environment), use:
+>
+> ```bash
+> pnpm run db:migrate:deploy
+> ```
+
 ---
 
 ## Step 7 — Seed the Database
@@ -295,9 +302,9 @@ pnpm run db:seed     # Re-creates all test users in PostgreSQL and Keycloak
 
 ---
 
-## Step 8 — Start the Application
+## Step 8 — Start the Web Application
 
-Start all six services (3 APIs + 3 frontends) with a single command:
+Start all six web services (3 APIs + 3 frontends) with a single command:
 
 ```bash
 pnpm run dev
@@ -310,6 +317,140 @@ Each service is colour-coded in the terminal output. You can now open:
 - **Assistant Portal** → http://localhost:5175
 
 Press `Ctrl + C` to stop all services.
+
+---
+
+## Step 9 — Start the Native Android App (Patient Mobile)
+
+The patient mobile app is a React Native app that connects to the same local APIs and Keycloak as the web portals. It runs on a physical Android device or an Android emulator and communicates with the services running on your machine.
+
+### 9.1 — Prerequisites
+
+Before running the app you need the Android development toolchain. If you have **Android Studio** installed this is already taken care of. For a minimal command-line-only setup:
+
+1. **Java (JDK 17)** — Download from https://adoptium.net and install. Verify:
+   ```bash
+   java -version
+   # Should show openjdk version 17.x.x
+   ```
+2. **Android Studio** (recommended) — Download from https://developer.android.com/studio. During setup, make sure the following are installed via the SDK Manager:
+   - Android SDK Platform (API 35 or higher)
+   - Android SDK Build-Tools
+   - Android Emulator
+3. **ANDROID_HOME environment variable** — Android Studio sets this automatically. To verify:
+   ```powershell
+   echo $env:ANDROID_HOME
+   # Should print a path like C:\Users\<you>\AppData\Local\Android\Sdk
+   ```
+   If it is blank, add it to your user environment variables and restart your terminal.
+
+### 9.2 — Install Mobile Dependencies
+
+The mobile app manages its own `node_modules` folder independently from the monorepo (it cannot be symlinked because Metro bundler does not follow symlinks). Install its dependencies once:
+
+```bash
+cd apps/patient-mobile
+npm install
+```
+
+> Use `npm install` here, not `pnpm`. The React Native toolchain expects a standard `node_modules` layout.
+
+### 9.3 — Configure the Environment File
+
+The app needs to know the IP address of your development machine so it can reach the APIs and Keycloak. An Android device (physical or emulator) cannot use `localhost` — it must use your machine's LAN IP address.
+
+**Find your LAN IP:**
+
+```powershell
+ipconfig
+# Look for the IPv4 address under your active network adapter, e.g. 192.168.1.42
+```
+
+Copy the example file and fill in your IP:
+
+```powershell
+Copy-Item apps/patient-mobile/.env.example apps/patient-mobile/.env
+```
+
+Then open `apps/patient-mobile/.env` and replace `LAN_IP` with your actual IP:
+
+```env
+API_URL=http://192.168.1.42:3001/api
+KEYCLOAK_URL=http://192.168.1.42:8080
+KEYCLOAK_REALM=clinic
+KEYCLOAK_CLIENT_ID=patient-mobile-client
+```
+
+> **Android Emulator note:** If you are using the built-in Android Emulator (not a physical device), you can use `10.0.2.2` instead of your LAN IP — this is a special alias that the emulator maps to `localhost` on your host machine:
+>
+> ```env
+> API_URL=http://10.0.2.2:3001/api
+> KEYCLOAK_URL=http://10.0.2.2:8080
+> ```
+
+### 9.4 — Set Up a Device or Emulator
+
+**Option A — Android Emulator (no physical device needed)**
+
+1. Open Android Studio.
+2. Go to **More Actions → Virtual Device Manager** (or **Device Manager** in the toolbar).
+3. Click **Create Device**, pick a phone (e.g. Pixel 8), choose a system image (API 35 / Android 15), and finish.
+4. Click the **Play** button to start the emulator. Wait until it finishes booting to the home screen.
+
+**Option B — Physical Android Device**
+
+1. On the device: go to **Settings → About phone** and tap **Build number** seven times to enable Developer Options.
+2. Go to **Settings → Developer Options** and enable **USB Debugging**.
+3. Connect the device to your PC via USB.
+4. Accept the "Allow USB debugging from this computer?" prompt on the device.
+5. Verify the device is detected:
+   ```bash
+   adb devices
+   # Should list your device, e.g.:
+   # List of devices attached
+   # R58MA1XXXXX   device
+   ```
+
+### 9.5 — Build and Launch the App
+
+Make sure the web services from Step 8 are already running (the APIs must be reachable from the device).
+
+From the monorepo root:
+
+```bash
+pnpm run mobile:android
+```
+
+This will:
+
+1. Start the **Metro bundler** (JavaScript build server).
+2. Compile and install the Android APK on the connected device or running emulator.
+3. Launch the app automatically.
+
+The first build takes 2–5 minutes. Subsequent builds are much faster because Gradle caches the results.
+
+> **If Android Studio is open** while running this command, make sure no Gradle sync or build is in progress in the IDE — concurrent Gradle processes can conflict.
+
+### 9.6 — Log In to the Mobile App
+
+Once the app is open:
+
+1. Tap **Sign in with Clinic Account**.
+2. The app opens the Keycloak login page in the device browser.
+3. Log in with any patient account from the seed data, for example:
+   - **Email:** `patient.wilson@example.com`
+   - **Password:** `Patient1234!` (or the value of `SEED_PATIENT_PASSWORD` in your `.env`)
+4. After login, Keycloak redirects back to the app automatically.
+
+### 9.7 — Keeping Metro Running for Development
+
+For faster development iteration (instant JS reload without a full rebuild), keep the Metro bundler running in a separate terminal:
+
+```bash
+pnpm run mobile:start
+```
+
+With Metro running, any JavaScript change you save will be reflected on the device within seconds (press `R` twice in the Metro terminal to force a full reload).
 
 ---
 
@@ -485,19 +626,22 @@ Open http://localhost:8025 to view the inbox.
 
 ## Useful Commands
 
-| Command                          | Description                                                     |
-| -------------------------------- | --------------------------------------------------------------- |
-| `pnpm run infra:up`              | Start Docker containers (Postgres, Keycloak, Mailpit)           |
-| `pnpm run infra:down`            | Stop and remove Docker containers                               |
-| `pnpm run db:migrate`            | Run any pending database migrations                             |
-| `pnpm run db:seed`               | Create/reset all test users in DB and Keycloak                  |
-| `pnpm run db:reset`              | **⚠ Drops and recreates the database** (wipes all data)         |
-| `pnpm run db:studio`             | Open Prisma Studio (visual DB browser) at http://localhost:5555 |
-| `pnpm run dev`                   | Start all 6 apps in development mode                            |
-| `pnpm run build`                 | Build all packages and apps for production                      |
-| `pnpm run typecheck`             | Type-check all packages and apps without emitting files         |
-| `docker logs clinic-keycloak -f` | Stream Keycloak logs                                            |
-| `docker logs clinic-postgres -f` | Stream PostgreSQL logs                                          |
+| Command                          | Description                                                                             |
+| -------------------------------- | --------------------------------------------------------------------------------------- |
+| `pnpm run infra:up`              | Start Docker containers (Postgres, Keycloak, Mailpit)                                   |
+| `pnpm run infra:down`            | Stop and remove Docker containers                                                       |
+| `pnpm run db:migrate`            | Run pending migrations interactively (prompts for a name if new migrations are created) |
+| `pnpm run db:migrate:deploy`     | Apply existing migration files non-interactively (safe for CI / shared environments)    |
+| `pnpm run db:seed`               | Create/reset all test users in DB and Keycloak                                          |
+| `pnpm run db:reset`              | **⚠ Drops and recreates the database** (wipes all data)                                 |
+| `pnpm run db:studio`             | Open Prisma Studio (visual DB browser) at http://localhost:5555                         |
+| `pnpm run dev`                   | Start all 6 web apps in development mode                                                |
+| `pnpm run build`                 | Build all packages and apps for production                                              |
+| `pnpm run typecheck`             | Type-check all packages and apps without emitting files                                 |
+| `docker logs clinic-keycloak -f` | Stream Keycloak logs                                                                    |
+| `docker logs clinic-postgres -f` | Stream PostgreSQL logs                                                                  |
+| `pnpm run mobile:android`        | Build and launch the Android app on device / emulator                                   |
+| `pnpm run mobile:start`          | Start the Metro JS bundler only (for hot-reload development)                            |
 
 ---
 
@@ -551,7 +695,8 @@ clinic-monorepo/
 │   ├── api-assistant/    # NestJS — Assistant API (port 3003)
 │   ├── patient-portal/   # React/Vite — Patient UI  (port 5173)
 │   ├── doctor-portal/    # React/Vite — Doctor UI   (port 5174)
-│   └── assistant-portal/ # React/Vite — Assistant UI (port 5175)
+│   ├── assistant-portal/ # React/Vite — Assistant UI (port 5175)
+│   └── patient-mobile/   # React Native — Android patient app
 ├── packages/
 │   ├── database/         # Prisma schema, migrations, seed script
 │   └── shared-types/     # TypeScript types shared across apps

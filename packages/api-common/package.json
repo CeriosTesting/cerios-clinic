@@ -14,6 +14,7 @@
 	"dependencies": {
 		"@clinic/database": "workspace:*",
 		"@prisma/adapter-pg": "^7.7.0",
+		"compression": "^1.8.1",
 		"helmet": "^8.0.0"
 	},
 	"devDependencies": {
@@ -21,6 +22,7 @@
 		"@nestjs/core": "^11.1.18",
 		"@nestjs/passport": "^11.0.5",
 		"@nestjs/swagger": "^11.2.6",
+		"@types/compression": "^1.8.1",
 		"typescript": "^6.0.2"
 	},
 	"peerDependencies": {
