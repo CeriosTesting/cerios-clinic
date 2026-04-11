@@ -1,4 +1,5 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import type { BottomTabNavigationOptions } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
@@ -43,7 +44,7 @@ const TAB_ICONS: Record<string, string> = {
 	Profile: "👤",
 };
 
-const tabScreenOptions = ({ route }: { route: { name: string } }) => ({
+const tabScreenOptions = ({ route }: { route: { name: string } }): BottomTabNavigationOptions => ({
 	tabBarIcon: ({ color }: { color: string }): React.JSX.Element => (
 		<Text style={{ fontSize: 18, color }} accessibilityLabel={route.name}>
 			{TAB_ICONS[route.name]}

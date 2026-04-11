@@ -19,7 +19,7 @@ export default function AppointmentsScreen(): React.JSX.Element {
 	const { data: appointments, isLoading, refetch } = useAppointments();
 	const [search, setSearch] = useState("");
 
-	const { filtered, upcoming, past } = useMemo(() => {
+	const { upcoming, past } = useMemo(() => {
 		const q = search.toLowerCase();
 		const f = appointments
 			? q
@@ -30,7 +30,6 @@ export default function AppointmentsScreen(): React.JSX.Element {
 				: appointments
 			: [];
 		return {
-			filtered: f,
 			upcoming: f.filter(a => UPCOMING.includes(a.status)),
 			past: f.filter(a => PAST.includes(a.status)),
 		};

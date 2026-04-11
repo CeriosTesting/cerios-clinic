@@ -3,16 +3,110 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOp
 
 import { useProfile, useUpdateProfile } from "../api/hooks";
 
+function formatDob(date?: string | null): string {
+	if (!date) return "";
+	return new Date(date).toISOString().split("T")[0];
+}
+
+type FormValues = {
+	firstName: string;
+	lastName: string;
+	phone: string;
+	dateOfBirth: string;
+	insuranceNumber: string;
+};
+
+type FieldHandlers = {
+	firstName: (v: string) => void;
+	lastName: (v: string) => void;
+	phone: (v: string) => void;
+	dateOfBirth: (v: string) => void;
+	insuranceNumber: (v: string) => void;
+};
+
+function ProfileFormContent({
+	profile,
+	form,
+	update,
+	handlers,
+	onSave,
+}: {
+	profile: ReturnType<typeof useProfile>["data"];
+	form: FormValues;
+	update: ReturnType<typeof useUpdateProfile>;
+	handlers: FieldHandlers;
+	onSave: () => void;
+}): React.JSX.Element {
+	return (
+		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
+			{/* Email (read-only) */}
+			<View style={styles.emailCard}>
+				<Text style={styles.emailLabel}>Email address</Text>
+				<Text style={styles.emailValue}>{profile?.email ?? ""}</Text>
+			</View>
+
+			<View style={styles.card}>
+				<FormRow label="First name">
+					<TextInput
+						style={styles.input}
+						value={form.firstName}
+						onChangeText={handlers.firstName}
+						autoCapitalize="words"
+					/>
+				</FormRow>
+				<FormRow label="Last name">
+					<TextInput
+						style={styles.input}
+						value={form.lastName}
+						onChangeText={handlers.lastName}
+						autoCapitalize="words"
+					/>
+				</FormRow>
+				<FormRow label="Phone number">
+					<TextInput style={styles.input} value={form.phone} onChangeText={handlers.phone} keyboardType="phone-pad" />
+				</FormRow>
+				<FormRow label="Date of birth">
+					<TextInput
+						style={styles.input}
+						value={form.dateOfBirth}
+						onChangeText={handlers.dateOfBirth}
+						placeholder="YYYY-MM-DD"
+						placeholderTextColor="#D1D5DB"
+					/>
+				</FormRow>
+				<FormRow label="Insurance number" last>
+					<TextInput style={styles.input} value={form.insuranceNumber} onChangeText={handlers.insuranceNumber} />
+				</FormRow>
+			</View>
+
+			{update.isSuccess ? <Text style={styles.success}>Profile saved successfully.</Text> : null}
+			{update.isError ? <Text style={styles.error}>Could not save profile. Please try again.</Text> : null}
+
+			<TouchableOpacity
+				style={[styles.saveBtn, update.isPending && styles.saveBtnDisabled]}
+				onPress={onSave}
+				disabled={update.isPending}
+			>
+				{update.isPending ? (
+					<ActivityIndicator color="#ffffff" />
+				) : (
+					<Text style={styles.saveBtnText}>Save Changes</Text>
+				)}
+			</TouchableOpacity>
+		</ScrollView>
+	);
+}
+
 export default function ProfileScreen(): React.JSX.Element {
 	const { data: profile, isLoading } = useProfile();
 	const update = useUpdateProfile();
 
 	// Lazy initial state: populated from the first non-null profile response
-	const [form, setForm] = useState({
+	const [form, setForm] = useState<FormValues>({
 		firstName: profile?.firstName ?? "",
 		lastName: profile?.lastName ?? "",
 		phone: profile?.patient?.phone ?? "",
-		dateOfBirth: profile?.patient?.dateOfBirth ? new Date(profile.patient.dateOfBirth).toISOString().split("T")[0] : "",
+		dateOfBirth: formatDob(profile?.patient?.dateOfBirth),
 		insuranceNumber: profile?.patient?.insuranceNumber ?? "",
 	});
 
@@ -23,9 +117,7 @@ export default function ProfileScreen(): React.JSX.Element {
 			firstName: profile.firstName,
 			lastName: profile.lastName,
 			phone: profile.patient?.phone ?? "",
-			dateOfBirth: profile.patient?.dateOfBirth
-				? new Date(profile.patient.dateOfBirth).toISOString().split("T")[0]
-				: "",
+			dateOfBirth: formatDob(profile.patient?.dateOfBirth),
 			insuranceNumber: profile.patient?.insuranceNumber ?? "",
 		});
 	}, [profile]);
@@ -50,52 +142,19 @@ export default function ProfileScreen(): React.JSX.Element {
 	}
 
 	return (
-		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
-			{/* Email (read-only) */}
-			<View style={styles.emailCard}>
-				<Text style={styles.emailLabel}>Email address</Text>
-				<Text style={styles.emailValue}>{profile?.email ?? ""}</Text>
-			</View>
-
-			<View style={styles.card}>
-				<FormRow label="First name">
-					<TextInput style={styles.input} value={form.firstName} onChangeText={setFirstName} autoCapitalize="words" />
-				</FormRow>
-				<FormRow label="Last name">
-					<TextInput style={styles.input} value={form.lastName} onChangeText={setLastName} autoCapitalize="words" />
-				</FormRow>
-				<FormRow label="Phone number">
-					<TextInput style={styles.input} value={form.phone} onChangeText={setPhone} keyboardType="phone-pad" />
-				</FormRow>
-				<FormRow label="Date of birth">
-					<TextInput
-						style={styles.input}
-						value={form.dateOfBirth}
-						onChangeText={setDateOfBirth}
-						placeholder="YYYY-MM-DD"
-						placeholderTextColor="#D1D5DB"
-					/>
-				</FormRow>
-				<FormRow label="Insurance number" last>
-					<TextInput style={styles.input} value={form.insuranceNumber} onChangeText={setInsuranceNumber} />
-				</FormRow>
-			</View>
-
-			{update.isSuccess ? <Text style={styles.success}>Profile saved successfully.</Text> : null}
-			{update.isError ? <Text style={styles.error}>Could not save profile. Please try again.</Text> : null}
-
-			<TouchableOpacity
-				style={[styles.saveBtn, update.isPending && styles.saveBtnDisabled]}
-				onPress={handleSave}
-				disabled={update.isPending}
-			>
-				{update.isPending ? (
-					<ActivityIndicator color="#ffffff" />
-				) : (
-					<Text style={styles.saveBtnText}>Save Changes</Text>
-				)}
-			</TouchableOpacity>
-		</ScrollView>
+		<ProfileFormContent
+			profile={profile}
+			form={form}
+			update={update}
+			handlers={{
+				firstName: setFirstName,
+				lastName: setLastName,
+				phone: setPhone,
+				dateOfBirth: setDateOfBirth,
+				insuranceNumber: setInsuranceNumber,
+			}}
+			onSave={handleSave}
+		/>
 	);
 }
 
