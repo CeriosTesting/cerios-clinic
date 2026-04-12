@@ -51,10 +51,12 @@ Then open:
 2. In a second terminal, run:
 
 ```bash
-pnpm run mobile:test
+pnpm run mobile:test:emulator
 ```
 
 This installs a **release APK** to your emulator/device and does not use Metro.
+
+For a physical device on Wi-Fi/LAN, run `pnpm run mobile:env:lan` first, then `pnpm run mobile:test`.
 
 ---
 
@@ -416,7 +418,27 @@ The generated `local.properties` file is git-ignored — each developer runs thi
 
 ### 9.3 — Configure the Environment File
 
-The app needs to know the IP address of your development machine so it can reach the APIs and Keycloak. An Android device (physical or emulator) cannot use `localhost` — it must use your machine's LAN IP address.
+The app reads API and Keycloak URLs from `apps/patient-mobile/.env`.
+
+You can now generate this file automatically with a profile:
+
+```bash
+# Emulator profile (localhost on host machine via 10.0.2.2)
+pnpm run mobile:env:emulator
+
+# LAN profile (auto-detects your private IPv4)
+pnpm run mobile:env:lan
+
+# LAN profile with explicit IP override
+pnpm run mobile:env:lan -- --ip=192.168.1.42
+```
+
+- Use `mobile:env:emulator` when testing on the built-in Android Emulator against local services on your machine.
+- Use `mobile:env:lan` for physical devices (or emulator over Wi-Fi) on the same network.
+
+Manual fallback (if you prefer editing `.env` yourself):
+
+The app needs to know the IP address of your development machine so it can reach the APIs and Keycloak. A physical Android device cannot use `localhost` — it must use your machine's LAN IP address.
 
 **Find your LAN IP:**
 
@@ -480,6 +502,17 @@ Use two terminals:
 2. Terminal B: mobile build/install commands below
 
 From the monorepo root, run:
+
+```bash
+pnpm run mobile:test:emulator
+```
+
+This is the easiest localhost emulator flow. It does two things:
+
+1. Generates `apps/patient-mobile/.env` with emulator-safe URLs (`10.0.2.2`)
+2. Runs the full release testing flow
+
+If you already have a custom `.env` profile selected, you can run:
 
 ```bash
 pnpm run mobile:test
@@ -700,24 +733,28 @@ Open http://localhost:8025 to view the inbox.
 
 ## Useful Commands
 
-| Command                           | Description                                                                             |
-| --------------------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm run infra:up`               | Start Docker containers (Postgres, Keycloak, Mailpit)                                   |
-| `pnpm run infra:down`             | Stop and remove Docker containers                                                       |
-| `pnpm run db:migrate`             | Run pending migrations interactively (prompts for a name if new migrations are created) |
-| `pnpm run db:migrate:deploy`      | Apply existing migration files non-interactively (safe for CI / shared environments)    |
-| `pnpm run db:seed`                | Create/reset all test users in DB and Keycloak                                          |
-| `pnpm run db:reset`               | **⚠ Drops and recreates the database** (wipes all data)                                 |
-| `pnpm run db:studio`              | Open Prisma Studio (visual DB browser) at http://localhost:5555                         |
-| `pnpm run dev`                    | Start all 6 web apps in development mode (keep running while testing mobile)            |
-| `pnpm run build`                  | Build all packages and apps for production                                              |
-| `pnpm run typecheck`              | Type-check all packages and apps without emitting files                                 |
-| `docker logs clinic-keycloak -f`  | Stream Keycloak logs                                                                    |
-| `docker logs clinic-postgres -f`  | Stream PostgreSQL logs                                                                  |
-| `pnpm run mobile:setup`           | Generate Android SDK/JDK local configuration                                            |
-| `pnpm run mobile:test`            | One-command release testing flow (setup + install deps + install release APK)           |
-| `pnpm run mobile:release`         | Build a release APK (no Metro required at runtime)                                      |
-| `pnpm run mobile:release:install` | Build and install release APK on connected emulator/device (no Metro required)          |
+| Command                                    | Description                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `pnpm run infra:up`                        | Start Docker containers (Postgres, Keycloak, Mailpit)                                   |
+| `pnpm run infra:down`                      | Stop and remove Docker containers                                                       |
+| `pnpm run db:migrate`                      | Run pending migrations interactively (prompts for a name if new migrations are created) |
+| `pnpm run db:migrate:deploy`               | Apply existing migration files non-interactively (safe for CI / shared environments)    |
+| `pnpm run db:seed`                         | Create/reset all test users in DB and Keycloak                                          |
+| `pnpm run db:reset`                        | **⚠ Drops and recreates the database** (wipes all data)                                 |
+| `pnpm run db:studio`                       | Open Prisma Studio (visual DB browser) at http://localhost:5555                         |
+| `pnpm run dev`                             | Start all 6 web apps in development mode (keep running while testing mobile)            |
+| `pnpm run build`                           | Build all packages and apps for production                                              |
+| `pnpm run typecheck`                       | Type-check all packages and apps without emitting files                                 |
+| `docker logs clinic-keycloak -f`           | Stream Keycloak logs                                                                    |
+| `docker logs clinic-postgres -f`           | Stream PostgreSQL logs                                                                  |
+| `pnpm run mobile:setup`                    | Generate Android SDK/JDK local configuration                                            |
+| `pnpm run mobile:env:emulator`             | Generate `apps/patient-mobile/.env` for emulator localhost testing (`10.0.2.2`)         |
+| `pnpm run mobile:env:lan`                  | Generate `apps/patient-mobile/.env` for physical device/LAN testing                     |
+| `pnpm run mobile:test`                     | One-command release testing flow (setup + install deps + install release APK)           |
+| `pnpm run mobile:test:emulator`            | One-command emulator localhost release flow (env + setup + install release APK)         |
+| `pnpm run mobile:release`                  | Build a release APK (no Metro required at runtime)                                      |
+| `pnpm run mobile:release:install`          | Build and install release APK on connected emulator/device (no Metro required)          |
+| `pnpm run mobile:release:install:emulator` | Set emulator env and install release APK                                                |
 
 ---
 
