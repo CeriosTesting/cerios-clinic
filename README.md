@@ -23,6 +23,39 @@ This is a full-stack clinic management application consisting of:
 | **PostgreSQL**       | localhost:5432            | Database                                              |
 | **Mailpit**          | http://localhost:8025     | Local email catcher (dev only)                        |
 
+## Quick Test Paths
+
+Use one of these paths depending on what you want to test.
+
+### Path A — Test Web Apps Only
+
+From the repository root:
+
+```bash
+pnpm install
+pnpm run infra:up
+pnpm run db:migrate
+pnpm run db:seed
+pnpm run dev
+```
+
+Then open:
+
+- http://localhost:5173 (Patient Portal)
+- http://localhost:5174 (Doctor Portal)
+- http://localhost:5175 (Assistant Portal)
+
+### Path B — Test Web Apps + Android Mobile App (Release)
+
+1. Follow **Path A** first and keep `pnpm run dev` running.
+2. In a second terminal, run:
+
+```bash
+pnpm run mobile:test
+```
+
+This installs a **release APK** to your emulator/device and does not use Metro.
+
 ---
 
 ## Step 1 — Install Required Software
@@ -302,13 +335,15 @@ pnpm run db:seed     # Re-creates all test users in PostgreSQL and Keycloak
 
 ---
 
-## Step 8 — Start the Web Application
+## Step 8 — Start the Web Application (Required for Mobile Testing)
 
 Start all six web services (3 APIs + 3 frontends) with a single command:
 
 ```bash
 pnpm run dev
 ```
+
+Keep this terminal running while testing the mobile app, because the mobile app calls the local APIs and Keycloak.
 
 Each service is colour-coded in the terminal output. You can now open:
 
@@ -320,18 +355,18 @@ Press `Ctrl + C` to stop all services.
 
 ---
 
-## Step 9 — Start the Native Android App (Patient Mobile)
+## Step 9 — Test the Native Android App (Patient Mobile, Release APK)
 
-The patient mobile app is a React Native app that connects to the same local APIs and Keycloak as the web portals. It runs on a physical Android device or an Android emulator and communicates with the services running on your machine.
+The patient mobile app is a React Native app that connects to the same local APIs and Keycloak as the web portals. This guide uses a **release APK flow for testing** (no Metro/dev server required).
 
 ### 9.1 — Prerequisites
 
 Before running the app you need the Android development toolchain. If you have **Android Studio** installed this is already taken care of. For a minimal command-line-only setup:
 
-1. **Java (JDK 17)** — Download from https://adoptium.net and install. Verify:
+1. **Java (JDK 17 or newer)** — Download from https://adoptium.net and install. JDK 17, 21, or 25 all work; the setup script in section 9.2 handles JDK compatibility with Gradle automatically. Verify:
    ```bash
    java -version
-   # Should show openjdk version 17.x.x
+   # Should show your installed JDK version
    ```
 2. **Android Studio** (recommended) — Download from https://developer.android.com/studio. During setup, make sure the following are installed via the SDK Manager:
    - Android SDK Platform (API 35 or higher)
@@ -344,16 +379,40 @@ Before running the app you need the Android development toolchain. If you have *
    ```
    If it is blank, add it to your user environment variables and restart your terminal.
 
-### 9.2 — Install Mobile Dependencies
+### 9.2 — Generate the Android Configuration File
 
-The mobile app manages its own `node_modules` folder independently from the monorepo (it cannot be symlinked because Metro bundler does not follow symlinks). Install its dependencies once:
+Run the one-time setup script from the monorepo root:
 
 ```bash
-cd apps/patient-mobile
-npm install
+pnpm run mobile:setup
 ```
 
-> Use `npm install` here, not `pnpm`. The React Native toolchain expects a standard `node_modules` layout.
+This script:
+
+- Detects your Android SDK location (from `ANDROID_HOME` or common install paths) and writes `apps/patient-mobile/android/local.properties`.
+- Checks your JDK version. If you have JDK 22 or newer (JDK 17–21 work natively with Gradle), it locates Android Studio's bundled JBR (Java 21) and adds `org.gradle.java.home` to `~/.gradle/gradle.properties` so Gradle uses a compatible JDK automatically.
+
+The generated `local.properties` file is git-ignored — each developer runs this once on their own machine. The `~/.gradle/gradle.properties` entry is written to your user home directory and also never touches version control.
+
+> **Manual fallback — if the script cannot find your SDK:** Create `apps/patient-mobile/android/local.properties` by hand:
+>
+> ```properties
+> # Windows example:
+> sdk.dir=C\:\\Users\\<you>\\AppData\\Local\\Android\\Sdk
+>
+> # macOS example:
+> # sdk.dir=/Users/<you>/Library/Android/sdk
+> ```
+>
+> If you have JDK > 21 and the script cannot find Android Studio, add the following to `~/.gradle/gradle.properties` (create the file if it does not exist):
+>
+> ```properties
+> # Windows — path to Android Studio's bundled JBR:
+> org.gradle.java.home=C:\\Program Files\\Android\\Android Studio\\jbr
+>
+> # macOS:
+> # org.gradle.java.home=/Applications/Android Studio.app/Contents/jbr/Contents/Home
+> ```
 
 ### 9.3 — Configure the Environment File
 
@@ -411,27 +470,52 @@ KEYCLOAK_CLIENT_ID=patient-mobile-client
    # R58MA1XXXXX   device
    ```
 
-### 9.5 — Build and Launch the App
+### 9.5 — Build and Install the Release App (No Metro)
 
 Make sure the web services from Step 8 are already running (the APIs must be reachable from the device).
 
-From the monorepo root:
+Use two terminals:
+
+1. Terminal A: `pnpm run dev` (keep running)
+2. Terminal B: mobile build/install commands below
+
+From the monorepo root, run:
 
 ```bash
-pnpm run mobile:android
+pnpm run mobile:test
 ```
 
-This will:
+This command does the full release testing flow:
 
-1. Start the **Metro bundler** (JavaScript build server).
-2. Compile and install the Android APK on the connected device or running emulator.
-3. Launch the app automatically.
+1. Generates Android local configuration (`mobile:setup`)
+2. Installs mobile dependencies
+3. Builds and installs a **release** APK on your connected emulator/device
+
+For subsequent runs (faster), you can use:
+
+```bash
+pnpm run mobile:release:install
+```
+
+If you only want to generate the APK file without installing:
+
+```bash
+pnpm run mobile:release
+```
+
+The generated APK is at:
+
+```text
+apps/patient-mobile/android/app/build/outputs/apk/release/app-release.apk
+```
+
+In Android Studio, open `apps/patient-mobile/android` and run the `app` module with the `release` variant.
+
+### 9.6 — Log In to the Mobile App
 
 The first build takes 2–5 minutes. Subsequent builds are much faster because Gradle caches the results.
 
 > **If Android Studio is open** while running this command, make sure no Gradle sync or build is in progress in the IDE — concurrent Gradle processes can conflict.
-
-### 9.6 — Log In to the Mobile App
 
 Once the app is open:
 
@@ -441,16 +525,6 @@ Once the app is open:
    - **Email:** `patient.wilson@example.com`
    - **Password:** `Patient1234!` (or the value of `SEED_PATIENT_PASSWORD` in your `.env`)
 4. After login, Keycloak redirects back to the app automatically.
-
-### 9.7 — Keeping Metro Running for Development
-
-For faster development iteration (instant JS reload without a full rebuild), keep the Metro bundler running in a separate terminal:
-
-```bash
-pnpm run mobile:start
-```
-
-With Metro running, any JavaScript change you save will be reflected on the device within seconds (press `R` twice in the Metro terminal to force a full reload).
 
 ---
 
@@ -626,22 +700,24 @@ Open http://localhost:8025 to view the inbox.
 
 ## Useful Commands
 
-| Command                          | Description                                                                             |
-| -------------------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm run infra:up`              | Start Docker containers (Postgres, Keycloak, Mailpit)                                   |
-| `pnpm run infra:down`            | Stop and remove Docker containers                                                       |
-| `pnpm run db:migrate`            | Run pending migrations interactively (prompts for a name if new migrations are created) |
-| `pnpm run db:migrate:deploy`     | Apply existing migration files non-interactively (safe for CI / shared environments)    |
-| `pnpm run db:seed`               | Create/reset all test users in DB and Keycloak                                          |
-| `pnpm run db:reset`              | **⚠ Drops and recreates the database** (wipes all data)                                 |
-| `pnpm run db:studio`             | Open Prisma Studio (visual DB browser) at http://localhost:5555                         |
-| `pnpm run dev`                   | Start all 6 web apps in development mode                                                |
-| `pnpm run build`                 | Build all packages and apps for production                                              |
-| `pnpm run typecheck`             | Type-check all packages and apps without emitting files                                 |
-| `docker logs clinic-keycloak -f` | Stream Keycloak logs                                                                    |
-| `docker logs clinic-postgres -f` | Stream PostgreSQL logs                                                                  |
-| `pnpm run mobile:android`        | Build and launch the Android app on device / emulator                                   |
-| `pnpm run mobile:start`          | Start the Metro JS bundler only (for hot-reload development)                            |
+| Command                           | Description                                                                             |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| `pnpm run infra:up`               | Start Docker containers (Postgres, Keycloak, Mailpit)                                   |
+| `pnpm run infra:down`             | Stop and remove Docker containers                                                       |
+| `pnpm run db:migrate`             | Run pending migrations interactively (prompts for a name if new migrations are created) |
+| `pnpm run db:migrate:deploy`      | Apply existing migration files non-interactively (safe for CI / shared environments)    |
+| `pnpm run db:seed`                | Create/reset all test users in DB and Keycloak                                          |
+| `pnpm run db:reset`               | **⚠ Drops and recreates the database** (wipes all data)                                 |
+| `pnpm run db:studio`              | Open Prisma Studio (visual DB browser) at http://localhost:5555                         |
+| `pnpm run dev`                    | Start all 6 web apps in development mode (keep running while testing mobile)            |
+| `pnpm run build`                  | Build all packages and apps for production                                              |
+| `pnpm run typecheck`              | Type-check all packages and apps without emitting files                                 |
+| `docker logs clinic-keycloak -f`  | Stream Keycloak logs                                                                    |
+| `docker logs clinic-postgres -f`  | Stream PostgreSQL logs                                                                  |
+| `pnpm run mobile:setup`           | Generate Android SDK/JDK local configuration                                            |
+| `pnpm run mobile:test`            | One-command release testing flow (setup + install deps + install release APK)           |
+| `pnpm run mobile:release`         | Build a release APK (no Metro required at runtime)                                      |
+| `pnpm run mobile:release:install` | Build and install release APK on connected emulator/device (no Metro required)          |
 
 ---
 

@@ -110,9 +110,9 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Use the release signing config only when keystore properties are provided.
-            // Without them the build is unsigned (suitable for local testing only).
-            signingConfig project.hasProperty('STORE_FILE') ? signingConfigs.release : null
+            // Use release keystore when provided; otherwise sign with debug key
+            // so local release testing/install works without Metro.
+            signingConfig project.hasProperty('STORE_FILE') ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
