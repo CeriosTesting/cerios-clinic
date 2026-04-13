@@ -1,7 +1,18 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+	ActivityIndicator,
+	Alert,
+	Image,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View,
+} from "react-native";
+import { launchCamera, launchImageLibrary, type ImagePickerResponse } from "react-native-image-picker";
 
-import { useProfile, useUpdateProfile } from "../api/hooks";
+import { useProfile, useUpdateProfile, useUploadProfilePhoto } from "../api/hooks";
 import { useAuth } from "../auth/AuthContext";
 
 function formatDob(date?: string | null): string {
@@ -32,6 +43,8 @@ function ProfileFormContent({
 	handlers,
 	onSave,
 	onSignOut,
+	onPickPhoto,
+	uploadingPhoto,
 }: {
 	profile: ReturnType<typeof useProfile>["data"];
 	form: FormValues;
@@ -39,9 +52,34 @@ function ProfileFormContent({
 	handlers: FieldHandlers;
 	onSave: () => void;
 	onSignOut: () => void;
+	onPickPhoto: () => void;
+	uploadingPhoto: boolean;
 }): React.JSX.Element {
+	const initials = `${profile?.firstName?.[0] ?? ""}${profile?.lastName?.[0] ?? ""}`.toUpperCase();
+	const photoUri = profile?.patient?.photo ?? null;
+
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
+			{/* Profile photo */}
+			<View style={styles.avatarSection}>
+				<TouchableOpacity onPress={onPickPhoto} disabled={uploadingPhoto} activeOpacity={0.7}>
+					{photoUri ? (
+						<Image source={{ uri: photoUri }} style={styles.avatarImage} />
+					) : (
+						<View style={styles.avatarPlaceholder}>
+							<Text style={styles.avatarInitials}>{initials}</Text>
+						</View>
+					)}
+					<View style={styles.cameraBadge}>
+						{uploadingPhoto ? (
+							<ActivityIndicator size="small" color="#ffffff" />
+						) : (
+							<Text style={styles.cameraBadgeText}>📷</Text>
+						)}
+					</View>
+				</TouchableOpacity>
+				<Text style={styles.changePhotoText}>Tap to change photo</Text>
+			</View>
 			{/* Email (read-only) */}
 			<View style={styles.emailCard}>
 				<Text style={styles.emailLabel}>Email address</Text>
@@ -107,6 +145,7 @@ function ProfileFormContent({
 export default function ProfileScreen(): React.JSX.Element {
 	const { data: profile, isLoading } = useProfile();
 	const update = useUpdateProfile();
+	const uploadPhoto = useUploadProfilePhoto();
 	const { logout } = useAuth();
 
 	// Lazy initial state: populated from the first non-null profile response
@@ -145,6 +184,39 @@ export default function ProfileScreen(): React.JSX.Element {
 		void logout();
 	}, [logout]);
 
+	const processPickerResult = useCallback(
+		(response: ImagePickerResponse): void => {
+			if (response.didCancel || response.errorCode) return;
+			const asset = response.assets?.[0];
+			if (!asset?.uri) return;
+			uploadPhoto.mutate({
+				uri: asset.uri,
+				type: asset.type ?? "image/jpeg",
+				fileName: asset.fileName ?? "photo.jpg",
+			});
+		},
+		[uploadPhoto]
+	);
+
+	const handlePickPhoto = useCallback((): void => {
+		Alert.alert("Profile Photo", "Choose a source", [
+			{
+				text: "Camera",
+				onPress: () =>
+					void launchCamera({ mediaType: "photo", maxWidth: 600, maxHeight: 800, quality: 0.8 }, processPickerResult),
+			},
+			{
+				text: "Gallery",
+				onPress: () =>
+					void launchImageLibrary(
+						{ mediaType: "photo", maxWidth: 600, maxHeight: 800, quality: 0.8 },
+						processPickerResult
+					),
+			},
+			{ text: "Cancel", style: "cancel" },
+		]);
+	}, [processPickerResult]);
+
 	if (isLoading) {
 		return (
 			<View style={styles.center}>
@@ -167,6 +239,8 @@ export default function ProfileScreen(): React.JSX.Element {
 			}}
 			onSave={handleSave}
 			onSignOut={handleSignOut}
+			onPickPhoto={handlePickPhoto}
+			uploadingPhoto={uploadPhoto.isPending}
 		/>
 	);
 }
@@ -192,6 +266,38 @@ const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: "#F9FAFB" },
 	content: { padding: 20 },
 	center: { flex: 1, justifyContent: "center", alignItems: "center" },
+	avatarSection: { alignItems: "center", marginBottom: 20 },
+	avatarImage: {
+		width: 90,
+		height: 120,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: "#E5E7EB",
+	},
+	avatarPlaceholder: {
+		width: 90,
+		height: 120,
+		borderRadius: 12,
+		backgroundColor: "#1A2238",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	avatarInitials: { color: "#E85A28", fontWeight: "700", fontSize: 28 },
+	cameraBadge: {
+		position: "absolute",
+		bottom: -6,
+		right: -6,
+		width: 28,
+		height: 28,
+		borderRadius: 14,
+		backgroundColor: "#E85A28",
+		justifyContent: "center",
+		alignItems: "center",
+		borderWidth: 2,
+		borderColor: "#F9FAFB",
+	},
+	cameraBadgeText: { fontSize: 14 },
+	changePhotoText: { fontSize: 12, color: "#9CA3AF", marginTop: 10 },
 	emailCard: {
 		backgroundColor: "#ffffff",
 		borderRadius: 12,

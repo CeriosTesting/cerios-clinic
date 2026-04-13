@@ -9,6 +9,7 @@ import DoctorsPage from "./pages/DoctorsPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import MedicalHistoryPage from "./pages/MedicalHistoryPage";
+import PrescriptionsPage from "./pages/PrescriptionsPage";
 import ProfilePage from "./pages/ProfilePage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -37,6 +38,7 @@ export default function App(): React.ReactElement {
 					<Route path="appointments" element={<AppointmentsPage />} />
 					<Route path="appointments/:id" element={<AppointmentDetailPage />} />
 					<Route path="medical-history" element={<MedicalHistoryPage />} />
+					<Route path="prescriptions" element={<PrescriptionsPage />} />
 					<Route path="doctors" element={<DoctorsPage />} />
 					<Route path="profile" element={<ProfilePage />} />
 				</Route>

@@ -1,4 +1,4 @@
-import type { Appointment } from "@clinic/shared-types";
+import type { Appointment, Review } from "@clinic/shared-types";
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
@@ -24,6 +24,11 @@ export default function AppointmentDetailPage(): React.ReactElement {
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [showRescheduleModal, setShowRescheduleModal] = useState(false);
 	const [rescheduleSuccess, setRescheduleSuccess] = useState(false);
+	const [review, setReview] = useState<Review | null>(null);
+	const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
+	const [reviewSubmitting, setReviewSubmitting] = useState(false);
+	const [reviewError, setReviewError] = useState("");
+	const [reviewSuccess, setReviewSuccess] = useState(false);
 
 	const fetchAppointment = useCallback(() => {
 		setLoading(true);
@@ -36,7 +41,30 @@ export default function AppointmentDetailPage(): React.ReactElement {
 
 	useEffect(() => {
 		fetchAppointment();
+		// Try to load existing review
+		void api
+			.get<{ data: Review | null }>(`/appointments/${id}/reviews`)
+			.then(r => {
+				if (r.data.data) setReview(r.data.data);
+			})
+			.catch(() => {});
 	}, [fetchAppointment]);
+
+	const handleSubmitReview = async (e: React.SyntheticEvent<HTMLFormElement>): Promise<void> => {
+		e.preventDefault();
+		setReviewSubmitting(true);
+		setReviewError("");
+		try {
+			const r = await api.post<{ data: Review }>(`/appointments/${id}/reviews`, reviewForm);
+			setReview(r.data.data);
+			setReviewSuccess(true);
+		} catch (err: unknown) {
+			const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+			setReviewError(msg ?? "Could not submit review.");
+		} finally {
+			setReviewSubmitting(false);
+		}
+	};
 
 	const handleCancel = async (): Promise<void> => {
 		setCancelling(true);
@@ -135,6 +163,66 @@ export default function AppointmentDetailPage(): React.ReactElement {
 						onKeep={() => setShowConfirm(false)}
 						onReschedule={() => setShowRescheduleModal(true)}
 					/>
+
+					{/* Review Section — only for completed appointments */}
+					{appointment.status === "COMPLETED" && (
+						<div className="mt-6 pt-4 border-t border-gray-100">
+							<h2 className="text-lg font-semibold text-brand-navy mb-3">Review</h2>
+							{review ? (
+								<div className="bg-gray-50 rounded-lg p-4">
+									<div className="flex items-center gap-2 mb-2">
+										<span className="text-yellow-500 text-lg">
+											{"★".repeat(review.rating)}
+											{"☆".repeat(5 - review.rating)}
+										</span>
+										<span className="text-sm text-gray-400">{review.rating}/5</span>
+									</div>
+									{review.comment && <p className="text-sm text-gray-600">{review.comment}</p>}
+									{reviewSuccess && <p className="text-green-600 text-xs mt-2">Thank you for your review!</p>}
+								</div>
+							) : (
+								<form
+									onSubmit={e => {
+										void handleSubmitReview(e);
+									}}
+									className="space-y-3"
+								>
+									<div>
+										<label className="block text-sm font-medium text-gray-600 mb-1">Rating</label>
+										<div className="flex gap-1">
+											{[1, 2, 3, 4, 5].map(star => (
+												<button
+													key={star}
+													type="button"
+													onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
+													className={`text-2xl ${star <= reviewForm.rating ? "text-yellow-400" : "text-gray-300"} hover:text-yellow-400 transition-colors`}
+												>
+													★
+												</button>
+											))}
+										</div>
+									</div>
+									<div>
+										<label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="review-comment">
+											Comment (optional)
+										</label>
+										<textarea
+											id="review-comment"
+											value={reviewForm.comment}
+											onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+											className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+											rows={3}
+											placeholder="Share your experience..."
+										/>
+									</div>
+									{reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
+									<button type="submit" disabled={reviewSubmitting} className="btn-primary text-sm px-4 py-2">
+										{reviewSubmitting ? "Submitting..." : "Submit review"}
+									</button>
+								</form>
+							)}
+						</div>
+					)}
 				</div>
 			</div>
 

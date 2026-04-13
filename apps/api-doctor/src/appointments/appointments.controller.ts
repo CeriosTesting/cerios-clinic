@@ -1,3 +1,4 @@
+import { EventsService, MailService } from "@clinic/api-common";
 import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
 import {
 	Controller,
@@ -58,7 +59,11 @@ class UpdateAppointmentDto {
 @UseGuards(JwtAuthGuard)
 @Controller("appointments")
 export class AppointmentsController {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly mail: MailService,
+		private readonly events: EventsService
+	) {}
 
 	@Get()
 	@ApiOperation({ summary: "Get doctor's appointments (filterable)" })
@@ -268,6 +273,34 @@ export class AppointmentsController {
 					newStatus: dto.status,
 					changedByKeycloakId: user.sub,
 				},
+			});
+
+			// Send email notifications based on the new status
+			const patientUser = updated.patient?.user;
+			const doctorUser = updated.doctor?.user;
+			if (patientUser && doctorUser) {
+				const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
+				const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
+				if (dto.status === "CONFIRMED") {
+					void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, updated.scheduledAt);
+				} else if (dto.status === "CANCELLED") {
+					void this.mail.sendAppointmentCancellation(
+						patientUser.email,
+						patientName,
+						doctorName,
+						patientName,
+						updated.scheduledAt
+					);
+				}
+			}
+
+			this.events.emitAppointmentEvent({
+				type: dto.status === "CANCELLED" ? "appointment.cancelled" : "appointment.updated",
+				appointmentId: updated.id,
+				patientId: updated.patientId,
+				doctorId: updated.doctorId,
+				status: updated.status,
+				scheduledAt: updated.scheduledAt.toISOString(),
 			});
 		}
 

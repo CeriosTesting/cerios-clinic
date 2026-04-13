@@ -7,7 +7,17 @@ import {
 } from "@tanstack/react-query";
 import type { AxiosResponse } from "axios";
 
-import type { Appointment, DoctorPublic, DoctorSlotAvailability, ProfileData, UpdateProfileDto } from "../types";
+import type {
+	Appointment,
+	CreateReviewDto,
+	DoctorPublic,
+	DoctorReviewStats,
+	DoctorSlotAvailability,
+	Prescription,
+	ProfileData,
+	Review,
+	UpdateProfileDto,
+} from "../types";
 
 import api from "./client";
 
@@ -112,6 +122,90 @@ export function useUpdateProfile(): UseMutationResult<AxiosResponse<unknown>, Er
 		mutationFn: (dto: UpdateProfileDto) => api.put("/profile", dto),
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["profile"] });
+		},
+	});
+}
+
+export function useUploadProfilePhoto(): UseMutationResult<
+	AxiosResponse<{ data: { photo: string } }>,
+	Error,
+	{ uri: string; type: string; fileName: string }
+> {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ uri, type, fileName }: { uri: string; type: string; fileName: string }) => {
+			const form = new FormData();
+			form.append("photo", { uri, type, name: fileName } as unknown as Blob);
+			return api.patch<{ data: { photo: string } }>("/profile/photo", form, {
+				headers: { "Content-Type": "multipart/form-data" },
+			});
+		},
+		onSuccess: () => {
+			void qc.invalidateQueries({ queryKey: ["profile"] });
+		},
+	});
+}
+
+// ── Prescriptions ─────────────────────────────────────────────────────────────
+
+export function usePrescriptions(): UseQueryResult<Prescription[], Error> {
+	return useQuery({
+		queryKey: ["prescriptions"],
+		queryFn: async () => {
+			const r = await api.get<{ data: Prescription[] }>("/prescriptions");
+			return r.data.data;
+		},
+	});
+}
+
+export function usePrescriptionDetail(id: string): UseQueryResult<Prescription, Error> {
+	return useQuery({
+		queryKey: ["prescriptions", id],
+		queryFn: async () => {
+			const r = await api.get<{ data: Prescription }>(`/prescriptions/${id}`);
+			return r.data.data;
+		},
+		enabled: !!id,
+	});
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export function useAppointmentReview(appointmentId: string): UseQueryResult<Review | null, Error> {
+	return useQuery({
+		queryKey: ["reviews", appointmentId],
+		queryFn: async () => {
+			const r = await api.get<{ data: Review | null }>(`/appointments/${appointmentId}/reviews`);
+			return r.data.data;
+		},
+		enabled: !!appointmentId,
+	});
+}
+
+export function useDoctorReviews(doctorId: string): UseQueryResult<DoctorReviewStats, Error> {
+	return useQuery({
+		queryKey: ["doctorReviews", doctorId],
+		queryFn: async () => {
+			const r = await api.get<DoctorReviewStats>(`/doctors/${doctorId}/reviews`);
+			return r.data;
+		},
+		enabled: !!doctorId,
+	});
+}
+
+export function useSubmitReview(): UseMutationResult<
+	AxiosResponse<{ data: Review }>,
+	Error,
+	{ appointmentId: string; dto: CreateReviewDto }
+> {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: ({ appointmentId, dto }: { appointmentId: string; dto: CreateReviewDto }) =>
+			api.post<{ data: Review }>(`/appointments/${appointmentId}/reviews`, dto),
+		onSuccess: (_data, { appointmentId }) => {
+			void qc.invalidateQueries({ queryKey: ["reviews", appointmentId] });
+			void qc.invalidateQueries({ queryKey: ["doctorReviews"] });
+			void qc.invalidateQueries({ queryKey: ["doctors"] });
 		},
 	});
 }

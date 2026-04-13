@@ -69,18 +69,27 @@ export class DoctorsController {
 	async findAll(): Promise<{ data: unknown }> {
 		const doctors = await this.prisma.doctor.findMany({
 			where: { user: { deletedAt: null } },
-			include: { user: { select: { id: true, firstName: true, lastName: true } } },
+			include: {
+				user: { select: { id: true, firstName: true, lastName: true } },
+				reviews: { select: { rating: true } },
+			},
 			orderBy: { user: { lastName: "asc" } },
 		});
 
 		return {
-			data: doctors.map(d => ({
-				id: d.id,
-				userId: d.userId,
-				specialization: d.specialization,
-				firstName: d.user.firstName,
-				lastName: d.user.lastName,
-			})),
+			data: doctors.map(d => {
+				const ratings = d.reviews.map(r => r.rating);
+				const avg = ratings.length > 0 ? ratings.reduce((s, v) => s + v, 0) / ratings.length : null;
+				return {
+					id: d.id,
+					userId: d.userId,
+					specialization: d.specialization,
+					firstName: d.user.firstName,
+					lastName: d.user.lastName,
+					averageRating: avg ? Math.round(avg * 10) / 10 : null,
+					reviewCount: ratings.length,
+				};
+			}),
 		};
 	}
 
@@ -121,17 +130,31 @@ export class DoctorsController {
 		// Range for DB query: fromDate 00:00 UTC → toDate + 1 day 00:00 UTC (exclusive upper bound)
 		const rangeEnd = new Date(toDate.getTime() + 86_400_000);
 
-		// Fetch all non-CANCELLED bookings in the range for this doctor
-		const booked = await this.prisma.appointment.findMany({
-			where: {
-				doctorId,
-				status: { not: "CANCELLED" },
-				scheduledAt: { gte: fromDate, lt: rangeEnd },
-			},
-			select: { scheduledAt: true },
-		});
+		// Fetch all non-CANCELLED bookings and unavailability blocks in the range
+		const [booked, unavailability] = await Promise.all([
+			this.prisma.appointment.findMany({
+				where: {
+					doctorId,
+					status: { not: "CANCELLED" },
+					scheduledAt: { gte: fromDate, lt: rangeEnd },
+				},
+				select: { scheduledAt: true },
+			}),
+			this.prisma.doctorUnavailability.findMany({
+				where: {
+					doctorId,
+					startDate: { lt: rangeEnd },
+					endDate: { gt: fromDate },
+				},
+			}),
+		]);
 
 		const bookedTimes = new Set(booked.map(a => a.scheduledAt.toISOString()));
+
+		/** Returns true if a given slot time falls within any unavailability block */
+		function isUnavailable(slotTime: Date): boolean {
+			return unavailability.some(block => slotTime >= block.startDate && slotTime < block.endDate);
+		}
 
 		// Build availability grouped by date
 		const result: DoctorSlotAvailability[] = [];
@@ -145,7 +168,7 @@ export class DoctorsController {
 					const slotUtc = new Date(
 						Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate(), hour, minute, 0, 0)
 					);
-					if (!bookedTimes.has(slotUtc.toISOString())) {
+					if (!bookedTimes.has(slotUtc.toISOString()) && !isUnavailable(slotUtc)) {
 						freeSlots.push(slotUtc.toISOString());
 					}
 				}

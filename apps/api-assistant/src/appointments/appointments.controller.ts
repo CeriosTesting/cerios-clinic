@@ -1,3 +1,4 @@
+import { EventsService, MailService } from "@clinic/api-common";
 import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
 import {
 	Controller,
@@ -67,7 +68,11 @@ class UpdateAppointmentDto {
 @UseGuards(JwtAuthGuard)
 @Controller("appointments")
 export class AppointmentsController {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly mail: MailService,
+		private readonly events: EventsService
+	) {}
 
 	@Get()
 	@ApiOperation({ summary: "Get all appointments (filterable)" })
@@ -242,6 +247,24 @@ export class AppointmentsController {
 			},
 		});
 
+		// Send confirmation email to patient
+		const patientUser = appointment.patient?.user;
+		const doctorUser = appointment.doctor?.user;
+		if (patientUser && doctorUser) {
+			const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
+			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
+			void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, appointment.scheduledAt);
+		}
+
+		this.events.emitAppointmentEvent({
+			type: "appointment.created",
+			appointmentId: appointment.id,
+			patientId: appointment.patientId,
+			doctorId: appointment.doctorId,
+			status: appointment.status,
+			scheduledAt: appointment.scheduledAt.toISOString(),
+		});
+
 		return { data: appointment, message: "Appointment created" };
 	}
 
@@ -287,6 +310,34 @@ export class AppointmentsController {
 					changedByKeycloakId: user.sub,
 				},
 			});
+
+			// Send email notifications based on the new status
+			const patientUser = updated.patient?.user;
+			const doctorUser = updated.doctor?.user;
+			if (patientUser && doctorUser) {
+				const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
+				const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
+				if (dto.status === "CONFIRMED") {
+					void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, updated.scheduledAt);
+				} else if (dto.status === "CANCELLED") {
+					void this.mail.sendAppointmentCancellation(
+						patientUser.email,
+						patientName,
+						doctorName,
+						patientName,
+						updated.scheduledAt
+					);
+				}
+			}
+
+			this.events.emitAppointmentEvent({
+				type: dto.status === "CANCELLED" ? "appointment.cancelled" : "appointment.updated",
+				appointmentId: updated.id,
+				patientId: updated.patientId,
+				doctorId: updated.doctorId,
+				status: updated.status,
+				scheduledAt: updated.scheduledAt.toISOString(),
+			});
 		}
 
 		return { data: updated };
@@ -298,7 +349,13 @@ export class AppointmentsController {
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
 	): Promise<{ data: Appointment; message: string }> {
-		const appointment = await this.prisma.appointment.findUnique({ where: { id } });
+		const appointment = await this.prisma.appointment.findUnique({
+			where: { id },
+			include: {
+				patient: { include: { user: true } },
+				doctor: { include: { user: true } },
+			},
+		});
 		if (!appointment) throw new NotFoundException("Appointment not found");
 
 		const allowed = ALLOWED_TRANSITIONS[appointment.status as AppointmentStatus];
@@ -318,6 +375,37 @@ export class AppointmentsController {
 				newStatus: "CANCELLED",
 				changedByKeycloakId: user.sub,
 			},
+		});
+
+		// Send cancellation emails
+		const patientUser = appointment.patient?.user;
+		const doctorUser = appointment.doctor?.user;
+		if (patientUser && doctorUser) {
+			const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
+			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
+			void this.mail.sendAppointmentCancellation(
+				patientUser.email,
+				patientName,
+				doctorName,
+				patientName,
+				appointment.scheduledAt
+			);
+			void this.mail.sendAppointmentCancellation(
+				doctorUser.email,
+				`Dr. ${doctorName}`,
+				doctorName,
+				patientName,
+				appointment.scheduledAt
+			);
+		}
+
+		this.events.emitAppointmentEvent({
+			type: "appointment.cancelled",
+			appointmentId: updated.id,
+			patientId: updated.patientId,
+			doctorId: updated.doctorId,
+			status: "CANCELLED",
+			scheduledAt: updated.scheduledAt.toISOString(),
 		});
 
 		return { data: updated, message: "Appointment cancelled" };

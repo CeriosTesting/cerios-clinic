@@ -45,6 +45,16 @@ export default function DoctorsPage(): React.ReactElement {
 										Dr. {d.firstName} {d.lastName}
 									</p>
 									<p className="text-sm text-gray-400">{d.specialization ?? "General Practice"}</p>
+									{d.averageRating != null && d.averageRating > 0 && (
+										<p className="text-xs text-yellow-600 mt-0.5">
+											{"★".repeat(Math.round(d.averageRating))}
+											{"☆".repeat(5 - Math.round(d.averageRating))}
+											<span className="text-gray-400 ml-1">
+												{d.averageRating.toFixed(1)} ({d.reviewCount ?? 0} review{(d.reviewCount ?? 0) !== 1 ? "s" : ""}
+												)
+											</span>
+										</p>
+									)}
 								</div>
 							</div>
 						</div>

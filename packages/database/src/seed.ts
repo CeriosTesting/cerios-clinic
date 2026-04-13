@@ -347,18 +347,17 @@ async function main(): Promise<void> {
 		return cursor;
 	}
 
-	// Clear existing seeded appointments to prevent duplicates on re-seed
-	await prisma.appointmentStatusChange.deleteMany({
-		where: {
-			appointment: {
-				patient: { user: { email: { in: patientList.map(p => p.email) } } },
-			},
-		},
-	});
-	await prisma.appointment.deleteMany({
-		where: {
-			patient: { user: { email: { in: patientList.map(p => p.email) } } },
-		},
+	// Clear existing seeded data to prevent duplicates on re-seed
+	const seededPatientEmails = patientList.map(p => p.email);
+	const seededPatientFilter = { patient: { user: { email: { in: seededPatientEmails } } } };
+
+	await prisma.prescriptionItem.deleteMany({ where: { prescription: seededPatientFilter } });
+	await prisma.prescription.deleteMany({ where: seededPatientFilter });
+	await prisma.review.deleteMany({ where: seededPatientFilter });
+	await prisma.appointmentStatusChange.deleteMany({ where: { appointment: seededPatientFilter } });
+	await prisma.appointment.deleteMany({ where: seededPatientFilter });
+	await prisma.doctorUnavailability.deleteMany({
+		where: { doctor: { user: { email: { in: staffUsers.filter(s => s.role === "doctor").map(s => s.email) } } } },
 	});
 
 	const appointmentData = [
@@ -477,10 +476,267 @@ async function main(): Promise<void> {
 			status: "CANCELLED" as const,
 			notes: "Patient cancelled - rescheduled",
 		},
+		// Additional completed appointments for reviews & prescriptions
+		{
+			patientId: patients[2].id,
+			doctorId: doctors[0].id,
+			assistantId: assistants[0].id,
+			scheduledAt: slotUTC(-10, 10, 0),
+			status: "COMPLETED" as const,
+			notes: "Flu symptoms - prescribed medication",
+		},
+		{
+			patientId: patients[3].id,
+			doctorId: doctors[1].id,
+			assistantId: assistants[1].id,
+			scheduledAt: slotUTC(-5, 14, 0),
+			status: "COMPLETED" as const,
+			notes: "Cardiac follow-up - stable",
+		},
+		{
+			patientId: patients[4].id,
+			doctorId: doctors[2].id,
+			assistantId: assistants[2].id,
+			scheduledAt: slotUTC(-8, 11, 0),
+			status: "COMPLETED" as const,
+			notes: "Migraine consultation",
+		},
+		{
+			patientId: patients[0].id,
+			doctorId: doctors[0].id,
+			assistantId: assistants[0].id,
+			scheduledAt: slotUTC(-20, 9, 30),
+			status: "COMPLETED" as const,
+			notes: "General check-up - all clear",
+		},
+		{
+			patientId: patients[3].id,
+			doctorId: doctors[2].id,
+			assistantId: assistants[2].id,
+			scheduledAt: slotUTC(-15, 13, 0),
+			status: "COMPLETED" as const,
+			notes: "Neurological evaluation follow-up",
+		},
 	];
 
+	const createdAppointments = [];
 	for (const appt of appointmentData) {
-		await prisma.appointment.create({ data: appt });
+		const created = await prisma.appointment.create({ data: appt });
+		createdAppointments.push({ ...created, ...appt });
+	}
+
+	// ── Reviews for completed appointments ────────────────────────────────────
+	const completedAppointments = createdAppointments.filter(a => a.status === "COMPLETED");
+
+	const reviewData: Array<{
+		appointmentId: string;
+		patientId: string;
+		doctorId: string;
+		rating: number;
+		comment?: string;
+	}> = [
+		{
+			appointmentId: completedAppointments[0].id,
+			patientId: completedAppointments[0].patientId,
+			doctorId: completedAppointments[0].doctorId,
+			rating: 5,
+			comment: "Very thorough examination. Dr. Williams explained everything clearly.",
+		},
+		{
+			appointmentId: completedAppointments[1].id,
+			patientId: completedAppointments[1].patientId,
+			doctorId: completedAppointments[1].doctorId,
+			rating: 4,
+			comment: "Good doctor, but the wait time was a bit long.",
+		},
+		{
+			appointmentId: completedAppointments[2].id,
+			patientId: completedAppointments[2].patientId,
+			doctorId: completedAppointments[2].doctorId,
+			rating: 5,
+			comment: "Dr. Smith was incredibly attentive and caring. Highly recommend!",
+		},
+		{
+			appointmentId: completedAppointments[3].id,
+			patientId: completedAppointments[3].patientId,
+			doctorId: completedAppointments[3].doctorId,
+			rating: 4,
+			comment: "Professional and knowledgeable. Answered all my questions.",
+		},
+		{
+			appointmentId: completedAppointments[4].id,
+			patientId: completedAppointments[4].patientId,
+			doctorId: completedAppointments[4].doctorId,
+			rating: 3,
+			comment: "The consultation was okay, but felt a bit rushed.",
+		},
+		{
+			appointmentId: completedAppointments[5].id,
+			patientId: completedAppointments[5].patientId,
+			doctorId: completedAppointments[5].doctorId,
+			rating: 5,
+		},
+		{
+			appointmentId: completedAppointments[6].id,
+			patientId: completedAppointments[6].patientId,
+			doctorId: completedAppointments[6].doctorId,
+			rating: 4,
+			comment: "Great follow-up. Felt well taken care of.",
+		},
+	];
+
+	for (const review of reviewData) {
+		await prisma.review.create({ data: review });
+	}
+
+	// ── Prescriptions for completed appointments ──────────────────────────────
+	const prescriptionData = [
+		{
+			appointmentId: completedAppointments[0].id,
+			patientId: completedAppointments[0].patientId,
+			doctorId: completedAppointments[0].doctorId,
+			notes: "Follow-up in 2 weeks if symptoms persist.",
+			items: [
+				{
+					medicationName: "Ibuprofen",
+					dosage: "400mg",
+					frequency: "3 times daily",
+					duration: "7 days",
+					instructions: "Take with food",
+				},
+				{
+					medicationName: "Vitamin D3",
+					dosage: "1000 IU",
+					frequency: "Once daily",
+					duration: "30 days",
+					instructions: "Take in the morning",
+				},
+			],
+		},
+		{
+			appointmentId: completedAppointments[1].id,
+			patientId: completedAppointments[1].patientId,
+			doctorId: completedAppointments[1].doctorId,
+			notes: "Reduce caffeine intake. Return if headaches continue.",
+			items: [
+				{
+					medicationName: "Paracetamol",
+					dosage: "500mg",
+					frequency: "As needed, max 4x daily",
+					duration: "14 days",
+					instructions: "Do not exceed 2000mg per day",
+				},
+				{
+					medicationName: "Magnesium",
+					dosage: "400mg",
+					frequency: "Once daily",
+					duration: "30 days",
+					instructions: "Take before bed",
+				},
+			],
+		},
+		{
+			appointmentId: completedAppointments[2].id,
+			patientId: completedAppointments[2].patientId,
+			doctorId: completedAppointments[2].doctorId,
+			notes: "Rest well, stay hydrated, avoid contact with others for 5 days.",
+			items: [
+				{
+					medicationName: "Oseltamivir",
+					dosage: "75mg",
+					frequency: "Twice daily",
+					duration: "5 days",
+					instructions: "Start within 48 hours of symptom onset",
+				},
+				{
+					medicationName: "Dextromethorphan",
+					dosage: "20mg",
+					frequency: "Every 4 hours",
+					duration: "7 days",
+					instructions: "Cough suppressant — do not exceed 6 doses/day",
+				},
+				{ medicationName: "Throat lozenges", dosage: "1 lozenge", frequency: "Every 2 hours", duration: "5 days" },
+			],
+		},
+		{
+			appointmentId: completedAppointments[3].id,
+			patientId: completedAppointments[3].patientId,
+			doctorId: completedAppointments[3].doctorId,
+			items: [
+				{
+					medicationName: "Amlodipine",
+					dosage: "5mg",
+					frequency: "Once daily",
+					duration: "90 days",
+					instructions: "Monitor blood pressure weekly",
+				},
+				{
+					medicationName: "Aspirin",
+					dosage: "81mg",
+					frequency: "Once daily",
+					duration: "90 days",
+					instructions: "Take with breakfast",
+				},
+			],
+		},
+		{
+			appointmentId: completedAppointments[4].id,
+			patientId: completedAppointments[4].patientId,
+			doctorId: completedAppointments[4].doctorId,
+			notes: "Keep a headache diary. Avoid bright screens before sleep.",
+			items: [
+				{
+					medicationName: "Sumatriptan",
+					dosage: "50mg",
+					frequency: "At onset of migraine",
+					duration: "As needed",
+					instructions: "Maximum 2 tablets in 24 hours",
+				},
+				{
+					medicationName: "Propranolol",
+					dosage: "40mg",
+					frequency: "Twice daily",
+					duration: "60 days",
+					instructions: "Preventive — do not stop abruptly",
+				},
+			],
+		},
+	];
+
+	for (const rx of prescriptionData) {
+		const { items, ...prescriptionFields } = rx;
+		await prisma.prescription.create({
+			data: {
+				...prescriptionFields,
+				items: { create: items },
+			},
+		});
+	}
+
+	// ── Doctor unavailability blocks ──────────────────────────────────────────
+	const unavailabilityData = [
+		{
+			doctorId: doctors[0].id,
+			startDate: slotUTC(15, 0, 0),
+			endDate: slotUTC(19, 0, 0),
+			reason: "Annual leave",
+		},
+		{
+			doctorId: doctors[1].id,
+			startDate: slotUTC(8, 0, 0),
+			endDate: slotUTC(9, 0, 0),
+			reason: "Medical conference",
+		},
+		{
+			doctorId: doctors[2].id,
+			startDate: slotUTC(22, 0, 0),
+			endDate: slotUTC(26, 0, 0),
+			reason: "Personal time off",
+		},
+	];
+
+	for (const block of unavailabilityData) {
+		await prisma.doctorUnavailability.create({ data: block });
 	}
 
 	console.log(`✅ Seed complete:`);
@@ -488,6 +744,9 @@ async function main(): Promise<void> {
 	console.log(`   - ${assistantUsers.length} assistants`);
 	console.log(`   - ${patientUsers.length} patients`);
 	console.log(`   - ${appointmentData.length} appointments`);
+	console.log(`   - ${reviewData.length} reviews`);
+	console.log(`   - ${prescriptionData.length} prescriptions`);
+	console.log(`   - ${unavailabilityData.length} doctor unavailability blocks`);
 }
 
 void main()

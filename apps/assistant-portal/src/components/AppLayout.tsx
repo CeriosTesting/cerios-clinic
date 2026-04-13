@@ -1,4 +1,12 @@
-import { DashboardOutlined, CalendarOutlined, TeamOutlined, UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import {
+	DashboardOutlined,
+	CalendarOutlined,
+	TeamOutlined,
+	UserOutlined,
+	LogoutOutlined,
+	MedicineBoxOutlined,
+	StarOutlined,
+} from "@ant-design/icons";
 import { Layout, Menu } from "antd";
 import React, { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -17,6 +25,8 @@ const MENU_ITEMS = [
 	{ key: "/", icon: <DashboardOutlined />, label: "Dashboard" },
 	{ key: "/appointments", icon: <CalendarOutlined />, label: "Appointments" },
 	{ key: "/patients", icon: <UserOutlined />, label: "Patients" },
+	{ key: "/prescriptions", icon: <MedicineBoxOutlined />, label: "Prescriptions" },
+	{ key: "/reviews", icon: <StarOutlined />, label: "Reviews" },
 	{ key: "/admin", icon: <TeamOutlined />, label: "Admin" },
 ];
 

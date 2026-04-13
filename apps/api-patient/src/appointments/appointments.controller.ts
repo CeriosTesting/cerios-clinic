@@ -1,3 +1,4 @@
+import { EventsService, MailService } from "@clinic/api-common";
 import { AppointmentStatus } from "@clinic/shared-types";
 import {
 	Body,
@@ -95,7 +96,11 @@ function validateSlotTime(iso: string): void {
 @UseGuards(JwtAuthGuard)
 @Controller("appointments")
 export class AppointmentsController {
-	constructor(private readonly prisma: PrismaService) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly mail: MailService,
+		private readonly events: EventsService
+	) {}
 
 	@Get()
 	@ApiOperation({ summary: "Get current patient's appointments" })
@@ -233,6 +238,36 @@ export class AppointmentsController {
 				newStatus: "CANCELLED",
 				changedByKeycloakId: user.sub,
 			},
+		});
+
+		// Send cancellation emails to patient and doctor
+		const doctorUser = updated.doctor?.user;
+		if (doctorUser) {
+			const patientName = `${dbUser.firstName} ${dbUser.lastName}`;
+			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
+			void this.mail.sendAppointmentCancellation(
+				dbUser.email,
+				patientName,
+				doctorName,
+				patientName,
+				appointment.scheduledAt
+			);
+			void this.mail.sendAppointmentCancellation(
+				doctorUser.email,
+				`Dr. ${doctorName}`,
+				doctorName,
+				patientName,
+				appointment.scheduledAt
+			);
+		}
+
+		this.events.emitAppointmentEvent({
+			type: "appointment.cancelled",
+			appointmentId: updated.id,
+			patientId: updated.patientId,
+			doctorId: updated.doctorId,
+			status: "CANCELLED",
+			scheduledAt: updated.scheduledAt.toISOString(),
 		});
 
 		return { data: updated, message: "Appointment cancelled" };

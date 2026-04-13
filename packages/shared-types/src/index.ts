@@ -178,4 +178,93 @@ export interface DoctorPublic {
 	specialization?: string | null;
 	firstName: string;
 	lastName: string;
+	averageRating?: number | null;
+	reviewCount?: number;
+}
+
+// --- Reviews ---
+
+export interface Review {
+	id: string;
+	appointmentId: string;
+	patientId: string;
+	doctorId: string;
+	rating: number;
+	comment?: string | null;
+	createdAt: string;
+	patient?: Patient;
+	doctor?: Doctor;
+	appointment?: Appointment;
+}
+
+export interface CreateReviewDto {
+	rating: number;
+	comment?: string;
+}
+
+export interface DoctorReviewStats {
+	averageRating: number;
+	totalReviews: number;
+}
+
+// --- Doctor Unavailability ---
+
+export interface DoctorUnavailability {
+	id: string;
+	doctorId: string;
+	startDate: string;
+	endDate: string;
+	reason?: string | null;
+	createdAt: string;
+}
+
+export interface CreateUnavailabilityDto {
+	startDate: string;
+	endDate: string;
+	reason?: string;
+}
+
+// --- Prescriptions ---
+
+export interface PrescriptionItem {
+	id: string;
+	prescriptionId: string;
+	medicationName: string;
+	dosage: string;
+	frequency: string;
+	duration: string;
+	instructions?: string | null;
+}
+
+export interface Prescription {
+	id: string;
+	appointmentId: string;
+	patientId: string;
+	doctorId: string;
+	notes?: string | null;
+	createdAt: string;
+	updatedAt: string;
+	items: PrescriptionItem[];
+	patient?: Patient;
+	doctor?: Doctor;
+	appointment?: Appointment;
+}
+
+export interface CreatePrescriptionItemDto {
+	medicationName: string;
+	dosage: string;
+	frequency: string;
+	duration: string;
+	instructions?: string;
+}
+
+export interface CreatePrescriptionDto {
+	appointmentId: string;
+	notes?: string;
+	items: CreatePrescriptionItemDto[];
+}
+
+export interface UpdatePrescriptionDto {
+	notes?: string;
+	items?: CreatePrescriptionItemDto[];
 }

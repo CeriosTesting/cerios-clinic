@@ -37,6 +37,9 @@ export default function Layout(): React.ReactElement {
 							<Link to="/medical-history" className="nav-link">
 								Medical History
 							</Link>
+							<Link to="/prescriptions" className="nav-link">
+								Prescriptions
+							</Link>
 							<Link to="/doctors" className="nav-link">
 								Our Doctors
 							</Link>

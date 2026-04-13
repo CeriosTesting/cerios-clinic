@@ -12,6 +12,8 @@ import EditAppointmentPage from "./pages/EditAppointmentPage";
 import LoginPage from "./pages/LoginPage";
 import PatientDetailPage from "./pages/PatientDetailPage";
 import PatientsPage from "./pages/PatientsPage";
+import PrescriptionsPage from "./pages/PrescriptionsPage";
+import ReviewsPage from "./pages/ReviewsPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }): React.ReactElement | null {
 	if (!keycloak.authenticated) {
@@ -61,6 +63,8 @@ export default function App(): React.ReactElement {
 						<Route path="patients" element={<PatientsPage />} />
 						<Route path="patients/:id" element={<PatientDetailPage />} />
 						<Route path="admin" element={<AdminPage />} />
+						<Route path="prescriptions" element={<PrescriptionsPage />} />
+						<Route path="reviews" element={<ReviewsPage />} />
 					</Route>
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>

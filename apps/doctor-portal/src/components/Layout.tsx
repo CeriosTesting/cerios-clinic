@@ -14,6 +14,9 @@ interface KeycloakTokenParsed {
 const NAV_ITEMS = [
 	{ to: "/", label: "Dashboard", end: true },
 	{ to: "/appointments", label: "Appointments" },
+	{ to: "/prescriptions", label: "Prescriptions" },
+	{ to: "/availability", label: "Availability" },
+	{ to: "/reviews", label: "Reviews" },
 	{ to: "/admin", label: "Admin" },
 ];
 

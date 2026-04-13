@@ -1,3 +1,4 @@
+import { MailService } from "@clinic/api-common";
 import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { IsEmail, IsString, MinLength, IsOptional, IsDateString, Matches } from "class-validator";
@@ -42,7 +43,8 @@ class RegisterDto {
 export class AuthController {
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly keycloakAdmin: KeycloakAdminService
+		private readonly keycloakAdmin: KeycloakAdminService,
+		private readonly mail: MailService
 	) {}
 
 	@Post("register")
@@ -89,6 +91,9 @@ export class AuthController {
 			await this.keycloakAdmin.disableUser(keycloakId).catch(() => undefined);
 			throw err;
 		}
+
+		// Send welcome email
+		void this.mail.sendWelcome(dto.email, `${dto.firstName} ${dto.lastName}`);
 
 		return { message: "Account created successfully" };
 	}

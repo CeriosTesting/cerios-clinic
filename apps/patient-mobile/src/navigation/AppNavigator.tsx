@@ -12,6 +12,7 @@ import DoctorsScreen from "../screens/DoctorsScreen";
 import HomeScreen from "../screens/HomeScreen";
 import LoginScreen from "../screens/LoginScreen";
 import MedicalHistoryScreen from "../screens/MedicalHistoryScreen";
+import PrescriptionsScreen from "../screens/PrescriptionsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 
 // ── Param list types ──────────────────────────────────────────────────────────
@@ -24,6 +25,7 @@ export type AppointmentsStackParamList = {
 export type AppTabParamList = {
 	Home: undefined;
 	Appointments: undefined;
+	Prescriptions: undefined;
 	History: undefined;
 	Doctors: undefined;
 	Profile: undefined;
@@ -39,6 +41,7 @@ const ApptStack = createNativeStackNavigator<AppointmentsStackParamList>();
 const TAB_ICONS: Record<string, string> = {
 	Home: "🏠",
 	Appointments: "📅",
+	Prescriptions: "💊",
 	History: "📋",
 	Doctors: "👨‍⚕️",
 	Profile: "👤",
@@ -69,6 +72,7 @@ function AppTabs(): React.JSX.Element {
 		<Tab.Navigator screenOptions={tabScreenOptions}>
 			<Tab.Screen name="Home" component={HomeScreen} />
 			<Tab.Screen name="Appointments" component={AppointmentsStack} options={{ headerShown: false }} />
+			<Tab.Screen name="Prescriptions" component={PrescriptionsScreen} />
 			<Tab.Screen name="History" component={MedicalHistoryScreen} options={{ title: "History" }} />
 			<Tab.Screen name="Doctors" component={DoctorsScreen} />
 			<Tab.Screen name="Profile" component={ProfileScreen} />

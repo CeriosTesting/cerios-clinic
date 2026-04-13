@@ -35,6 +35,15 @@ export default function DoctorsScreen(): React.JSX.Element {
 					<Text style={styles.spec} numberOfLines={2}>
 						{item.specialization ?? "General Practice"}
 					</Text>
+					{(item as { averageRating?: number }).averageRating ? (
+						<View style={styles.ratingRow}>
+							<Text style={styles.star}>★</Text>
+							<Text style={styles.ratingText}>
+								{((item as { averageRating?: number }).averageRating ?? 0).toFixed(1)}
+							</Text>
+							<Text style={styles.reviewCount}>({(item as { reviewCount?: number }).reviewCount ?? 0})</Text>
+						</View>
+					) : null}
 				</View>
 			)}
 			ListEmptyComponent={
@@ -75,6 +84,10 @@ const styles = StyleSheet.create({
 	avatarText: { color: "#E85A28", fontWeight: "700", fontSize: 16 },
 	name: { fontSize: 14, fontWeight: "600", color: "#1A2238", textAlign: "center" },
 	spec: { fontSize: 12, color: "#6B7280", marginTop: 3, textAlign: "center" },
+	ratingRow: { flexDirection: "row", alignItems: "center", marginTop: 6, gap: 3 },
+	star: { fontSize: 14, color: "#F59E0B" },
+	ratingText: { fontSize: 12, fontWeight: "600", color: "#1A2238" },
+	reviewCount: { fontSize: 11, color: "#9CA3AF" },
 	empty: { alignItems: "center", paddingTop: 60 },
 	emptyText: { fontSize: 15, color: "#9CA3AF" },
 });

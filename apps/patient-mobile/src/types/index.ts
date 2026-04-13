@@ -79,3 +79,54 @@ export interface ProfileData {
 	lastName: string;
 	patient: Pick<Patient, "dateOfBirth" | "phone" | "insuranceNumber" | "photo"> | null;
 }
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export interface Review {
+	id: string;
+	appointmentId: string;
+	patientId: string;
+	doctorId: string;
+	rating: number;
+	comment?: string | null;
+	createdAt: string;
+	appointment?: Appointment;
+	doctor?: Doctor;
+}
+
+export interface CreateReviewDto {
+	rating: number;
+	comment?: string;
+}
+
+export interface DoctorReviewStats {
+	data: Review[];
+	stats: {
+		averageRating: number;
+		totalReviews: number;
+	};
+}
+
+// ── Prescriptions ─────────────────────────────────────────────────────────────
+
+export interface PrescriptionItem {
+	id: string;
+	prescriptionId: string;
+	medicationName: string;
+	dosage: string;
+	frequency: string;
+	duration: string;
+	instructions?: string | null;
+}
+
+export interface Prescription {
+	id: string;
+	appointmentId: string;
+	patientId: string;
+	doctorId: string;
+	notes?: string | null;
+	createdAt: string;
+	items: PrescriptionItem[];
+	doctor?: Doctor;
+	appointment?: Appointment;
+}

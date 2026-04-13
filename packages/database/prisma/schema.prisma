@@ -42,16 +42,19 @@ model User {
 }
 
 model Patient {
-  id              String  @id @default(uuid())
-  userId          String  @unique @map("user_id")
-  dateOfBirth     DateTime? @map("date_of_birth")
-  phone           String?
-  insuranceNumber String? @map("insurance_number")
-  photo           String?
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                        String  @id @default(uuid())
+  userId                    String  @unique @map("user_id")
+  dateOfBirth               DateTime? @map("date_of_birth")
+  phone                     String?
+  insuranceNumber           String? @map("insurance_number")
+  photo                     String?
+  emailNotificationsEnabled Boolean @default(true) @map("email_notifications_enabled")
+  updatedAt                 DateTime  @updatedAt @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id])
-  appointments Appointment[]
+  user          User           @relation(fields: [userId], references: [id])
+  appointments  Appointment[]
+  reviews       Review[]
+  prescriptions Prescription[]
 
   @@map("patients")
 }
@@ -63,8 +66,11 @@ model Doctor {
   licenseNumber  String? @map("license_number")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id])
-  appointments Appointment[]
+  user            User                  @relation(fields: [userId], references: [id])
+  appointments    Appointment[]
+  unavailability  DoctorUnavailability[]
+  reviews         Review[]
+  prescriptions   Prescription[]
 
   @@map("doctors")
 }
@@ -97,6 +103,8 @@ model Appointment {
   assistant Assistant? @relation(fields: [assistantId], references: [id])
 
   statusHistory AppointmentStatusChange[]
+  review        Review?
+  prescription  Prescription?
 
   @@index([patientId])
   @@index([doctorId])
@@ -123,4 +131,71 @@ model AppointmentStatusChange {
 
   @@index([appointmentId])
   @@map("appointment_status_changes")
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique @map("appointment_id")
+  patientId     String   @map("patient_id")
+  doctorId      String   @map("doctor_id")
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  patient     Patient     @relation(fields: [patientId], references: [id])
+  doctor      Doctor      @relation(fields: [doctorId], references: [id])
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("reviews")
+}
+
+model DoctorUnavailability {
+  id        String   @id @default(uuid())
+  doctorId  String   @map("doctor_id")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  doctor Doctor @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId])
+  @@index([doctorId, startDate, endDate])
+  @@map("doctor_unavailability")
+}
+
+model Prescription {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique @map("appointment_id")
+  patientId     String   @map("patient_id")
+  doctorId      String   @map("doctor_id")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  appointment Appointment        @relation(fields: [appointmentId], references: [id])
+  patient     Patient            @relation(fields: [patientId], references: [id])
+  doctor      Doctor             @relation(fields: [doctorId], references: [id])
+  items       PrescriptionItem[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id             String @id @default(uuid())
+  prescriptionId String @map("prescription_id")
+  medicationName String @map("medication_name")
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+  @@map("prescription_items")
 }
