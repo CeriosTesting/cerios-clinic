@@ -1,5 +1,5 @@
 import { KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID } from "@env";
-import { authorize, refresh, revoke, type AuthorizeResult } from "react-native-app-auth";
+import { authorize, logout as appAuthLogout, refresh, revoke, type AuthorizeResult } from "react-native-app-auth";
 import EncryptedStorage from "react-native-encrypted-storage";
 
 const STORAGE_KEY = "cerios_auth_tokens";
@@ -16,6 +16,7 @@ const config = {
 	clientId: KEYCLOAK_CLIENT_ID,
 	redirectUrl: "com.cerios.patient://oauth2redirect",
 	scopes: ["openid", "profile", "email", "roles"],
+	dangerouslyAllowInsecureHttpRequests: KEYCLOAK_URL.startsWith("http://"),
 	additionalParameters: {},
 };
 
@@ -47,6 +48,12 @@ export async function refreshTokens(): Promise<StoredTokens | null> {
 
 export async function signOut(): Promise<void> {
 	const stored = await getStoredTokens();
+	if (stored?.idToken) {
+		await appAuthLogout(config, {
+			idToken: stored.idToken,
+			postLogoutRedirectUrl: config.redirectUrl,
+		}).catch(() => undefined);
+	}
 	if (stored?.accessToken) {
 		await revoke(config, { tokenToRevoke: stored.accessToken, sendClientId: true }).catch(() => undefined);
 	}

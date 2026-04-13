@@ -20,6 +20,7 @@
 		"mobile:env:emulator": "node apps/patient-mobile/setup-env.mjs emulator",
 		"mobile:env:lan": "node apps/patient-mobile/setup-env.mjs lan",
 		"mobile:release": "cd apps/patient-mobile/android && gradlew.bat assembleRelease",
+		"mobile:release:clean": "cd apps/patient-mobile/android && gradlew.bat app:clean assembleRelease",
 		"mobile:release:install": "cd apps/patient-mobile/android && gradlew.bat installRelease",
 		"mobile:release:install:emulator": "pnpm mobile:env:emulator && pnpm mobile:release:install",
 		"mobile:setup": "node apps/patient-mobile/setup-android.mjs",

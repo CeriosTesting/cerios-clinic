@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { useProfile, useUpdateProfile } from "../api/hooks";
+import { useAuth } from "../auth/AuthContext";
 
 function formatDob(date?: string | null): string {
 	if (!date) return "";
@@ -30,12 +31,14 @@ function ProfileFormContent({
 	update,
 	handlers,
 	onSave,
+	onSignOut,
 }: {
 	profile: ReturnType<typeof useProfile>["data"];
 	form: FormValues;
 	update: ReturnType<typeof useUpdateProfile>;
 	handlers: FieldHandlers;
 	onSave: () => void;
+	onSignOut: () => void;
 }): React.JSX.Element {
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -93,6 +96,10 @@ function ProfileFormContent({
 					<Text style={styles.saveBtnText}>Save Changes</Text>
 				)}
 			</TouchableOpacity>
+
+			<TouchableOpacity style={styles.signOutBtn} onPress={onSignOut}>
+				<Text style={styles.signOutBtnText}>Sign Out</Text>
+			</TouchableOpacity>
 		</ScrollView>
 	);
 }
@@ -100,6 +107,7 @@ function ProfileFormContent({
 export default function ProfileScreen(): React.JSX.Element {
 	const { data: profile, isLoading } = useProfile();
 	const update = useUpdateProfile();
+	const { logout } = useAuth();
 
 	// Lazy initial state: populated from the first non-null profile response
 	const [form, setForm] = useState<FormValues>({
@@ -133,6 +141,10 @@ export default function ProfileScreen(): React.JSX.Element {
 		update.mutate(form);
 	}, [update, form]);
 
+	const handleSignOut = useCallback((): void => {
+		void logout();
+	}, [logout]);
+
 	if (isLoading) {
 		return (
 			<View style={styles.center}>
@@ -154,6 +166,7 @@ export default function ProfileScreen(): React.JSX.Element {
 				insuranceNumber: setInsuranceNumber,
 			}}
 			onSave={handleSave}
+			onSignOut={handleSignOut}
 		/>
 	);
 }
@@ -211,4 +224,13 @@ const styles = StyleSheet.create({
 	},
 	saveBtnDisabled: { opacity: 0.6 },
 	saveBtnText: { color: "#ffffff", fontWeight: "600", fontSize: 16 },
+	signOutBtn: {
+		borderWidth: 1,
+		borderColor: "#EF4444",
+		borderRadius: 10,
+		paddingVertical: 14,
+		alignItems: "center" as const,
+		marginTop: 12,
+	},
+	signOutBtnText: { color: "#EF4444", fontWeight: "600" as const, fontSize: 16 },
 });
