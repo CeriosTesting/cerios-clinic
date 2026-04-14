@@ -10,18 +10,18 @@ This guide walks you through setting up the Clinic application from scratch on a
 
 This is a full-stack clinic management application consisting of:
 
-| Service              | URL                       | Description                                           |
-| -------------------- | ------------------------- | ----------------------------------------------------- |
-| **Patient Portal**   | http://localhost:5173     | React app — patients view/book appointments           |
-| **Doctor Portal**    | http://localhost:5174     | React app — doctors manage their schedule             |
-| **Assistant Portal** | http://localhost:5175     | React app — reception/admin staff manage appointments |
-| **Patient API**      | http://localhost:3001/api | NestJS backend for the Patient Portal                 |
-| **Doctor API**       | http://localhost:3002/api | NestJS backend for the Doctor Portal                  |
-| **Assistant API**    | http://localhost:3003/api | NestJS backend for the Assistant Portal               |
-| **Patient Mobile**   | Android device / emulator | React Native app — patients on Android                |
-| **Keycloak**         | http://localhost:8080     | Authentication & user management                      |
-| **PostgreSQL**       | localhost:5432            | Database                                              |
-| **Mailpit**          | http://localhost:8025     | Local email catcher (dev only)                        |
+| Service              | URL                       | Description                                                                         |
+| -------------------- | ------------------------- | ----------------------------------------------------------------------------------- |
+| **Patient Portal**   | http://localhost:5173     | React app — patients view/book appointments                                         |
+| **Doctor Portal**    | http://localhost:5174     | React app — doctors manage their schedule                                           |
+| **Assistant Portal** | http://localhost:5175     | React app — reception/admin staff manage appointments                               |
+| **Patient API**      | http://localhost:3001/api | NestJS backend for the Patient Portal ([Swagger](http://localhost:3001/api/docs))   |
+| **Doctor API**       | http://localhost:3002/api | NestJS backend for the Doctor Portal ([Swagger](http://localhost:3002/api/docs))    |
+| **Assistant API**    | http://localhost:3003/api | NestJS backend for the Assistant Portal ([Swagger](http://localhost:3003/api/docs)) |
+| **Patient Mobile**   | Android device / emulator | React Native app — patients on Android                                              |
+| **Keycloak**         | http://localhost:8080     | Authentication & user management                                                    |
+| **PostgreSQL**       | localhost:5432            | Database                                                                            |
+| **Mailpit**          | http://localhost:8025     | Local email catcher (dev only)                                                      |
 
 ## Quick Test Paths
 
@@ -141,7 +141,7 @@ cd clinic-monorepo
 
 ## Step 3 — Create the Environment File
 
-The project needs a `.env` file with configuration values. An example is provided:
+The project needs a `.env` file with configuration values. The example file contains sensible defaults for local development — just copy it:
 
 **On Windows PowerShell:**
 
@@ -155,51 +155,7 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Now open `.env` in any text editor (Notepad is fine) and replace every `change_me` with real values. For a local development setup you can use simple passwords — nothing is exposed to the internet:
-
-```env
-# ── PostgreSQL ──────────────────────────────────────────────
-POSTGRES_USER=clinic
-POSTGRES_PASSWORD=clinic_secret
-POSTGRES_DB=clinic_db
-DATABASE_URL="postgresql://clinic:clinic_secret@localhost:5432/clinic_db"
-
-# ── Keycloak ─────────────────────────────────────────────────
-KEYCLOAK_ADMIN_USER=admin
-KEYCLOAK_ADMIN_PASSWORD=admin_secret
-KEYCLOAK_URL=http://localhost:8080
-KEYCLOAK_REALM=clinic
-
-# ── Keycloak clients ─────────────────────────────────────────
-KEYCLOAK_PATIENT_CLIENT_ID=patient-portal-client
-KEYCLOAK_STAFF_CLIENT_ID=staff-portal-client
-KEYCLOAK_ADMIN_CLIENT_ID=api-service-client
-KEYCLOAK_ADMIN_CLIENT_SECRET=api_service_secret_change_in_prod
-
-# ── Frontend (Vite) ─────────────────────────────────────────
-VITE_KEYCLOAK_URL=http://localhost:8080
-VITE_KEYCLOAK_REALM=clinic
-VITE_PATIENT_KEYCLOAK_CLIENT_ID=patient-portal-client
-VITE_STAFF_KEYCLOAK_CLIENT_ID=staff-portal-client
-VITE_PATIENT_API_BASE_URL=http://localhost:3001/api
-VITE_DOCTOR_API_BASE_URL=http://localhost:3002/api
-VITE_ASSISTANT_API_BASE_URL=http://localhost:3003/api
-
-# ── CORS ─────────────────────────────────────────────────────
-API_PATIENT_CORS_ORIGINS=http://localhost:5173
-API_DOCTOR_CORS_ORIGINS=http://localhost:5174
-API_ASSISTANT_CORS_ORIGINS=http://localhost:5175
-
-# ── Seed ─────────────────────────────────────────────────────
-SEED_STAFF_PASSWORD=Staff1234!
-SEED_PATIENT_PASSWORD=Patient1234!
-
-# ── Keycloak realm admin account ──────────────────────────────
-KEYCLOAK_REALM_ADMIN_EMAIL=admin@clinic.local
-KEYCLOAK_REALM_ADMIN_PASSWORD=Admin1234!
-```
-
-> **Important:** The value for `KEYCLOAK_ADMIN_CLIENT_SECRET` must match the `secret` field in `infra/keycloak/clinic-realm.json` (`api_service_secret_change_in_prod` by default). Do not change one without changing the other.
+No changes are needed — the defaults work out of the box for local development.
 
 ---
 
