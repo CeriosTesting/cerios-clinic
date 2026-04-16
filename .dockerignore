@@ -1,0 +1,33 @@
+# Dependencies (re-installed inside the container)
+**/node_modules
+
+# Build output (rebuilt inside the container)
+**/dist
+
+# Git
+.git/
+.gitignore
+
+# Android (not containerised)
+apps/patient-mobile/android/build/
+apps/patient-mobile/android/app/build/
+apps/patient-mobile/android/.cxx/
+apps/patient-mobile/android/.gradle/
+apps/patient-mobile/android/local.properties
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Environment (compose injects env vars directly)
+.env
+
+# Documentation / images (not needed in build)
+*.md
+*.png
+*.jpg
+LICENSE

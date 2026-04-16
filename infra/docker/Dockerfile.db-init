@@ -1,0 +1,54 @@
+# ── Stage 1: base ──────────────────────────────────────────
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# ── Stage 2: install dependencies ─────────────────────────
+FROM base AS deps
+
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/shared-types/package.json packages/shared-types/
+COPY packages/database/package.json     packages/database/
+COPY packages/api-common/package.json   packages/api-common/
+COPY apps/api-patient/package.json      apps/api-patient/
+COPY apps/api-doctor/package.json       apps/api-doctor/
+COPY apps/api-assistant/package.json    apps/api-assistant/
+COPY apps/patient-portal/package.json   apps/patient-portal/
+COPY apps/doctor-portal/package.json    apps/doctor-portal/
+COPY apps/assistant-portal/package.json apps/assistant-portal/
+COPY apps/patient-mobile/package.json   apps/patient-mobile/
+
+# Prisma schema is needed by the postinstall hook (prisma generate)
+COPY packages/database/prisma.config.ts          packages/database/
+COPY packages/database/prisma/schema.prisma      packages/database/prisma/
+
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: build ────────────────────────────────────────
+FROM deps AS build
+
+COPY tsconfig.base.json tsconfig.nestjs.json ./
+COPY packages/ packages/
+
+# Copy app stubs so workspace links resolve (not built, just present)
+COPY apps/api-patient/   apps/api-patient/
+COPY apps/api-doctor/    apps/api-doctor/
+COPY apps/api-assistant/ apps/api-assistant/
+
+# Generate Prisma client
+RUN pnpm --filter @clinic/database generate
+
+# Build the database package (needed by seed script's ts-node)
+RUN pnpm --filter @clinic/shared-types build \
+ && pnpm --filter @clinic/database build
+
+# ── Stage 4: run migrations + seed ────────────────────────
+FROM build AS runtime
+
+# dotenv-cli in package scripts loads ../../.env — create an empty file
+# so it doesn't fail. Actual env vars are injected by Docker Compose.
+RUN touch /app/.env
+
+# migrate deploy applies only unapplied migrations (idempotent).
+# seed script checks for existing Keycloak users before creating (idempotent).
+CMD pnpm --filter database migrate:deploy && pnpm --filter database seed

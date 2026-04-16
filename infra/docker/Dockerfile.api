@@ -1,0 +1,83 @@
+# ── Stage 1: base ──────────────────────────────────────────
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# ── Stage 2: install dependencies ─────────────────────────
+FROM base AS deps
+
+# Copy only the files pnpm needs to resolve the workspace
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/shared-types/package.json packages/shared-types/
+COPY packages/database/package.json     packages/database/
+COPY packages/api-common/package.json   packages/api-common/
+COPY apps/api-patient/package.json      apps/api-patient/
+COPY apps/api-doctor/package.json       apps/api-doctor/
+COPY apps/api-assistant/package.json    apps/api-assistant/
+COPY apps/patient-portal/package.json   apps/patient-portal/
+COPY apps/doctor-portal/package.json    apps/doctor-portal/
+COPY apps/assistant-portal/package.json apps/assistant-portal/
+COPY apps/patient-mobile/package.json   apps/patient-mobile/
+
+# Prisma schema is needed by the postinstall hook (prisma generate)
+COPY packages/database/prisma.config.ts          packages/database/
+COPY packages/database/prisma/schema.prisma      packages/database/prisma/
+
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: build ────────────────────────────────────────
+FROM deps AS build
+
+# Copy all source (filtered by .dockerignore)
+COPY tsconfig.base.json tsconfig.nestjs.json ./
+COPY packages/ packages/
+ARG APP_NAME
+COPY apps/${APP_NAME}/ apps/${APP_NAME}/
+
+# Generate Prisma client (skipped during install because schema wasn't present).
+# Create empty .env so dotenv-cli in the generate script doesn't fail.
+RUN touch .env && pnpm --filter @clinic/database generate
+
+# Build workspace packages in dependency order, then the target API
+RUN pnpm --filter @clinic/shared-types build \
+ && pnpm --filter @clinic/database build \
+ && pnpm --filter @clinic/api-common build \
+ && pnpm --filter ${APP_NAME} build
+
+# Rewrite "main" from src/index.ts → dist/index.js so Node.js can
+# resolve @clinic/* packages at runtime (publishConfig only applies
+# when publishing to a registry, not for workspace: links).
+RUN for pkg in packages/shared-types packages/database packages/api-common; do \
+      sed -i 's|"main": "src/index.ts"|"main": "dist/index.js"|' "$pkg/package.json"; \
+    done
+
+# ── Stage 4: production runtime ───────────────────────────
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+# Copy the full monorepo layout so workspace: links resolve correctly
+COPY --from=build /app/node_modules         ./node_modules
+COPY --from=build /app/package.json         ./package.json
+COPY --from=build /app/packages/shared-types/dist  packages/shared-types/dist
+COPY --from=build /app/packages/shared-types/package.json packages/shared-types/
+COPY --from=build /app/packages/database/dist      packages/database/dist
+COPY --from=build /app/packages/database/package.json packages/database/
+COPY --from=build /app/packages/api-common/dist    packages/api-common/dist
+COPY --from=build /app/packages/api-common/package.json packages/api-common/
+
+ARG APP_NAME
+COPY --from=build /app/apps/${APP_NAME}/dist       apps/${APP_NAME}/dist
+COPY --from=build /app/apps/${APP_NAME}/package.json apps/${APP_NAME}/
+
+# Prisma generated client (lives inside node_modules/.prisma)
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+
+# pnpm workspace symlinks in node_modules — re-create them so require()
+# can resolve @clinic/* packages from the API's dist folder
+COPY --from=build /app/node_modules/@clinic ./node_modules/@clinic
+
+ENV NODE_ENV=production
+ENV APP_NAME=${APP_NAME}
+
+CMD node apps/${APP_NAME}/dist/main.js

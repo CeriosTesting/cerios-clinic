@@ -29,6 +29,20 @@ export function loadKeycloakConfig(audienceEnvVar: string): KeycloakRuntimeConfi
 		issuers.push(issuer.replace("localhost", "10.0.2.2"));
 	}
 
+	// When the API runs inside Docker it reaches Keycloak via an internal
+	// hostname (e.g. http://keycloak:8080), but the browser obtains tokens
+	// from the public URL (http://localhost:8080). Accept the public issuer
+	// so those tokens pass validation.
+	const publicUrl = readEnvOrDefault("KEYCLOAK_PUBLIC_URL", "");
+	if (publicUrl && publicUrl !== url) {
+		const publicIssuer = `${publicUrl}/realms/${realm}`;
+		issuers.push(publicIssuer);
+		// Android emulators reach the host via 10.0.2.2 instead of localhost
+		if (publicUrl.includes("localhost")) {
+			issuers.push(publicIssuer.replace("localhost", "10.0.2.2"));
+		}
+	}
+
 	return {
 		url,
 		realm,

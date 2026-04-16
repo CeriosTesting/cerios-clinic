@@ -60,5 +60,181 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
       MP_SMTP_AUTH_ALLOW_INSECURE: "true"
 
+  # ── App services (only start with --profile apps) ────────
+
+  db-init:
+    profiles: [apps]
+    container_name: clinic-db-init
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.db-init
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_secret}
+      SEED_STAFF_PASSWORD: ${SEED_STAFF_PASSWORD:-Clinic1234!}
+      SEED_PATIENT_PASSWORD: ${SEED_PATIENT_PASSWORD:-Patient1234!}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    restart: "no"
+
+  api-patient:
+    profiles: [apps]
+    container_name: clinic-api-patient
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.api
+      args:
+        APP_NAME: api-patient
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_PUBLIC_URL: "http://localhost:8080"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+      KEYCLOAK_PATIENT_CLIENT_ID: ${KEYCLOAK_PATIENT_CLIENT_ID:-patient-portal-client}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
+      API_PATIENT_CORS_ORIGINS: "http://localhost:5173"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  api-doctor:
+    profiles: [apps]
+    container_name: clinic-api-doctor
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.api
+      args:
+        APP_NAME: api-doctor
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: "3002"
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_PUBLIC_URL: "http://localhost:8080"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+      KEYCLOAK_STAFF_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
+      API_DOCTOR_CORS_ORIGINS: "http://localhost:5174"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  api-assistant:
+    profiles: [apps]
+    container_name: clinic-api-assistant
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.api
+      args:
+        APP_NAME: api-assistant
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: "3003"
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_PUBLIC_URL: "http://localhost:8080"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+      KEYCLOAK_STAFF_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
+      API_ASSISTANT_CORS_ORIGINS: "http://localhost:5175"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3003/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  patient-portal:
+    profiles: [apps]
+    container_name: clinic-patient-portal
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.frontend
+      args:
+        APP_NAME: patient-portal
+        VITE_PATIENT_API_BASE_URL: "http://localhost:3001/api"
+        VITE_KEYCLOAK_URL: "http://localhost:8080"
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+        VITE_PATIENT_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_PATIENT_CLIENT_ID:-patient-portal-client}
+    ports:
+      - "5173:80"
+    depends_on:
+      api-patient:
+        condition: service_healthy
+
+  doctor-portal:
+    profiles: [apps]
+    container_name: clinic-doctor-portal
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.frontend
+      args:
+        APP_NAME: doctor-portal
+        VITE_DOCTOR_API_BASE_URL: "http://localhost:3002/api"
+        VITE_KEYCLOAK_URL: "http://localhost:8080"
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+        VITE_STAFF_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+    ports:
+      - "5174:80"
+    depends_on:
+      api-doctor:
+        condition: service_healthy
+
+  assistant-portal:
+    profiles: [apps]
+    container_name: clinic-assistant-portal
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.frontend
+      args:
+        APP_NAME: assistant-portal
+        VITE_ASSISTANT_API_BASE_URL: "http://localhost:3003/api"
+        VITE_KEYCLOAK_URL: "http://localhost:8080"
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+        VITE_STAFF_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+    ports:
+      - "5175:80"
+    depends_on:
+      api-assistant:
+        condition: service_healthy
+
 volumes:
   postgres_data:

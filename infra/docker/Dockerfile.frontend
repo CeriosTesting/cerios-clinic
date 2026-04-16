@@ -1,0 +1,68 @@
+# ── Stage 1: base ──────────────────────────────────────────
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# ── Stage 2: install dependencies ─────────────────────────
+FROM base AS deps
+
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/shared-types/package.json packages/shared-types/
+COPY packages/database/package.json     packages/database/
+COPY packages/api-common/package.json   packages/api-common/
+COPY apps/api-patient/package.json      apps/api-patient/
+COPY apps/api-doctor/package.json       apps/api-doctor/
+COPY apps/api-assistant/package.json    apps/api-assistant/
+COPY apps/patient-portal/package.json   apps/patient-portal/
+COPY apps/doctor-portal/package.json    apps/doctor-portal/
+COPY apps/assistant-portal/package.json apps/assistant-portal/
+COPY apps/patient-mobile/package.json   apps/patient-mobile/
+
+# Prisma schema is needed by the postinstall hook (prisma generate)
+COPY packages/database/prisma.config.ts          packages/database/
+COPY packages/database/prisma/schema.prisma      packages/database/prisma/
+
+RUN pnpm install --frozen-lockfile
+
+# ── Stage 3: build ────────────────────────────────────────
+FROM deps AS build
+
+COPY tsconfig.base.json ./
+COPY packages/shared-types/ packages/shared-types/
+
+ARG APP_NAME
+COPY apps/${APP_NAME}/ apps/${APP_NAME}/
+
+# VITE_* variables are inlined at build time by Vite.
+# Defaults point to localhost which is correct — the user's browser
+# (not the container) makes these requests.
+ARG VITE_KEYCLOAK_URL=http://localhost:8080
+ARG VITE_KEYCLOAK_REALM=clinic
+ARG VITE_PATIENT_KEYCLOAK_CLIENT_ID=patient-portal-client
+ARG VITE_STAFF_KEYCLOAK_CLIENT_ID=staff-portal-client
+ARG VITE_PATIENT_API_BASE_URL=http://localhost:3001/api
+ARG VITE_DOCTOR_API_BASE_URL=http://localhost:3002/api
+ARG VITE_ASSISTANT_API_BASE_URL=http://localhost:3003/api
+
+ENV VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
+ENV VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
+ENV VITE_PATIENT_KEYCLOAK_CLIENT_ID=${VITE_PATIENT_KEYCLOAK_CLIENT_ID}
+ENV VITE_STAFF_KEYCLOAK_CLIENT_ID=${VITE_STAFF_KEYCLOAK_CLIENT_ID}
+ENV VITE_PATIENT_API_BASE_URL=${VITE_PATIENT_API_BASE_URL}
+ENV VITE_DOCTOR_API_BASE_URL=${VITE_DOCTOR_API_BASE_URL}
+ENV VITE_ASSISTANT_API_BASE_URL=${VITE_ASSISTANT_API_BASE_URL}
+
+# Build shared-types (devDependency for type-checking) then the frontend.
+# Create empty .env so dotenv-cli in build scripts doesn't fail.
+RUN touch .env \
+ && pnpm --filter @clinic/shared-types build \
+ && pnpm --filter ${APP_NAME} build
+
+# ── Stage 4: serve with nginx ─────────────────────────────
+FROM nginx:alpine AS runtime
+
+ARG APP_NAME
+COPY --from=build /app/apps/${APP_NAME}/dist /usr/share/nginx/html
+COPY infra/docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
