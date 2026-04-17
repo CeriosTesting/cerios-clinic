@@ -347,54 +347,56 @@ export default function AdminPage(): React.ReactElement {
 			{!loading && (
 				<div className="card overflow-hidden p-0">
 					<div className="overflow-x-auto">
-					<table className="w-full text-sm min-w-[500px]">
-						<thead className="bg-gray-50 border-b border-gray-100">
-							<tr>
-								<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Name</th>
-								<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Email</th>
-								<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">
-									{tab === "doctors" ? "Specialization" : "Department"}
-								</th>
-								<th className="px-4 py-3"></th>
-							</tr>
-						</thead>
-						<tbody className="divide-y divide-gray-50">
-							{(tab === "doctors" ? doctors : assistants).map(u => (
-								<tr key={u.id} className="hover:bg-gray-50 transition-colors">
-									<td className="px-4 py-3 font-medium text-brand-navy">
-										{u.firstName} {u.lastName}
-									</td>
-									<td className="px-4 py-3 text-gray-500">{u.email}</td>
-									<td className="px-4 py-3 text-gray-500">
-										{tab === "doctors" ? u.doctor?.specialization : u.assistant?.department}
-									</td>
-									<td className="px-4 py-3 text-right">
-										<div className="flex items-center justify-end gap-2">
-											<button
-												onClick={() => (tab === "doctors" ? openEditDoctor(u) : openEditAssistant(u))}
-												className="text-brand-orange text-xs font-medium hover:underline"
-											>
-												Edit
-											</button>
-											<button
-												onClick={() => setConfirmDelete(u)}
-												className="text-red-400 text-xs font-medium hover:underline"
-											>
-												Delete
-											</button>
-										</div>
-									</td>
-								</tr>
-							))}
-							{(tab === "doctors" ? doctors : assistants).length === 0 && (
+						<table className="w-full text-sm min-w-[500px]">
+							<thead className="bg-gray-50 border-b border-gray-100">
 								<tr>
-									<td colSpan={4} className="px-4 py-8 text-center text-gray-400">
-										No {tab} found.
-									</td>
+									<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Name</th>
+									<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Email</th>
+									<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">
+										{tab === "doctors" ? "Specialization" : "Department"}
+									</th>
+									<th className="px-4 py-3"></th>
 								</tr>
-							)}
-						</tbody>
-					</table>					</div>				</div>
+							</thead>
+							<tbody className="divide-y divide-gray-50">
+								{(tab === "doctors" ? doctors : assistants).map(u => (
+									<tr key={u.id} className="hover:bg-gray-50 transition-colors">
+										<td className="px-4 py-3 font-medium text-brand-navy">
+											{u.firstName} {u.lastName}
+										</td>
+										<td className="px-4 py-3 text-gray-500">{u.email}</td>
+										<td className="px-4 py-3 text-gray-500">
+											{tab === "doctors" ? u.doctor?.specialization : u.assistant?.department}
+										</td>
+										<td className="px-4 py-3 text-right">
+											<div className="flex items-center justify-end gap-2">
+												<button
+													onClick={() => (tab === "doctors" ? openEditDoctor(u) : openEditAssistant(u))}
+													className="text-brand-orange text-xs font-medium hover:underline"
+												>
+													Edit
+												</button>
+												<button
+													onClick={() => setConfirmDelete(u)}
+													className="text-red-400 text-xs font-medium hover:underline"
+												>
+													Delete
+												</button>
+											</div>
+										</td>
+									</tr>
+								))}
+								{(tab === "doctors" ? doctors : assistants).length === 0 && (
+									<tr>
+										<td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+											No {tab} found.
+										</td>
+									</tr>
+								)}
+							</tbody>
+						</table>{" "}
+					</div>{" "}
+				</div>
 			)}
 
 			{renderModals()}

@@ -67,7 +67,8 @@ export default function PrescriptionsPage(): React.ReactElement {
 			fetchPrescriptions("/prescriptions");
 			return;
 		}
-		const endpoint = searchType === "patient" ? `/prescriptions/patient/${option.value}` : `/prescriptions/doctor/${option.value}`;
+		const endpoint =
+			searchType === "patient" ? `/prescriptions/patient/${option.value}` : `/prescriptions/doctor/${option.value}`;
 		fetchPrescriptions(endpoint);
 	};
 
@@ -130,7 +131,9 @@ export default function PrescriptionsPage(): React.ReactElement {
 									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Patient</th>
 									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Doctor</th>
 									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Date</th>
-									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase w-28">Medications</th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase w-28">
+										Medications
+									</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-gray-50">
@@ -138,7 +141,10 @@ export default function PrescriptionsPage(): React.ReactElement {
 									const expanded = expandedIds.has(r.id);
 									return (
 										<React.Fragment key={r.id}>
-											<tr className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => toggleExpand(r.id)}>
+											<tr
+												className="hover:bg-gray-50 transition-colors cursor-pointer"
+												onClick={() => toggleExpand(r.id)}
+											>
 												<td className="px-3 py-2 text-gray-400">
 													{expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
 												</td>

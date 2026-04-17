@@ -248,7 +248,10 @@ export default function AdminPage(): React.ReactElement {
 							<div>
 								<label className="form-label">Email</label>
 								<input
-									{...register("email", { required: "Required", pattern: { value: /^\S+@\S+$/i, message: "Invalid email" } })}
+									{...register("email", {
+										required: "Required",
+										pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
+									})}
 									disabled={isEdit}
 									className="form-input w-full disabled:opacity-50"
 								/>

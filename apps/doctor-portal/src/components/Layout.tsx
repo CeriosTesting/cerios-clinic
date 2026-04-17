@@ -127,7 +127,12 @@ export default function Layout(): React.ReactElement {
 						className="absolute left-0 top-0 bottom-0 w-60 bg-brand-navy text-white flex flex-col"
 						onClick={e => e.stopPropagation()}
 					>
-						<SidebarContent isAdmin={isAdmin} displayName={displayName} specialization={specialization} logout={logout} />
+						<SidebarContent
+							isAdmin={isAdmin}
+							displayName={displayName}
+							specialization={specialization}
+							logout={logout}
+						/>
 					</aside>
 				</div>
 			)}

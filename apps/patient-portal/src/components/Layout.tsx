@@ -99,9 +99,7 @@ export default function Layout(): React.ReactElement {
 			</nav>
 
 			{/* Backdrop for mobile menu */}
-			{mobileOpen && (
-				<div className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setMobileOpen(false)} />
-			)}
+			{mobileOpen && <div className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setMobileOpen(false)} />}
 
 			{/* Main content */}
 			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-14">

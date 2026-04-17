@@ -1,8 +1,9 @@
+import "react-datepicker/dist/react-datepicker.css";
+
 import type { Appointment, AppointmentStatusChange } from "@clinic/shared-types";
 import { ALLOWED_TRANSITIONS } from "@clinic/shared-types";
 import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { useForm, Controller } from "react-hook-form";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -176,9 +177,7 @@ export default function EditAppointmentPage(): React.ReactElement | null {
 						{history.map((h, i) => (
 							<div key={i} className="relative">
 								<div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2 border-white bg-brand-primary" />
-								{i < history.length - 1 && (
-									<div className="absolute -left-[18px] top-4 w-0.5 h-full bg-gray-200" />
-								)}
+								{i < history.length - 1 && <div className="absolute -left-[18px] top-4 w-0.5 h-full bg-gray-200" />}
 								<div>
 									<span className={STATUS_BADGE[h.newStatus] ?? "badge-gray"}>
 										{h.previousStatus ? `${h.previousStatus} → ${h.newStatus}` : `Created as ${h.newStatus}`}

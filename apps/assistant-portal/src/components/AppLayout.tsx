@@ -1,14 +1,4 @@
-import {
-	LayoutDashboard,
-	Calendar,
-	Users,
-	User,
-	LogOut,
-	Pill,
-	Star,
-	Menu,
-	X,
-} from "lucide-react";
+import { LayoutDashboard, Calendar, Users, User, LogOut, Pill, Star, Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 
@@ -59,9 +49,7 @@ function SidebarContent({
 						end={item.end}
 						className={({ isActive }) =>
 							`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-								isActive
-									? "bg-brand-primary text-white"
-									: "text-white/70 hover:bg-white/10 hover:text-white"
+								isActive ? "bg-brand-primary text-white" : "text-white/70 hover:bg-white/10 hover:text-white"
 							}`
 						}
 					>

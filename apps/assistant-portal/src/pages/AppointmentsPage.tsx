@@ -91,7 +91,8 @@ export default function AppointmentsPage(): React.ReactElement {
 									return (
 										<tr key={a.id} className="hover:bg-gray-50 transition-colors">
 											<td className="px-3 py-2 text-gray-600">
-												{d.toLocaleDateString("en-NL")} {d.toLocaleTimeString("en-NL", { hour: "2-digit", minute: "2-digit" })}
+												{d.toLocaleDateString("en-NL")}{" "}
+												{d.toLocaleTimeString("en-NL", { hour: "2-digit", minute: "2-digit" })}
 											</td>
 											<td className="px-3 py-2 font-medium text-brand-navy">
 												{a.patient?.user?.firstName} {a.patient?.user?.lastName}
@@ -114,17 +115,16 @@ export default function AppointmentsPage(): React.ReactElement {
 													</button>
 													{a.status !== "CANCELLED" && a.status !== "COMPLETED" && (
 														<>
-															<button
-																className="btn-link-danger"
-																onClick={() => setCancelConfirm(a.id)}
-															>
+															<button className="btn-link-danger" onClick={() => setCancelConfirm(a.id)}>
 																Cancel
 															</button>
 															{cancelConfirm === a.id && (
 																<div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[180px]">
 																	<p className="text-sm text-gray-600 mb-2">Cancel this appointment?</p>
 																	<div className="flex gap-2 justify-end">
-																		<button className="btn-ghost text-xs" onClick={() => setCancelConfirm(null)}>No</button>
+																		<button className="btn-ghost text-xs" onClick={() => setCancelConfirm(null)}>
+																			No
+																		</button>
 																		<button
 																			className="btn-primary text-xs"
 																			onClick={() => {
