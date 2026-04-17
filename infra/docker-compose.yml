@@ -35,6 +35,7 @@ services:
       - "8080:8080"
     volumes:
       - ./keycloak:/opt/keycloak/data/import
+      - ./keycloak/themes:/opt/keycloak/themes
     depends_on:
       postgres:
         condition: service_healthy
@@ -133,7 +134,7 @@ services:
       KEYCLOAK_URL: "http://keycloak:8080"
       KEYCLOAK_PUBLIC_URL: "http://localhost:8080"
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-      KEYCLOAK_STAFF_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+      KEYCLOAK_DOCTOR_CLIENT_ID: ${KEYCLOAK_DOCTOR_CLIENT_ID:-doctor-portal-client}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
       API_DOCTOR_CORS_ORIGINS: "http://localhost:5174"
@@ -166,7 +167,7 @@ services:
       KEYCLOAK_URL: "http://keycloak:8080"
       KEYCLOAK_PUBLIC_URL: "http://localhost:8080"
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-      KEYCLOAK_STAFF_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+      KEYCLOAK_ASSISTANT_CLIENT_ID: ${KEYCLOAK_ASSISTANT_CLIENT_ID:-assistant-portal-client}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
       API_ASSISTANT_CORS_ORIGINS: "http://localhost:5175"
@@ -211,7 +212,7 @@ services:
         VITE_DOCTOR_API_BASE_URL: "http://localhost:3002/api"
         VITE_KEYCLOAK_URL: "http://localhost:8080"
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-        VITE_STAFF_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+        VITE_DOCTOR_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_DOCTOR_CLIENT_ID:-doctor-portal-client}
     ports:
       - "5174:80"
     depends_on:
@@ -229,11 +230,62 @@ services:
         VITE_ASSISTANT_API_BASE_URL: "http://localhost:3003/api"
         VITE_KEYCLOAK_URL: "http://localhost:8080"
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-        VITE_STAFF_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_STAFF_CLIENT_ID:-staff-portal-client}
+        VITE_ASSISTANT_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_ASSISTANT_CLIENT_ID:-assistant-portal-client}
     ports:
       - "5175:80"
     depends_on:
       api-assistant:
+        condition: service_healthy
+
+  api-admin:
+    profiles: [apps]
+    container_name: clinic-api-admin
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.api
+      args:
+        APP_NAME: api-admin
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: "3004"
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
+      KEYCLOAK_URL: "http://keycloak:8080"
+      KEYCLOAK_PUBLIC_URL: "http://localhost:8080"
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+      KEYCLOAK_ADMIN_PORTAL_CLIENT_ID: ${KEYCLOAK_ADMIN_PORTAL_CLIENT_ID:-admin-portal-client}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
+      API_ADMIN_CORS_ORIGINS: "http://localhost:5176"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3004/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  admin-portal:
+    profiles: [apps]
+    container_name: clinic-admin-portal
+    build:
+      context: ../
+      dockerfile: infra/docker/Dockerfile.frontend
+      args:
+        APP_NAME: admin-portal
+        VITE_ADMIN_API_BASE_URL: "http://localhost:3004/api"
+        VITE_KEYCLOAK_URL: "http://localhost:8080"
+        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
+        VITE_ADMIN_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_ADMIN_PORTAL_CLIENT_ID:-admin-portal-client}
+    ports:
+      - "5176:80"
+    depends_on:
+      api-admin:
         condition: service_healthy
 
 volumes:

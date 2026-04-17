@@ -1,0 +1,61 @@
+/* Patient Portal Theme — Emerald */
+
+:root {
+	--pf-global--primary-color--100: #059669;
+	--pf-global--primary-color--200: #047857;
+	--pf-global--link--Color: #059669;
+	--pf-global--link--Color--hover: #047857;
+}
+
+#kc-header {
+	background-color: #064e3b;
+}
+
+#kc-header-wrapper {
+	background-color: #064e3b;
+	color: #ffffff;
+}
+
+#kc-page-title {
+	color: #064e3b;
+}
+
+.btn-primary,
+input[type="submit"].btn-primary,
+.pf-c-button.pf-m-primary {
+	background-color: #059669;
+	border-color: #059669;
+	color: #ffffff;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+input[type="submit"].btn-primary:hover,
+.pf-c-button.pf-m-primary:hover {
+	background-color: #047857;
+	border-color: #047857;
+}
+
+a {
+	color: #059669;
+}
+
+a:hover {
+	color: #047857;
+}
+
+.pf-c-form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	border-color: #059669;
+	outline-color: #059669;
+}
+
+body {
+	background-color: #ecfdf5;
+}
+
+#kc-content {
+	border-top: 4px solid #059669;
+}

@@ -1,0 +1,68 @@
+/* Admin Portal Theme — Violet */
+
+:root {
+	--pf-global--primary-color--100: #7c3aed;
+	--pf-global--primary-color--200: #6d28d9;
+	--pf-global--link--Color: #7c3aed;
+	--pf-global--link--Color--hover: #6d28d9;
+}
+
+/* Header banner */
+#kc-header {
+	background-color: #1e1b4b;
+}
+
+#kc-header-wrapper {
+	background-color: #1e1b4b;
+	color: #ffffff;
+}
+
+/* Login card title area */
+#kc-page-title {
+	color: #1e1b4b;
+}
+
+/* Primary button */
+.btn-primary,
+input[type="submit"].btn-primary,
+.pf-c-button.pf-m-primary {
+	background-color: #7c3aed;
+	border-color: #7c3aed;
+	color: #ffffff;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+input[type="submit"].btn-primary:hover,
+.pf-c-button.pf-m-primary:hover {
+	background-color: #6d28d9;
+	border-color: #6d28d9;
+}
+
+/* Links */
+a {
+	color: #7c3aed;
+}
+
+a:hover {
+	color: #6d28d9;
+}
+
+/* Form focus ring */
+.pf-c-form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	border-color: #7c3aed;
+	outline-color: #7c3aed;
+}
+
+/* Page background */
+body {
+	background-color: #f5f3ff;
+}
+
+/* Card / login box border accent */
+#kc-content {
+	border-top: 4px solid #7c3aed;
+}

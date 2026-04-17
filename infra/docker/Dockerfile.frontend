@@ -13,9 +13,11 @@ COPY packages/api-common/package.json   packages/api-common/
 COPY apps/api-patient/package.json      apps/api-patient/
 COPY apps/api-doctor/package.json       apps/api-doctor/
 COPY apps/api-assistant/package.json    apps/api-assistant/
+COPY apps/api-admin/package.json        apps/api-admin/
 COPY apps/patient-portal/package.json   apps/patient-portal/
 COPY apps/doctor-portal/package.json    apps/doctor-portal/
 COPY apps/assistant-portal/package.json apps/assistant-portal/
+COPY apps/admin-portal/package.json     apps/admin-portal/
 COPY apps/patient-mobile/package.json   apps/patient-mobile/
 
 # Prisma schema is needed by the postinstall hook (prisma generate)
@@ -39,18 +41,24 @@ COPY apps/${APP_NAME}/ apps/${APP_NAME}/
 ARG VITE_KEYCLOAK_URL=http://localhost:8080
 ARG VITE_KEYCLOAK_REALM=clinic
 ARG VITE_PATIENT_KEYCLOAK_CLIENT_ID=patient-portal-client
-ARG VITE_STAFF_KEYCLOAK_CLIENT_ID=staff-portal-client
+ARG VITE_DOCTOR_KEYCLOAK_CLIENT_ID=doctor-portal-client
+ARG VITE_ASSISTANT_KEYCLOAK_CLIENT_ID=assistant-portal-client
+ARG VITE_ADMIN_KEYCLOAK_CLIENT_ID=admin-portal-client
 ARG VITE_PATIENT_API_BASE_URL=http://localhost:3001/api
 ARG VITE_DOCTOR_API_BASE_URL=http://localhost:3002/api
 ARG VITE_ASSISTANT_API_BASE_URL=http://localhost:3003/api
+ARG VITE_ADMIN_API_BASE_URL=http://localhost:3004/api
 
 ENV VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
 ENV VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
 ENV VITE_PATIENT_KEYCLOAK_CLIENT_ID=${VITE_PATIENT_KEYCLOAK_CLIENT_ID}
-ENV VITE_STAFF_KEYCLOAK_CLIENT_ID=${VITE_STAFF_KEYCLOAK_CLIENT_ID}
+ENV VITE_DOCTOR_KEYCLOAK_CLIENT_ID=${VITE_DOCTOR_KEYCLOAK_CLIENT_ID}
+ENV VITE_ASSISTANT_KEYCLOAK_CLIENT_ID=${VITE_ASSISTANT_KEYCLOAK_CLIENT_ID}
+ENV VITE_ADMIN_KEYCLOAK_CLIENT_ID=${VITE_ADMIN_KEYCLOAK_CLIENT_ID}
 ENV VITE_PATIENT_API_BASE_URL=${VITE_PATIENT_API_BASE_URL}
 ENV VITE_DOCTOR_API_BASE_URL=${VITE_DOCTOR_API_BASE_URL}
 ENV VITE_ASSISTANT_API_BASE_URL=${VITE_ASSISTANT_API_BASE_URL}
+ENV VITE_ADMIN_API_BASE_URL=${VITE_ADMIN_API_BASE_URL}
 
 # Build shared-types (devDependency for type-checking) then the frontend.
 # Create empty .env so dotenv-cli in build scripts doesn't fail.

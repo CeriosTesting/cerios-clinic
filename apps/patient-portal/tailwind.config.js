@@ -5,11 +5,11 @@ export default {
 		extend: {
 			colors: {
 				brand: {
-					navy: "#1A2238",
-					orange: "#E85A28",
-					"orange-hover": "#C94A1E",
-					"navy-light": "#243050",
-					"bg-soft": "#F5F7FA",
+					navy: "#064E3B",
+					orange: "#059669",
+					"orange-hover": "#047857",
+					"navy-light": "#065F46",
+					"bg-soft": "#ECFDF5",
 				},
 			},
 			fontFamily: {

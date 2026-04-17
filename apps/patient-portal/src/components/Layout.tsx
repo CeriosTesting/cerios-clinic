@@ -58,12 +58,12 @@ export default function Layout(): React.ReactElement {
 			</nav>
 
 			{/* Main content */}
-			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-14">
 				<Outlet />
 			</main>
 
 			{/* Footer */}
-			<footer className="bg-brand-navy text-white text-center text-sm py-4 mt-12">
+			<footer className="fixed bottom-0 left-0 right-0 z-10 bg-brand-navy text-white text-center text-sm py-4">
 				<p>Clinic Patient Portal &copy; {new Date().getFullYear()}</p>
 			</footer>
 		</div>

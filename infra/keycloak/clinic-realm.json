@@ -2,7 +2,7 @@
 	"realm": "clinic",
 	"enabled": true,
 	"displayName": "Clinic Portal",
-	"registrationAllowed": true,
+	"registrationAllowed": false,
 	"registrationEmailAsUsername": true,
 	"loginWithEmailAllowed": true,
 	"duplicateEmailsAllowed": false,
@@ -37,7 +37,8 @@
 			"redirectUris": ["http://localhost:5173/*"],
 			"webOrigins": ["http://localhost:5173"],
 			"attributes": {
-				"pkce.code.challenge.method": "S256"
+				"pkce.code.challenge.method": "S256",
+				"login_theme": "patient-theme"
 			},
 			"defaultClientScopes": ["openid", "profile", "email", "roles"],
 			"protocolMappers": [
@@ -57,26 +58,87 @@
 			]
 		},
 		{
-			"clientId": "staff-portal-client",
-			"name": "Staff Portals",
+			"clientId": "admin-portal-client",
+			"name": "Admin Portal",
 			"enabled": true,
 			"publicClient": true,
 			"standardFlowEnabled": true,
 			"directAccessGrantsEnabled": false,
-			"redirectUris": ["http://localhost:5174/*", "http://localhost:5175/*"],
-			"webOrigins": ["http://localhost:5174", "http://localhost:5175"],
+			"redirectUris": ["http://localhost:5176/*"],
+			"webOrigins": ["http://localhost:5176"],
 			"attributes": {
-				"pkce.code.challenge.method": "S256"
+				"pkce.code.challenge.method": "S256",
+				"login_theme": "admin-theme"
 			},
 			"defaultClientScopes": ["openid", "profile", "email", "roles"],
 			"protocolMappers": [
 				{
-					"name": "staff-portal-audience",
+					"name": "admin-portal-audience",
 					"protocol": "openid-connect",
 					"protocolMapper": "oidc-audience-mapper",
 					"consentRequired": false,
 					"config": {
-						"included.client.audience": "staff-portal-client",
+						"included.client.audience": "admin-portal-client",
+						"id.token.claim": "false",
+						"lightweight.claim": "false",
+						"access.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"clientId": "doctor-portal-client",
+			"name": "Doctor Portal",
+			"enabled": true,
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"directAccessGrantsEnabled": false,
+			"redirectUris": ["http://localhost:5174/*"],
+			"webOrigins": ["http://localhost:5174"],
+			"attributes": {
+				"pkce.code.challenge.method": "S256",
+				"login_theme": "doctor-theme"
+			},
+			"defaultClientScopes": ["openid", "profile", "email", "roles"],
+			"protocolMappers": [
+				{
+					"name": "doctor-portal-audience",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"consentRequired": false,
+					"config": {
+						"included.client.audience": "doctor-portal-client",
+						"id.token.claim": "false",
+						"lightweight.claim": "false",
+						"access.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"clientId": "assistant-portal-client",
+			"name": "Assistant Portal",
+			"enabled": true,
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"directAccessGrantsEnabled": false,
+			"redirectUris": ["http://localhost:5175/*"],
+			"webOrigins": ["http://localhost:5175"],
+			"attributes": {
+				"pkce.code.challenge.method": "S256",
+				"login_theme": "assistant-theme"
+			},
+			"defaultClientScopes": ["openid", "profile", "email", "roles"],
+			"protocolMappers": [
+				{
+					"name": "assistant-portal-audience",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"consentRequired": false,
+					"config": {
+						"included.client.audience": "assistant-portal-client",
 						"id.token.claim": "false",
 						"lightweight.claim": "false",
 						"access.token.claim": "true",

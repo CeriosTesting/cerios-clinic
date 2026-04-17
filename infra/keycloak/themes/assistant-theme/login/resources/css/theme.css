@@ -1,0 +1,61 @@
+/* Assistant Portal Theme — Cyan */
+
+:root {
+	--pf-global--primary-color--100: #0891b2;
+	--pf-global--primary-color--200: #0e7490;
+	--pf-global--link--Color: #0891b2;
+	--pf-global--link--Color--hover: #0e7490;
+}
+
+#kc-header {
+	background-color: #164e63;
+}
+
+#kc-header-wrapper {
+	background-color: #164e63;
+	color: #ffffff;
+}
+
+#kc-page-title {
+	color: #164e63;
+}
+
+.btn-primary,
+input[type="submit"].btn-primary,
+.pf-c-button.pf-m-primary {
+	background-color: #0891b2;
+	border-color: #0891b2;
+	color: #ffffff;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+input[type="submit"].btn-primary:hover,
+.pf-c-button.pf-m-primary:hover {
+	background-color: #0e7490;
+	border-color: #0e7490;
+}
+
+a {
+	color: #0891b2;
+}
+
+a:hover {
+	color: #0e7490;
+}
+
+.pf-c-form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	border-color: #0891b2;
+	outline-color: #0891b2;
+}
+
+body {
+	background-color: #ecfeff;
+}
+
+#kc-content {
+	border-top: 4px solid #0891b2;
+}

@@ -1,0 +1,61 @@
+/* Doctor Portal Theme — Blue */
+
+:root {
+	--pf-global--primary-color--100: #1d4ed8;
+	--pf-global--primary-color--200: #1e40af;
+	--pf-global--link--Color: #1d4ed8;
+	--pf-global--link--Color--hover: #1e40af;
+}
+
+#kc-header {
+	background-color: #1e3a5f;
+}
+
+#kc-header-wrapper {
+	background-color: #1e3a5f;
+	color: #ffffff;
+}
+
+#kc-page-title {
+	color: #1e3a5f;
+}
+
+.btn-primary,
+input[type="submit"].btn-primary,
+.pf-c-button.pf-m-primary {
+	background-color: #1d4ed8;
+	border-color: #1d4ed8;
+	color: #ffffff;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+input[type="submit"].btn-primary:hover,
+.pf-c-button.pf-m-primary:hover {
+	background-color: #1e40af;
+	border-color: #1e40af;
+}
+
+a {
+	color: #1d4ed8;
+}
+
+a:hover {
+	color: #1e40af;
+}
+
+.pf-c-form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	border-color: #1d4ed8;
+	outline-color: #1d4ed8;
+}
+
+body {
+	background-color: #eff6ff;
+}
+
+#kc-content {
+	border-top: 4px solid #1d4ed8;
+}

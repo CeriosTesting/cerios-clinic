@@ -214,6 +214,10 @@ export class AppointmentsController {
 		}
 
 		// Same-day cancellations are not allowed — the patient must call the clinic
+		// (unless the bug toggle is enabled, making this restriction UI-only)
+		const sameDayBugToggle = await this.prisma.featureToggle
+			.findUnique({ where: { key: "bug:same-day-restriction" } })
+			.catch(() => null);
 		const apptUTCDate = new Date(
 			Date.UTC(
 				appointment.scheduledAt.getUTCFullYear(),
@@ -221,7 +225,7 @@ export class AppointmentsController {
 				appointment.scheduledAt.getUTCDate()
 			)
 		);
-		if (apptUTCDate.getTime() === todayUTC().getTime()) {
+		if (!sameDayBugToggle?.enabled && apptUTCDate.getTime() === todayUTC().getTime()) {
 			throw new BadRequestException("Same-day cancellation is not possible online. Please call the clinic directly.");
 		}
 
@@ -296,6 +300,22 @@ export class AppointmentsController {
 		const reschedulable: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED"];
 		if (!reschedulable.includes(appointment.status as AppointmentStatus)) {
 			throw new BadRequestException(`Cannot reschedule appointment with status ${appointment.status}`);
+		}
+
+		// Same-day rescheduling is not allowed — the patient must call the clinic
+		// (unless the bug toggle is enabled, making this restriction UI-only)
+		const sameDayBugToggle = await this.prisma.featureToggle
+			.findUnique({ where: { key: "bug:same-day-restriction" } })
+			.catch(() => null);
+		const apptUTCDate = new Date(
+			Date.UTC(
+				appointment.scheduledAt.getUTCFullYear(),
+				appointment.scheduledAt.getUTCMonth(),
+				appointment.scheduledAt.getUTCDate()
+			)
+		);
+		if (!sameDayBugToggle?.enabled && apptUTCDate.getTime() === todayUTC().getTime()) {
+			throw new BadRequestException("Same-day rescheduling is not possible online. Please call the clinic directly.");
 		}
 
 		const newScheduledAt = new Date(dto.scheduledAt);

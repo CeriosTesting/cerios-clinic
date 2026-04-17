@@ -262,8 +262,8 @@ function ActionSection({
 
 	return (
 		<div className="mt-6 pt-4 border-t border-gray-100 space-y-3">
-			{/* Reschedule button — always shown when actionable */}
-			{!showConfirm && (
+			{/* Reschedule button — hidden for same-day appointments */}
+			{!showConfirm && !isToday && (
 				<button
 					onClick={onReschedule}
 					className="text-brand-orange border border-brand-orange hover:bg-orange-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -277,7 +277,8 @@ function ActionSection({
 				<div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
 					<span className="text-amber-500 mt-0.5">ℹ</span>
 					<p className="text-sm text-amber-800">
-						Your appointment is today. If you need to cancel, please <strong>call the clinic directly</strong>.
+						Your appointment is today. If you need to cancel or reschedule, please{" "}
+						<strong>call the clinic directly</strong>.
 					</p>
 				</div>
 			) : (

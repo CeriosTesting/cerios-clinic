@@ -24,7 +24,7 @@ export function getApiRuntimeEnv(): ApiRuntimeEnv {
 		nodeEnv: readEnvOrDefault("NODE_ENV", "development"),
 		port: parsePortEnv("PORT", 3002),
 		corsOrigins: parseOriginsEnv("API_DOCTOR_CORS_ORIGINS", "http://localhost:5174"),
-		keycloak: loadKeycloakConfig("KEYCLOAK_STAFF_CLIENT_ID"),
+		keycloak: loadKeycloakConfig("KEYCLOAK_DOCTOR_CLIENT_ID"),
 	};
 
 	return cachedEnv;

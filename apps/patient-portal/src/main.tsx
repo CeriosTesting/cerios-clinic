@@ -10,7 +10,7 @@ void keycloak
 	.init({
 		onLoad: "check-sso",
 		pkceMethod: "S256",
-		silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+		checkLoginIframe: false,
 	})
 	.then(authenticated => {
 		const root = createRoot(document.getElementById("root")!);

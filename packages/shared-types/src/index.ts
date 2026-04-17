@@ -268,3 +268,31 @@ export interface UpdatePrescriptionDto {
 	notes?: string;
 	items?: CreatePrescriptionItemDto[];
 }
+
+// --- Feature Toggles ---
+
+export interface FeatureToggle {
+	id: string;
+	key: string;
+	enabled: boolean;
+	description?: string | null;
+	config?: Record<string, unknown> | null;
+	updatedAt: string;
+	createdAt: string;
+}
+
+export interface UpdateFeatureToggleDto {
+	enabled?: boolean;
+	config?: Record<string, unknown>;
+}
+
+/** Known feature toggle keys */
+export const FEATURE_TOGGLE_KEYS = {
+	API_SLOWDOWN: "bug:api-slowdown",
+	SAME_DAY_RESTRICTION: "bug:same-day-restriction",
+} as const;
+
+export interface ApiSlowdownConfig {
+	minDelayMs: number;
+	maxDelayMs: number;
+}

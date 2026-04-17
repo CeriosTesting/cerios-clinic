@@ -53,7 +53,7 @@ const tabScreenOptions = ({ route }: { route: { name: string } }): BottomTabNavi
 			{TAB_ICONS[route.name]}
 		</Text>
 	),
-	tabBarActiveTintColor: "#E85A28",
+	tabBarActiveTintColor: "#059669",
 	tabBarInactiveTintColor: "#9CA3AF",
 	headerShown: false,
 });

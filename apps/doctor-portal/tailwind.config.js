@@ -4,10 +4,10 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				"brand-navy": "#1A2238",
-				"brand-orange": "#E85A28",
-				"brand-orange-hover": "#C94A1E",
-				"brand-bg": "#F5F7FA",
+				"brand-navy": "#1E3A5F",
+				"brand-orange": "#1D4ED8",
+				"brand-orange-hover": "#1E40AF",
+				"brand-bg": "#EFF6FF",
 			},
 		},
 	},

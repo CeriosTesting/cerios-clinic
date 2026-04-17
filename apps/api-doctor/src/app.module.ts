@@ -1,5 +1,5 @@
-import { EventsModule, MailModule } from "@clinic/api-common";
-import { Module } from "@nestjs/common";
+import { EventsModule, MailModule, SlowdownMiddleware } from "@clinic/api-common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 
@@ -34,4 +34,8 @@ import { ReviewsModule } from "./reviews/reviews.module";
 	],
 	providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+	configure(consumer: MiddlewareConsumer): void {
+		consumer.apply(SlowdownMiddleware).forRoutes("*");
+	}
+}

@@ -28,19 +28,19 @@ export default function App(): React.ReactElement {
 			theme={{
 				algorithm: theme.defaultAlgorithm,
 				token: {
-					colorPrimary: "#E85A28",
-					colorLink: "#E85A28",
+					colorPrimary: "#0891B2",
+					colorLink: "#0891B2",
 					borderRadius: 8,
 					fontFamily: "Inter, system-ui, sans-serif",
 				},
 				components: {
 					Layout: {
-						siderBg: "#1A2238",
-						triggerBg: "#131929",
+						siderBg: "#164E63",
+						triggerBg: "#0C3B4E",
 					},
 					Menu: {
-						darkItemBg: "#1A2238",
-						darkItemSelectedBg: "#E85A28",
+						darkItemBg: "#164E63",
+						darkItemSelectedBg: "#0891B2",
 						darkItemHoverBg: "rgba(255,255,255,0.08)",
 					},
 				},

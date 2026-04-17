@@ -52,18 +52,6 @@ git clone <repository-url> clinic
 cd clinic
 ```
 
-**On Windows PowerShell:**
-
-```powershell
-Copy-Item .env.example .env
-```
-
-**On Mac/Linux:**
-
-```bash
-cp .env.example .env
-```
-
 Then start everything:
 
 ```bash
@@ -182,6 +170,20 @@ docker compose -f infra/docker-compose.yml --profile apps down -v
 docker compose -f infra/docker-compose.yml --profile apps up -d --build
 ```
 
+### After updating Keycloak realm configuration
+
+Keycloak only imports `clinic-realm.json` when the realm does **not yet exist** in the database. If you pull changes that modify the realm (e.g. new clients, updated themes, changed redirect URIs), a normal `docker:up` will **not** apply them. You need to wipe Keycloak's stored data first:
+
+```bash
+# Stop all containers and delete the postgres volume (wipes Keycloak realm + all app data)
+docker compose -f infra/docker-compose.yml --profile apps down -v
+
+# Rebuild and start — realm is re-imported from clinic-realm.json, db-init re-seeds test data
+docker compose -f infra/docker-compose.yml --profile apps up -d --build
+```
+
+> This is required any time `infra/keycloak/clinic-realm.json` changes — for example when Keycloak clients are added, renamed, or have their login theme updated.
+
 ---
 
 ## Troubleshooting
@@ -240,7 +242,8 @@ clinic-monorepo/
 │   │   └── clinic-realm.json
 │   └── postgres/
 │       └── init.sql
-├── .env.example          # Copy this to .env
+├── .env                  # Environment variables
+├── .env.example
 └── package.json          # Root scripts
 ```
 

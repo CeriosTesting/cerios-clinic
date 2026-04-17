@@ -199,3 +199,15 @@ model PrescriptionItem {
   @@index([prescriptionId])
   @@map("prescription_items")
 }
+
+model FeatureToggle {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  enabled     Boolean  @default(false)
+  description String?
+  config      Json?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("feature_toggles")
+}

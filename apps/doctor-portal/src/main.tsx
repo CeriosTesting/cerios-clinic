@@ -9,8 +9,8 @@ import keycloak from "./keycloak";
 void keycloak
 	.init({
 		onLoad: "check-sso",
-		silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
 		pkceMethod: "S256",
+		checkLoginIframe: false,
 	})
 	.then(authenticated => {
 		const root = createRoot(document.getElementById("root")!);

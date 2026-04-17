@@ -11,4 +11,5 @@ export type {
 	DoctorUnavailability,
 	Prescription,
 	PrescriptionItem,
+	FeatureToggle,
 } from "@prisma/client";
