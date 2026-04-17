@@ -218,6 +218,5 @@
 			],
 			"realmRoles": ["admin", "doctor"]
 		}
-	],
-	"defaultRoles": ["patient"]
+	]
 }
