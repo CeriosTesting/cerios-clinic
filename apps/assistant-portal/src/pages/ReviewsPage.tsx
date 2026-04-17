@@ -1,9 +1,8 @@
-import { Card, Rate, Select, Spin, Table, Typography } from "antd";
+import { Star } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 
 import api from "../api";
-
-const { Title, Text } = Typography;
 
 interface SelectOption {
 	value: string;
@@ -25,6 +24,16 @@ interface ReviewStats {
 	totalReviews: number;
 }
 
+function Stars({ value, max = 5 }: { value: number; max?: number }): React.ReactElement {
+	return (
+		<span className="inline-flex gap-0.5">
+			{Array.from({ length: max }, (_, i) => (
+				<Star key={i} size={14} className={i < value ? "fill-yellow-400 text-yellow-400" : "text-gray-200"} />
+			))}
+		</span>
+	);
+}
+
 export default function ReviewsPage(): React.ReactElement {
 	const [reviews, setReviews] = useState<ReviewData[]>([]);
 	const [stats, setStats] = useState<ReviewStats | null>(null);
@@ -32,7 +41,7 @@ export default function ReviewsPage(): React.ReactElement {
 	const [searchType, setSearchType] = useState<"doctor" | "patient">("doctor");
 	const [patients, setPatients] = useState<SelectOption[]>([]);
 	const [doctors, setDoctors] = useState<SelectOption[]>([]);
-	const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+	const [selectedId, setSelectedId] = useState<SelectOption | null>(null);
 
 	const fetchReviews = (endpoint: string): void => {
 		setLoading(true);
@@ -65,125 +74,112 @@ export default function ReviewsPage(): React.ReactElement {
 			);
 	}, []);
 
-	const handleSelect = (value: string | undefined): void => {
-		setSelectedId(value);
-		if (!value) {
+	const handleSelect = (option: SelectOption | null): void => {
+		setSelectedId(option);
+		if (!option) {
 			fetchReviews("/reviews");
 			return;
 		}
-		const endpoint = `/reviews/${searchType}/${value}`;
+		const endpoint = `/reviews/${searchType}/${option.value}`;
 		fetchReviews(endpoint);
 	};
 
 	const handleTypeChange = (type: "doctor" | "patient"): void => {
 		setSearchType(type);
-		setSelectedId(undefined);
+		setSelectedId(null);
 		fetchReviews("/reviews");
 	};
 
-	const columns = [
-		{
-			title: "Patient",
-			key: "patient",
-			render: (_: unknown, r: ReviewData) =>
-				r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : "—",
-		},
-		{
-			title: "Rating",
-			key: "rating",
-			render: (_: unknown, r: ReviewData) => <Rate disabled value={r.rating} style={{ fontSize: 14 }} />,
-		},
-		{
-			title: "Comment",
-			dataIndex: "comment",
-			key: "comment",
-			render: (v: string | null) => v ?? <Text type="secondary">—</Text>,
-		},
-		{
-			title: "Date",
-			key: "date",
-			render: (_: unknown, r: ReviewData) =>
-				new Date(r.appointment?.scheduledAt ?? r.createdAt).toLocaleDateString("en-NL", {
-					year: "numeric",
-					month: "short",
-					day: "numeric",
-				}),
-		},
-	];
-
 	return (
 		<div>
-			<Title level={3}>Reviews</Title>
+			<h1 className="text-2xl font-bold text-brand-navy mb-4">Reviews</h1>
 
-			<Card style={{ marginBottom: 16 }}>
-				<div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+			<div className="card mb-4">
+				<div className="flex gap-2 mb-4">
 					<button
 						type="button"
+						className={searchType === "doctor" ? "btn-primary text-sm" : "btn-outline text-sm"}
 						onClick={() => handleTypeChange("doctor")}
-						style={{
-							padding: "4px 12px",
-							borderRadius: 6,
-							border: "1px solid #d9d9d9",
-							background: searchType === "doctor" ? "#E85A28" : "#fff",
-							color: searchType === "doctor" ? "#fff" : "#333",
-							cursor: "pointer",
-						}}
 					>
 						By Doctor
 					</button>
 					<button
 						type="button"
+						className={searchType === "patient" ? "btn-primary text-sm" : "btn-outline text-sm"}
 						onClick={() => handleTypeChange("patient")}
-						style={{
-							padding: "4px 12px",
-							borderRadius: 6,
-							border: "1px solid #d9d9d9",
-							background: searchType === "patient" ? "#E85A28" : "#fff",
-							color: searchType === "patient" ? "#fff" : "#333",
-							cursor: "pointer",
-						}}
 					>
 						By Patient
 					</button>
 				</div>
 				<Select
-					showSearch
-					allowClear
+					isClearable
+					isSearchable
 					placeholder={`Select a ${searchType}...`}
 					value={selectedId}
 					onChange={handleSelect}
 					options={searchType === "doctor" ? doctors : patients}
-					filterOption={(input, option) => (option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
-					style={{ width: "100%" }}
-					size="large"
+					classNamePrefix="react-select"
 				/>
-			</Card>
+			</div>
 
 			{stats && (
-				<div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-					<Card style={{ flex: 1, textAlign: "center" }}>
-						<Title level={2} style={{ margin: 0 }}>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+					<div className="card text-center">
+						<p className="text-3xl font-bold text-brand-navy">
 							{stats.averageRating ? stats.averageRating.toFixed(1) : "—"}
-						</Title>
-						<Text type="secondary">Average rating</Text>
+						</p>
+						<p className="text-xs text-gray-400 mt-1">Average rating</p>
 						{stats.averageRating > 0 && (
-							<div>
-								<Rate disabled value={Math.round(stats.averageRating)} style={{ fontSize: 16 }} />
+							<div className="mt-1 flex justify-center">
+								<Stars value={Math.round(stats.averageRating)} />
 							</div>
 						)}
-					</Card>
-					<Card style={{ flex: 1, textAlign: "center" }}>
-						<Title level={2} style={{ margin: 0 }}>
-							{stats.totalReviews}
-						</Title>
-						<Text type="secondary">Total reviews</Text>
-					</Card>
+					</div>
+					<div className="card text-center">
+						<p className="text-3xl font-bold text-brand-navy">{stats.totalReviews}</p>
+						<p className="text-xs text-gray-400 mt-1">Total reviews</p>
+					</div>
 				</div>
 			)}
 
-			<Spin spinning={loading}>
-				<Table dataSource={reviews} columns={columns} rowKey="id" locale={{ emptyText: "No reviews found" }} />
-			</Spin>
+			<div className="card">
+				{loading && <p className="text-gray-400 text-sm">Loading...</p>}
+				{!loading && reviews.length === 0 && <p className="text-gray-400 text-sm">No reviews found.</p>}
+				{!loading && reviews.length > 0 && (
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm min-w-[500px]">
+							<thead className="border-b border-gray-100">
+								<tr>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Patient</th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase w-32">Rating</th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Comment</th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase w-28">Date</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y divide-gray-50">
+								{reviews.map(r => (
+									<tr key={r.id} className="hover:bg-gray-50 transition-colors">
+										<td className="px-3 py-2 font-medium text-brand-navy">
+											{r.patient?.user ? `${r.patient.user.firstName} ${r.patient.user.lastName}` : "—"}
+										</td>
+										<td className="px-3 py-2">
+											<Stars value={r.rating} />
+										</td>
+										<td className="px-3 py-2 text-gray-600">{r.comment ?? <span className="text-gray-300">—</span>}</td>
+										<td className="px-3 py-2 text-gray-500">
+											{new Date(r.appointment?.scheduledAt ?? r.createdAt).toLocaleDateString("en-NL", {
+												year: "numeric",
+												month: "short",
+												day: "numeric",
+											})}
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

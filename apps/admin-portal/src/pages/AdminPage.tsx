@@ -175,7 +175,7 @@ export default function AdminPage(): React.ReactElement {
 						}}
 						className="space-y-4"
 					>
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<Field
 								label="First name"
 								value={doctorForm.firstName}
@@ -238,7 +238,7 @@ export default function AdminPage(): React.ReactElement {
 						}}
 						className="space-y-4"
 					>
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<Field
 								label="First name"
 								value={assistantForm.firstName}
@@ -346,7 +346,8 @@ export default function AdminPage(): React.ReactElement {
 
 			{!loading && (
 				<div className="card overflow-hidden p-0">
-					<table className="w-full text-sm">
+					<div className="overflow-x-auto">
+					<table className="w-full text-sm min-w-[500px]">
 						<thead className="bg-gray-50 border-b border-gray-100">
 							<tr>
 								<th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Name</th>
@@ -393,8 +394,7 @@ export default function AdminPage(): React.ReactElement {
 								</tr>
 							)}
 						</tbody>
-					</table>
-				</div>
+					</table>					</div>				</div>
 			)}
 
 			{renderModals()}

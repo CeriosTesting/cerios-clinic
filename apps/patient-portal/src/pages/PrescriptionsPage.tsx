@@ -68,7 +68,7 @@ export default function PrescriptionsPage(): React.ReactElement {
 										{p.items.map((item, idx) => (
 											<div key={item.id ?? idx} className="bg-gray-50 rounded-lg p-3">
 												<p className="font-medium text-brand-navy text-sm">{item.medicationName}</p>
-												<div className="grid grid-cols-3 gap-2 mt-1 text-xs text-gray-500">
+												<div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1 text-xs text-gray-500">
 													<span>Dosage: {item.dosage}</span>
 													<span>Frequency: {item.frequency}</span>
 													<span>Duration: {item.duration}</span>

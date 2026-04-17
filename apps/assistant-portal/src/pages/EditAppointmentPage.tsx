@@ -1,25 +1,33 @@
 import type { Appointment, AppointmentStatusChange } from "@clinic/shared-types";
 import { ALLOWED_TRANSITIONS } from "@clinic/shared-types";
-import { Button, Card, DatePicker, Form, Input, Select, Typography, message, Timeline, Tag } from "antd";
-import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { useForm, Controller } from "react-hook-form";
+import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api from "../api";
 
-const { Title, Text } = Typography;
-
-const STATUS_COLOR: Record<string, string> = {
-	SCHEDULED: "blue",
-	CONFIRMED: "green",
-	COMPLETED: "default",
-	CANCELLED: "red",
+const STATUS_BADGE: Record<string, string> = {
+	SCHEDULED: "badge-blue",
+	CONFIRMED: "badge-green",
+	COMPLETED: "badge-gray",
+	CANCELLED: "badge-red",
 };
+
+interface FormValues {
+	status: string;
+	scheduledAt: Date | null;
+	notes: string;
+}
 
 export default function EditAppointmentPage(): React.ReactElement | null {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
-	const [form] = Form.useForm();
+	const { control, register, handleSubmit, reset } = useForm<FormValues>({
+		defaultValues: { status: "", scheduledAt: null, notes: "" },
+	});
 	const [appointment, setAppointment] = useState<Appointment | null>(null);
 	const [history, setHistory] = useState<
 		(AppointmentStatusChange & { changedByName?: string | null; changedByRole?: string | null })[]
@@ -35,29 +43,29 @@ export default function EditAppointmentPage(): React.ReactElement | null {
 			.then(([apptRes, histRes]) => {
 				const a = apptRes.data.data;
 				setAppointment(a);
-				form.setFieldsValue({
+				reset({
 					status: a.status,
-					scheduledAt: dayjs(a.scheduledAt),
+					scheduledAt: new Date(a.scheduledAt),
 					notes: a.notes ?? "",
 				});
 				setHistory(histRes.data.data);
 			})
 			.catch(() => {})
 			.finally(() => setLoading(false));
-	}, [id]);
+	}, [id, reset]);
 
-	const onFinish = async (values: Record<string, unknown>): Promise<void> => {
+	const onSubmit = async (values: FormValues): Promise<void> => {
 		setSubmitting(true);
 		try {
 			await api.put(`/appointments/${id}`, {
 				status: values.status,
-				scheduledAt: (values.scheduledAt as { toISOString: () => string }).toISOString(),
+				scheduledAt: values.scheduledAt!.toISOString(),
 				notes: values.notes ?? "",
 			});
-			message.success("Appointment updated.");
+			toast.success("Appointment updated.");
 			void navigate("/appointments");
 		} catch (err: unknown) {
-			message.error(
+			toast.error(
 				(err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
 					"Could not update appointment."
 			);
@@ -66,104 +74,126 @@ export default function EditAppointmentPage(): React.ReactElement | null {
 		}
 	};
 
-	if (loading) return <div style={{ padding: 32, textAlign: "center", color: "#999" }}>Loading...</div>;
-	if (!appointment) return <div style={{ padding: 32, textAlign: "center", color: "red" }}>Appointment not found.</div>;
+	if (loading) return <div className="text-center py-8 text-gray-400">Loading...</div>;
+	if (!appointment) return <div className="text-center py-8 text-red-500">Appointment not found.</div>;
 
 	const patient = appointment.patient?.user;
 	const doctor = appointment.doctor?.user;
 	const allowedNextStatuses = ALLOWED_TRANSITIONS[appointment.status] ?? [];
 	const isTerminal = allowedNextStatuses.length === 0;
 
-	const timelineItems = history.map(h => ({
-		color: STATUS_COLOR[h.newStatus] ?? "gray",
-		children: (
-			<div>
-				<Tag color={STATUS_COLOR[h.newStatus]}>
-					{h.previousStatus ? `${h.previousStatus} → ${h.newStatus}` : `Created as ${h.newStatus}`}
-				</Tag>
-				<br />
-				<Text type="secondary" style={{ fontSize: 12 }}>
-					{new Date(h.changedAt).toLocaleString("en-NL")}
-					{h.changedByName ? ` · ${h.changedByName}` : ""}
-					{h.changedByRole ? ` (${h.changedByRole})` : ""}
-				</Text>
-			</div>
-		),
-	}));
-
 	return (
-		<div style={{ maxWidth: 560 }}>
-			<Button
-				type="link"
-				style={{ paddingLeft: 0, color: "#E85A28" }}
+		<div className="max-w-lg">
+			<button
+				className="btn-link text-brand-accent pl-0"
 				onClick={() => {
 					void navigate("/appointments");
 				}}
 			>
 				← Back
-			</Button>
-			<Title level={3} style={{ color: "#1A2238", marginTop: 8 }}>
-				Edit appointment
-			</Title>
+			</button>
+			<h1 className="text-2xl font-bold text-brand-navy mt-2 mb-4">Edit appointment</h1>
 
-			<Card style={{ marginBottom: 16 }}>
-				<p style={{ margin: 0, color: "#666", fontSize: 14 }}>
+			<div className="card mb-4">
+				<p className="text-sm text-gray-600">
 					<strong>Patient:</strong> {patient?.firstName} {patient?.lastName}
 				</p>
-				<p style={{ margin: "4px 0 0", color: "#666", fontSize: 14 }}>
+				<p className="text-sm text-gray-600 mt-1">
 					<strong>Doctor:</strong> Dr. {doctor?.firstName} {doctor?.lastName}
 				</p>
-			</Card>
+			</div>
 
-			<Card style={{ marginBottom: 16 }}>
-				<Form
-					form={form}
-					layout="vertical"
-					onFinish={values => {
-						void onFinish(values as Record<string, unknown>);
+			<div className="card mb-4">
+				<form
+					onSubmit={e => {
+						void handleSubmit(onSubmit)(e);
 					}}
+					className="space-y-4"
 				>
-					<Form.Item name="status" label="Status" rules={[{ required: true }]}>
-						<Select
-							disabled={isTerminal}
-							options={[
-								{ value: appointment.status, label: `${appointment.status} (current)` },
-								...allowedNextStatuses.map(s => ({ value: s, label: s })),
-							]}
+					<div>
+						<label className="form-label">Status</label>
+						<Controller
+							name="status"
+							control={control}
+							rules={{ required: true }}
+							render={({ field }) => (
+								<select {...field} disabled={isTerminal} className="form-input w-full">
+									<option value={appointment.status}>{appointment.status} (current)</option>
+									{allowedNextStatuses.map(s => (
+										<option key={s} value={s}>
+											{s}
+										</option>
+									))}
+								</select>
+							)}
 						/>
-					</Form.Item>
-					{isTerminal && (
-						<p style={{ color: "#999", fontSize: 13, marginTop: -12, marginBottom: 16 }}>
-							This appointment is in a terminal state and cannot be changed.
-						</p>
-					)}
+						{isTerminal && (
+							<p className="text-gray-400 text-xs mt-1">
+								This appointment is in a terminal state and cannot be changed.
+							</p>
+						)}
+					</div>
 
-					<Form.Item
-						name="scheduledAt"
-						label="Date & Time"
-						rules={[{ required: true, message: "Pick a date and time" }]}
-					>
-						<DatePicker showTime format="DD/MM/YYYY HH:mm" style={{ width: "100%" }} />
-					</Form.Item>
+					<div>
+						<label className="form-label">Date & Time</label>
+						<Controller
+							name="scheduledAt"
+							control={control}
+							rules={{ required: "Pick a date and time" }}
+							render={({ field }) => (
+								<DatePicker
+									selected={field.value}
+									onChange={field.onChange}
+									showTimeSelect
+									dateFormat="dd/MM/yyyy HH:mm"
+									timeFormat="HH:mm"
+									placeholderText="Select date and time"
+									className="form-input w-full"
+								/>
+							)}
+						/>
+					</div>
 
-					<Form.Item name="notes" label="Notes">
-						<Input.TextArea rows={3} />
-					</Form.Item>
+					<div>
+						<label className="form-label">Notes</label>
+						<textarea {...register("notes")} rows={3} className="form-input w-full" />
+					</div>
 
 					{!isTerminal && (
-						<Form.Item style={{ marginBottom: 0 }}>
-							<Button type="primary" htmlType="submit" loading={submitting} block>
-								Save changes
-							</Button>
-						</Form.Item>
+						<button type="submit" className="btn-primary w-full" disabled={submitting}>
+							{submitting ? "Saving..." : "Save changes"}
+						</button>
 					)}
-				</Form>
-			</Card>
+				</form>
+			</div>
 
-			{/* Status History */}
-			<Card title="Status History">
-				{history.length === 0 ? <Text type="secondary">No history recorded.</Text> : <Timeline items={timelineItems} />}
-			</Card>
+			<div className="card">
+				<h2 className="text-base font-semibold text-brand-navy mb-3">Status History</h2>
+				{history.length === 0 ? (
+					<p className="text-gray-400 text-sm">No history recorded.</p>
+				) : (
+					<div className="relative pl-6 space-y-4">
+						{history.map((h, i) => (
+							<div key={i} className="relative">
+								<div className="absolute -left-6 top-1 w-3 h-3 rounded-full border-2 border-white bg-brand-primary" />
+								{i < history.length - 1 && (
+									<div className="absolute -left-[18px] top-4 w-0.5 h-full bg-gray-200" />
+								)}
+								<div>
+									<span className={STATUS_BADGE[h.newStatus] ?? "badge-gray"}>
+										{h.previousStatus ? `${h.previousStatus} → ${h.newStatus}` : `Created as ${h.newStatus}`}
+									</span>
+									<p className="text-xs text-gray-400 mt-1">
+										{new Date(h.changedAt).toLocaleString("en-NL")}
+										{h.changedByName ? ` · ${h.changedByName}` : ""}
+										{h.changedByRole ? ` (${h.changedByRole})` : ""}
+									</p>
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

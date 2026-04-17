@@ -1,12 +1,7 @@
-import { Button, Card, Input, Table, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../api";
-
-const { Title } = Typography;
-const { Search } = Input;
 
 interface PatientRow {
 	id: string;
@@ -42,95 +37,83 @@ export default function PatientsPage(): React.ReactElement {
 		search("");
 	}, [search]);
 
-	const columns: ColumnsType<PatientRow> = [
-		{
-			title: "",
-			key: "photo",
-			width: 56,
-			render: (_, p) => (
-				<img
-					src={p.photo ?? "/placeholder-avatar.svg"}
-					alt=""
-					style={{
-						width: 36,
-						height: 48,
-						objectFit: "cover",
-						borderRadius: 4,
-						border: "1px solid #E8EDF2",
-						display: "block",
-					}}
-				/>
-			),
-		},
-		{
-			title: "Name",
-			key: "name",
-			render: (_, p) => `${p.user.firstName} ${p.user.lastName}`,
-			sorter: (a, b) => a.user.lastName.localeCompare(b.user.lastName),
-			defaultSortOrder: "ascend",
-		},
-		{
-			title: "Email",
-			key: "email",
-			render: (_, p) => p.user.email,
-		},
-		{
-			title: "Phone",
-			key: "phone",
-			render: (_, p) => p.phone ?? "—",
-		},
-		{
-			title: "",
-			key: "action",
-			render: (_, p) => (
-				<Button
-					type="link"
-					size="small"
-					style={{ color: "#E85A28" }}
-					onClick={() => {
-						void navigate(`/patients/${p.userId}`);
-					}}
-				>
-					View
-				</Button>
-			),
-		},
-	];
+	const handleSearch = (e: React.FormEvent<HTMLFormElement>): void => {
+		e.preventDefault();
+		search(query);
+	};
 
 	return (
 		<div>
-			<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-				<Title level={3} style={{ color: "#1A2238", margin: 0 }}>
-					Patients
-				</Title>
+			<h1 className="text-2xl font-bold text-brand-navy mb-4">Patients</h1>
+
+			<div className="card">
+				<form onSubmit={handleSearch} className="flex gap-2 mb-4 max-w-sm">
+					<input
+						id="patients-search"
+						type="text"
+						placeholder="Search by name or email"
+						className="form-input flex-1"
+						value={query}
+						onChange={e => setQuery(e.target.value)}
+					/>
+					<button type="submit" className="btn-primary">
+						Search
+					</button>
+				</form>
+
+				{loading && <p className="text-gray-400 text-sm">Loading...</p>}
+				{!loading && patients.length === 0 && <p className="text-gray-400 text-sm">No patients found.</p>}
+				{!loading && patients.length > 0 && (
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm min-w-[500px]">
+							<thead className="border-b border-gray-100">
+								<tr>
+									<th className="w-14 px-3 py-2"></th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Name</th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Email</th>
+									<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Phone</th>
+									<th className="px-3 py-2 w-16"></th>
+								</tr>
+							</thead>
+							<tbody className="divide-y divide-gray-50">
+								{patients.map(p => (
+									<tr
+										key={p.id}
+										className="hover:bg-gray-50 transition-colors cursor-pointer"
+										onClick={() => {
+											void navigate(`/patients/${p.userId}`);
+										}}
+									>
+										<td className="px-3 py-2">
+											<img
+												src={p.photo ?? "/placeholder-avatar.svg"}
+												alt=""
+												className="w-9 h-12 object-cover rounded border border-gray-200 block"
+											/>
+										</td>
+										<td className="px-3 py-2 font-medium text-brand-navy">
+											{p.user.firstName} {p.user.lastName}
+										</td>
+										<td className="px-3 py-2 text-gray-600">{p.user.email}</td>
+										<td className="px-3 py-2 text-gray-500">{p.phone ?? "—"}</td>
+										<td className="px-3 py-2">
+											<button
+												className="btn-link text-brand-accent"
+												onClick={e => {
+													e.stopPropagation();
+													void navigate(`/patients/${p.userId}`);
+												}}
+											>
+												View
+											</button>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
 			</div>
-			<Card>
-				<Search
-					id="patients-search"
-					placeholder="Search by name or email"
-					allowClear
-					value={query}
-					style={{ maxWidth: 360, marginBottom: 16 }}
-					onSearch={search}
-					onChange={e => {
-						if (!e.target.value) search("");
-						else setQuery(e.target.value);
-					}}
-				/>
-				<Table
-					dataSource={patients}
-					columns={columns}
-					rowKey="id"
-					loading={loading}
-					pagination={{ pageSize: 20, showSizeChanger: false }}
-					onRow={(p): React.HTMLAttributes<HTMLElement> => ({
-						onClick: (): void => {
-							void navigate(`/patients/${p.userId}`);
-						},
-						style: { cursor: "pointer" },
-					})}
-				/>
-			</Card>
 		</div>
 	);
 }

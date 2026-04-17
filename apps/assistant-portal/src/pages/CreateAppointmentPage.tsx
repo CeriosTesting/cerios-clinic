@@ -1,11 +1,12 @@
-import { Button, Card, DatePicker, Form, Input, Select, Typography, message } from "antd";
-import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { useForm, Controller } from "react-hook-form";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 import api from "../api";
-
-const { Title } = Typography;
 
 interface PatientOption {
 	id: string;
@@ -19,23 +20,34 @@ interface DoctorOption {
 	specialization: string;
 }
 
+interface FormValues {
+	patientId: { value: string; label: string } | null;
+	doctorId: { value: string; label: string } | null;
+	scheduledAt: Date | null;
+	notes: string;
+}
+
 export default function CreateAppointmentPage(): React.ReactElement {
 	const navigate = useNavigate();
-	const [form] = Form.useForm();
+	const {
+		control,
+		register,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<FormValues>({
+		defaultValues: { patientId: null, doctorId: null, scheduledAt: null, notes: "" },
+	});
 	const [doctors, setDoctors] = useState<DoctorOption[]>([]);
-	const [doctorsLoading, setDoctorsLoading] = useState(false);
 	const [patients, setPatients] = useState<PatientOption[]>([]);
 	const [searchQ, setSearchQ] = useState("");
 	const [searching, setSearching] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 
 	useEffect(() => {
-		setDoctorsLoading(true);
 		void api
 			.get<{ data: DoctorOption[] }>("/patients/doctors")
 			.then(r => setDoctors(r.data.data))
-			.catch(() => message.error("Failed to load doctors. Please refresh."))
-			.finally(() => setDoctorsLoading(false));
+			.catch(() => toast.error("Failed to load doctors. Please refresh."));
 	}, []);
 
 	const searchPatients = async (q: string): Promise<void> => {
@@ -53,100 +65,128 @@ export default function CreateAppointmentPage(): React.ReactElement {
 		}
 	};
 
-	const onFinish = async (values: Record<string, unknown>): Promise<void> => {
+	const onSubmit = async (values: FormValues): Promise<void> => {
 		setSubmitting(true);
 		try {
 			await api.post("/appointments", {
-				patientId: values.patientId,
-				doctorId: values.doctorId,
-				scheduledAt: (values.scheduledAt as { toISOString: () => string }).toISOString(),
+				patientId: values.patientId!.value,
+				doctorId: values.doctorId!.value,
+				scheduledAt: values.scheduledAt!.toISOString(),
 				notes: values.notes ?? "",
 			});
-			message.success("Appointment created!");
+			toast.success("Appointment created!");
 			void navigate("/appointments");
 		} catch {
-			message.error("Could not create appointment.");
+			toast.error("Could not create appointment.");
 		} finally {
 			setSubmitting(false);
 		}
 	};
 
+	const patientOptions = patients.map(p => ({
+		value: p.id,
+		label: `${p.user.firstName} ${p.user.lastName} — ${p.user.email}`,
+	}));
+
+	const doctorOptions = doctors.map(d => ({
+		value: d.id,
+		label: `Dr. ${d.user.firstName} ${d.user.lastName} — ${d.specialization}`,
+	}));
+
 	return (
-		<div style={{ maxWidth: 560 }}>
-			<Button
-				type="link"
-				style={{ paddingLeft: 0, color: "#E85A28" }}
+		<div className="max-w-lg">
+			<button
+				className="btn-link text-brand-accent pl-0"
 				onClick={() => {
 					void navigate("/appointments");
 				}}
 			>
 				← Back
-			</Button>
-			<Title level={3} style={{ color: "#1A2238", marginTop: 8 }}>
-				New appointment
-			</Title>
+			</button>
+			<h1 className="text-2xl font-bold text-brand-navy mt-2 mb-4">New appointment</h1>
 
-			<Card>
-				<Form
-					form={form}
-					layout="vertical"
-					onFinish={values => {
-						void onFinish(values as Record<string, unknown>);
+			<div className="card">
+				<form
+					onSubmit={e => {
+						void handleSubmit(onSubmit)(e);
 					}}
+					className="space-y-4"
 				>
-					<Form.Item name="patientId" label="Patient" rules={[{ required: true, message: "Select a patient" }]}>
-						<Select
-							showSearch={{
-								filterOption: false,
-								onSearch: (q: string) => {
-									void searchPatients(q);
-								},
-							}}
-							loading={searching}
-							placeholder="Search by name or email"
-							notFoundContent={searchQ.length < 2 ? "Type at least 2 characters" : "No patients found"}
-							options={patients.map(p => ({
-								value: p.id,
-								label: `${p.user.firstName} ${p.user.lastName} — ${p.user.email}`,
-							}))}
+					<div>
+						<label className="form-label">Patient</label>
+						<Controller
+							name="patientId"
+							control={control}
+							rules={{ required: "Select a patient" }}
+							render={({ field }) => (
+								<Select
+									{...field}
+									isSearchable
+									isLoading={searching}
+									placeholder="Search by name or email"
+									noOptionsMessage={() => (searchQ.length < 2 ? "Type at least 2 characters" : "No patients found")}
+									options={patientOptions}
+									onInputChange={q => {
+										void searchPatients(q);
+									}}
+									classNamePrefix="react-select"
+								/>
+							)}
 						/>
-					</Form.Item>
+						{errors.patientId && <p className="text-red-500 text-xs mt-1">{errors.patientId.message}</p>}
+					</div>
 
-					<Form.Item name="doctorId" label="Doctor" rules={[{ required: true, message: "Select a doctor" }]}>
-						<Select
-							placeholder="Select doctor"
-							loading={doctorsLoading}
-							options={doctors.map(d => ({
-								value: d.id,
-								label: `Dr. ${d.user.firstName} ${d.user.lastName} — ${d.specialization}`,
-							}))}
+					<div>
+						<label className="form-label">Doctor</label>
+						<Controller
+							name="doctorId"
+							control={control}
+							rules={{ required: "Select a doctor" }}
+							render={({ field }) => (
+								<Select
+									{...field}
+									isSearchable
+									placeholder="Select doctor"
+									options={doctorOptions}
+									classNamePrefix="react-select"
+								/>
+							)}
 						/>
-					</Form.Item>
+						{errors.doctorId && <p className="text-red-500 text-xs mt-1">{errors.doctorId.message}</p>}
+					</div>
 
-					<Form.Item
-						name="scheduledAt"
-						label="Date & Time"
-						rules={[{ required: true, message: "Pick a date and time" }]}
-					>
-						<DatePicker
-							showTime
-							format="DD/MM/YYYY HH:mm"
-							style={{ width: "100%" }}
-							disabledDate={d => d && d < dayjs().startOf("day")}
+					<div>
+						<label className="form-label">Date & Time</label>
+						<Controller
+							name="scheduledAt"
+							control={control}
+							rules={{ required: "Pick a date and time" }}
+							render={({ field }) => (
+								<DatePicker
+									selected={field.value}
+									onChange={field.onChange}
+									showTimeSelect
+									dateFormat="dd/MM/yyyy HH:mm"
+									timeFormat="HH:mm"
+									minDate={new Date()}
+									placeholderText="Select date and time"
+									className="form-input w-full"
+								/>
+							)}
 						/>
-					</Form.Item>
+						{errors.scheduledAt && <p className="text-red-500 text-xs mt-1">{errors.scheduledAt.message}</p>}
+					</div>
 
-					<Form.Item name="notes" label="Notes (optional)">
-						<Input.TextArea rows={3} />
-					</Form.Item>
+					<div>
+						<label className="form-label">Notes (optional)</label>
+						<textarea {...register("notes")} rows={3} className="form-input w-full" />
+					</div>
 
-					<Form.Item style={{ marginBottom: 0 }}>
-						<Button type="primary" htmlType="submit" loading={submitting} block>
-							Create appointment
-						</Button>
-					</Form.Item>
-				</Form>
-			</Card>
+					<button type="submit" className="btn-primary w-full" disabled={submitting}>
+						{submitting ? "Creating..." : "Create appointment"}
+					</button>
+				</form>
+			</div>
 		</div>
 	);
 }

@@ -2,10 +2,6 @@ import React from "react";
 
 import keycloak from "../keycloak";
 
-const VIOLET = "#7C3AED";
-const VIOLET_HOVER = "#6D28D9";
-const DARK_VIOLET = "#1E1B4B";
-
 export default function LoginPage(): React.ReactElement | null {
 	if (keycloak.authenticated) {
 		window.location.replace("/");
@@ -17,110 +13,39 @@ export default function LoginPage(): React.ReactElement | null {
 	};
 
 	return (
-		<div style={{ display: "flex", minHeight: "100vh", fontFamily: "Inter, system-ui, sans-serif" }}>
+		<div className="flex min-h-screen font-sans">
 			{/* Left branding panel */}
-			<div
-				style={{
-					width: "42%",
-					minWidth: 280,
-					background: DARK_VIOLET,
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					padding: "48px 40px",
-				}}
-			>
-				<div
-					style={{
-						width: 72,
-						height: 72,
-						borderRadius: 20,
-						background: VIOLET,
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						marginBottom: 28,
-					}}
-				>
-					<span style={{ color: "#fff", fontSize: 28, fontWeight: 700 }}>A</span>
+			<div className="hidden sm:flex w-[42%] min-w-[280px] bg-brand-navy flex-col items-center justify-center px-10 py-12">
+				<div className="w-[72px] h-[72px] rounded-[20px] bg-brand-primary flex items-center justify-center mb-7">
+					<span className="text-white text-[28px] font-bold">A</span>
 				</div>
-				<div
-					style={{
-						fontSize: 11,
-						color: "rgba(255,255,255,0.4)",
-						letterSpacing: 3,
-						textTransform: "uppercase",
-						marginBottom: 10,
-					}}
-				>
-					Cerios Clinic
-				</div>
-				<h1
-					style={{
-						fontSize: 26,
-						fontWeight: 700,
-						color: "#fff",
-						margin: 0,
-						marginBottom: 14,
-						textAlign: "center",
-					}}
-				>
-					Assistant Portal
-				</h1>
-				<p
-					style={{
-						fontSize: 14,
-						color: "rgba(255,255,255,0.45)",
-						textAlign: "center",
-						lineHeight: 1.7,
-						maxWidth: 220,
-					}}
-				>
+				<div className="text-[11px] text-white/40 tracking-[3px] uppercase mb-2.5">Cerios Clinic</div>
+				<h1 className="text-[26px] font-bold text-white text-center mb-3.5">Assistant Portal</h1>
+				<p className="text-sm text-white/45 text-center leading-relaxed max-w-[220px]">
 					Manage appointments and coordinate patient care
 				</p>
 			</div>
 
 			{/* Right sign-in panel */}
-			<div
-				style={{
-					flex: 1,
-					background: "#fff",
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					padding: "48px 40px",
-				}}
-			>
-				<div style={{ width: "100%", maxWidth: 360 }}>
-					<h2 style={{ fontSize: 24, fontWeight: 700, color: DARK_VIOLET, marginBottom: 8, marginTop: 0 }}>
-						Welcome back
-					</h2>
-					<p style={{ fontSize: 14, color: "#6b7280", marginBottom: 36, lineHeight: 1.7 }}>
+			<div className="flex-1 bg-white flex flex-col items-center justify-center px-10 py-12">
+				<div className="w-full max-w-[360px]">
+					{/* Mobile-only branding */}
+					<div className="sm:hidden text-center mb-8">
+						<div className="w-16 h-16 rounded-2xl bg-brand-primary flex items-center justify-center mx-auto mb-4">
+							<span className="text-white text-2xl font-bold">A</span>
+						</div>
+						<div className="text-[10px] text-gray-400 tracking-[2px] uppercase">Cerios Clinic</div>
+						<h1 className="text-xl font-bold text-brand-navy mt-1">Assistant Portal</h1>
+					</div>
+
+					<h2 className="text-2xl font-bold text-brand-navy mb-2">Welcome back</h2>
+					<p className="text-sm text-gray-500 mb-9 leading-relaxed">
 						Sign in with your clinic credentials to continue. Authorized staff only.
 					</p>
-					<button
-						onClick={handleLogin}
-						onMouseOver={e => (e.currentTarget.style.background = VIOLET_HOVER)}
-						onMouseOut={e => (e.currentTarget.style.background = VIOLET)}
-						style={{
-							width: "100%",
-							background: VIOLET,
-							color: "#fff",
-							border: "none",
-							borderRadius: 10,
-							padding: "14px 24px",
-							fontSize: 15,
-							fontWeight: 600,
-							cursor: "pointer",
-							fontFamily: "inherit",
-							transition: "background 0.15s",
-						}}
-					>
+					<button onClick={handleLogin} className="btn-primary w-full py-3.5 text-[15px]">
 						Sign in
 					</button>
-					<p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", marginTop: 28 }}>
+					<p className="text-xs text-gray-400 text-center mt-7">
 						Contact your administrator if you need help accessing your account.
 					</p>
 				</div>

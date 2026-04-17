@@ -1,11 +1,9 @@
-import { UploadOutlined } from "@ant-design/icons";
-import { Button, Card, Spin, Typography, message } from "antd";
+import { Upload } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { getPatient, uploadPatientPhoto } from "../api";
-
-const { Title, Text } = Typography;
 
 const PORTRAIT_W = 300;
 const PORTRAIT_H = 400;
@@ -38,11 +36,9 @@ function resizeToPortrait(file: File): Promise<string> {
 				let srcH = img.height;
 
 				if (srcRatio > targetRatio) {
-					// Wider than target: crop sides
 					srcW = Math.round(img.height * targetRatio);
 					srcX = Math.round((img.width - srcW) / 2);
 				} else if (srcRatio < targetRatio) {
-					// Taller than target: crop top/bottom
 					srcH = Math.round(img.width / targetRatio);
 					srcY = Math.round((img.height - srcH) / 2);
 				}
@@ -97,7 +93,7 @@ export default function PatientDetailPage(): React.ReactElement | null {
 		if (!id) return;
 		void getPatient(id)
 			.then((r: unknown) => setPatient((r as { data: { data: PatientDetail } }).data.data))
-			.catch(() => message.error("Could not load patient"))
+			.catch(() => toast.error("Could not load patient"))
 			.finally(() => setLoading(false));
 	}, [id]);
 
@@ -105,7 +101,7 @@ export default function PatientDetailPage(): React.ReactElement | null {
 		const file = e.target.files?.[0];
 		if (!file) return;
 		if (file.size > 1 * 1024 * 1024) {
-			message.error("File must be 1 MB or smaller");
+			toast.error("File must be 1 MB or smaller");
 			if (fileInputRef.current) fileInputRef.current.value = "";
 			return;
 		}
@@ -114,7 +110,7 @@ export default function PatientDetailPage(): React.ReactElement | null {
 			setPreview(dataUrl);
 			setPendingData(dataUrl);
 		} catch {
-			message.error("Could not process image");
+			toast.error("Could not process image");
 		}
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	}, []);
@@ -128,9 +124,9 @@ export default function PatientDetailPage(): React.ReactElement | null {
 			setPatient(prev => (prev ? { ...prev, patient: { ...prev.patient!, photo: r.data.data.photo } } : prev));
 			setPreview(null);
 			setPendingData(null);
-			message.success("Photo updated");
+			toast.success("Photo updated");
 		} catch {
-			message.error("Upload failed. Please try again.");
+			toast.error("Upload failed. Please try again.");
 		} finally {
 			setUploading(false);
 		}
@@ -140,8 +136,8 @@ export default function PatientDetailPage(): React.ReactElement | null {
 
 	if (loading) {
 		return (
-			<div style={{ textAlign: "center", padding: 64 }}>
-				<Spin size="large" />
+			<div className="text-center py-16">
+				<div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-r-transparent" />
 			</div>
 		);
 	}
@@ -149,24 +145,23 @@ export default function PatientDetailPage(): React.ReactElement | null {
 	if (!patient) return null;
 
 	return (
-		<div style={{ maxWidth: 520 }}>
-			<Button
-				type="link"
-				style={{ paddingLeft: 0, color: "#E85A28", marginBottom: 8 }}
+		<div className="max-w-lg">
+			<button
+				className="btn-link text-brand-accent pl-0 mb-2"
 				onClick={() => {
 					void navigate("/patients");
 				}}
 			>
 				← Back to patients
-			</Button>
+			</button>
 
-			<Title level={3} style={{ color: "#1A2238", marginTop: 8, marginBottom: 16 }} data-testid="patient-name">
+			<h1 className="text-2xl font-bold text-brand-navy mt-2 mb-4" data-testid="patient-name">
 				{patient.firstName} {patient.lastName}
-			</Title>
+			</h1>
 
-			<Card style={{ marginBottom: 16 }}>
+			<div className="card mb-4">
 				<PatientInfoCard patient={patient} currentPhoto={currentPhoto} preview={preview} />
-			</Card>
+			</div>
 
 			<PhotoUploadCard
 				fileInputRef={fileInputRef}
@@ -186,13 +181,11 @@ export default function PatientDetailPage(): React.ReactElement | null {
 
 function InfoRow({ label, value, testId }: { label: string; value: string; testId?: string }): React.ReactElement {
 	return (
-		<div style={{ marginBottom: 12 }}>
-			<Text type="secondary" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, display: "block" }}>
-				{label}
-			</Text>
-			<Text strong style={{ color: "#1A2238" }} data-testid={testId}>
+		<div className="mb-3">
+			<span className="text-[11px] uppercase tracking-wider text-gray-400 block">{label}</span>
+			<span className="font-semibold text-brand-navy" data-testid={testId}>
 				{value}
-			</Text>
+			</span>
 		</div>
 	);
 }
@@ -207,32 +200,21 @@ function PatientInfoCard({
 	preview: string | null;
 }): React.ReactElement {
 	return (
-		<div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-			<div style={{ flexShrink: 0 }}>
+		<div className="flex gap-6 items-start">
+			<div className="shrink-0">
 				<img
 					src={currentPhoto ?? "/placeholder-avatar.svg"}
 					alt="Patient photo"
 					data-testid="patient-photo"
-					style={{
-						width: PORTRAIT_W / 2,
-						height: PORTRAIT_H / 2,
-						objectFit: "cover",
-						borderRadius: 8,
-						border: "1px solid #E8EDF2",
-						display: "block",
-					}}
+					className="w-[150px] h-[200px] object-cover rounded-lg border border-gray-200 block"
 				/>
 				{preview && (
-					<Text
-						type="secondary"
-						style={{ fontSize: 11, display: "block", marginTop: 4, textAlign: "center" }}
-						data-testid="patient-photo-preview-label"
-					>
+					<span className="text-[11px] text-gray-400 block mt-1 text-center" data-testid="patient-photo-preview-label">
 						Preview
-					</Text>
+					</span>
 				)}
 			</div>
-			<div style={{ flex: 1 }}>
+			<div className="flex-1 min-w-0">
 				<InfoRow label="Email" value={patient.email} testId="patient-info-email" />
 				<InfoRow label="Phone" value={patient.patient?.phone ?? "—"} testId="patient-info-phone" />
 				<InfoRow
@@ -261,21 +243,23 @@ function PhotoUploadCard({
 	onUpload: () => void;
 }): React.ReactElement {
 	return (
-		<Card title="Update photo">
-			<input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} />
-			<div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-				<Button icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
+		<div className="card">
+			<h2 className="text-base font-semibold text-brand-navy mb-3">Update photo</h2>
+			<input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+			<div className="flex gap-2 items-center">
+				<button className="btn-outline inline-flex items-center gap-2" onClick={() => fileInputRef.current?.click()}>
+					<Upload size={16} />
 					Select image
-				</Button>
+				</button>
 				{pendingData && (
-					<Button type="primary" loading={uploading} onClick={onUpload}>
-						Save photo
-					</Button>
+					<button className="btn-primary" disabled={uploading} onClick={onUpload}>
+						{uploading ? "Saving..." : "Save photo"}
+					</button>
 				)}
 			</div>
-			<Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 12 }}>
+			<p className="text-gray-400 text-xs mt-2">
 				Max 1 MB · JPEG, PNG or WebP · Automatically cropped to 300×400 px portrait
-			</Text>
-		</Card>
+			</p>
+		</div>
 	);
 }

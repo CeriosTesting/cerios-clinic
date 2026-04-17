@@ -1,10 +1,8 @@
-import { Button, Card, Form, Input, Modal, Popconfirm, Table, Tabs, Typography, message } from "antd";
-import type { ColumnsType } from "antd/es/table";
 import React, { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
 
 import api from "../api";
-
-const { Title } = Typography;
 
 interface AdminUser {
 	id: string;
@@ -16,19 +14,34 @@ interface AdminUser {
 	assistant?: { id: string; department: string };
 }
 
+interface FormValues {
+	firstName: string;
+	lastName: string;
+	email: string;
+	specialization?: string;
+	licenseNumber?: string;
+	department?: string;
+}
+
 export default function AdminPage(): React.ReactElement {
 	const [users, setUsers] = useState<AdminUser[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [tab, setTab] = useState("doctors");
+	const [tab, setTab] = useState<"doctors" | "assistants">("doctors");
 
-	// Modal state
 	const [modalOpen, setModalOpen] = useState(false);
 	const [modalMode, setModalMode] = useState<"create-doctor" | "edit-doctor" | "create-assistant" | "edit-assistant">(
 		"create-doctor"
 	);
 	const [selected, setSelected] = useState<AdminUser | null>(null);
 	const [saving, setSaving] = useState(false);
-	const [form] = Form.useForm();
+	const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+	const {
+		register,
+		handleSubmit: rhfSubmit,
+		reset,
+		formState: { errors },
+	} = useForm<FormValues>();
 
 	const load = useCallback(() => {
 		setLoading(true);
@@ -48,7 +61,7 @@ export default function AdminPage(): React.ReactElement {
 
 	const openCreate = (type: "doctor" | "assistant"): void => {
 		setSelected(null);
-		form.resetFields();
+		reset({ firstName: "", lastName: "", email: "", specialization: "", licenseNumber: "", department: "" });
 		setModalMode(type === "doctor" ? "create-doctor" : "create-assistant");
 		setModalOpen(true);
 	};
@@ -56,7 +69,7 @@ export default function AdminPage(): React.ReactElement {
 	const openEdit = (u: AdminUser): void => {
 		setSelected(u);
 		if (u.role === "doctor") {
-			form.setFieldsValue({
+			reset({
 				firstName: u.firstName,
 				lastName: u.lastName,
 				email: u.email,
@@ -65,7 +78,7 @@ export default function AdminPage(): React.ReactElement {
 			});
 			setModalMode("edit-doctor");
 		} else {
-			form.setFieldsValue({
+			reset({
 				firstName: u.firstName,
 				lastName: u.lastName,
 				email: u.email,
@@ -80,26 +93,26 @@ export default function AdminPage(): React.ReactElement {
 		try {
 			if (u.role === "doctor") await api.delete(`/admin/doctors/${u.doctor?.id}`);
 			else await api.delete(`/admin/assistants/${u.assistant?.id}`);
-			message.success("User removed.");
+			toast.success("User removed.");
+			setDeleteConfirm(null);
 			load();
 		} catch {
-			message.error("Could not remove user.");
+			toast.error("Could not remove user.");
 		}
 	};
 
-	const handleSubmit = async (): Promise<void> => {
-		const values = await form.validateFields();
+	const onModalSubmit = async (values: FormValues): Promise<void> => {
 		setSaving(true);
 		try {
 			if (modalMode === "create-doctor") await api.post("/admin/doctors", values);
 			else if (modalMode === "edit-doctor") await api.put(`/admin/doctors/${selected!.doctor?.id}`, values);
 			else if (modalMode === "create-assistant") await api.post("/admin/assistants", values);
 			else await api.put(`/admin/assistants/${selected!.assistant?.id}`, values);
-			message.success("Saved!");
+			toast.success("Saved!");
 			setModalOpen(false);
 			load();
 		} catch {
-			message.error("Could not save.");
+			toast.error("Could not save.");
 		} finally {
 			setSaving(false);
 		}
@@ -108,145 +121,176 @@ export default function AdminPage(): React.ReactElement {
 	const isDoctor = modalMode.includes("doctor");
 	const isEdit = modalMode.startsWith("edit");
 
-	const doctorColumns: ColumnsType<AdminUser> = [
-		{ title: "Name", render: (_, u) => `${u.firstName} ${u.lastName}` },
-		{ title: "Email", dataIndex: "email" },
-		{ title: "Specialization", render: (_, u) => u.doctor?.specialization ?? "—" },
-		{
-			title: "Actions",
-			render: (_, u) => (
-				<div style={{ display: "flex", gap: 8 }}>
-					<Button type="link" size="small" onClick={() => openEdit(u)}>
-						Edit
-					</Button>
-					<Popconfirm
-						title="Remove this doctor?"
-						onConfirm={() => {
-							void handleDelete(u);
-						}}
-						okText="Yes"
-						cancelText="No"
-					>
-						<Button type="link" size="small" danger>
-							Delete
-						</Button>
-					</Popconfirm>
-				</div>
-			),
-		},
-	];
-
-	const assistantColumns: ColumnsType<AdminUser> = [
-		{ title: "Name", render: (_, u) => `${u.firstName} ${u.lastName}` },
-		{ title: "Email", dataIndex: "email" },
-		{ title: "Department", render: (_, u) => u.assistant?.department ?? "—" },
-		{
-			title: "Actions",
-			render: (_, u) => (
-				<div style={{ display: "flex", gap: 8 }}>
-					<Button type="link" size="small" onClick={() => openEdit(u)}>
-						Edit
-					</Button>
-					<Popconfirm
-						title="Remove this assistant?"
-						onConfirm={() => {
-							void handleDelete(u);
-						}}
-						okText="Yes"
-						cancelText="No"
-					>
-						<Button type="link" size="small" danger>
-							Delete
-						</Button>
-					</Popconfirm>
-				</div>
-			),
-		},
-	];
-
-	const tabItems = [
-		{
-			key: "doctors",
-			label: `Doctors (${doctors.length})`,
-			children: (
-				<Table
-					dataSource={doctors}
-					columns={doctorColumns}
-					rowKey="id"
-					loading={loading}
-					size="small"
-					pagination={{ pageSize: 15 }}
-				/>
-			),
-		},
-		{
-			key: "assistants",
-			label: `Assistants (${assistants.length})`,
-			children: (
-				<Table
-					dataSource={assistants}
-					columns={assistantColumns}
-					rowKey="id"
-					loading={loading}
-					size="small"
-					pagination={{ pageSize: 15 }}
-				/>
-			),
-		},
-	];
+	const renderTable = (data: AdminUser[], type: "doctor" | "assistant"): React.ReactElement => (
+		<div className="overflow-x-auto">
+			{loading && <p className="text-gray-400 text-sm">Loading...</p>}
+			{!loading && data.length === 0 && <p className="text-gray-400 text-sm">No {type}s found.</p>}
+			{!loading && data.length > 0 && (
+				<table className="w-full text-sm min-w-[500px]">
+					<thead className="border-b border-gray-100">
+						<tr>
+							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Name</th>
+							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Email</th>
+							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">
+								{type === "doctor" ? "Specialization" : "Department"}
+							</th>
+							<th className="px-3 py-2 w-36"></th>
+						</tr>
+					</thead>
+					<tbody className="divide-y divide-gray-50">
+						{data.map(u => (
+							<tr key={u.id} className="hover:bg-gray-50 transition-colors">
+								<td className="px-3 py-2 font-medium text-brand-navy">
+									{u.firstName} {u.lastName}
+								</td>
+								<td className="px-3 py-2 text-gray-600">{u.email}</td>
+								<td className="px-3 py-2 text-gray-500">
+									{type === "doctor" ? (u.doctor?.specialization ?? "—") : (u.assistant?.department ?? "—")}
+								</td>
+								<td className="px-3 py-2">
+									<div className="flex gap-2 items-center relative">
+										<button className="btn-link" onClick={() => openEdit(u)}>
+											Edit
+										</button>
+										<button className="btn-link-danger" onClick={() => setDeleteConfirm(u.id)}>
+											Delete
+										</button>
+										{deleteConfirm === u.id && (
+											<div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[180px]">
+												<p className="text-sm text-gray-600 mb-2">Remove this {type}?</p>
+												<div className="flex gap-2 justify-end">
+													<button className="btn-ghost text-xs" onClick={() => setDeleteConfirm(null)}>
+														No
+													</button>
+													<button
+														className="btn-primary text-xs"
+														onClick={() => {
+															void handleDelete(u);
+														}}
+													>
+														Yes
+													</button>
+												</div>
+											</div>
+										)}
+									</div>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			)}
+		</div>
+	);
 
 	return (
 		<div>
-			<div style={{ marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-				<Title level={3} style={{ margin: 0, color: "#1A2238" }}>
-					Admin — User Management
-				</Title>
-				<Button type="primary" onClick={() => openCreate(tab === "doctors" ? "doctor" : "assistant")}>
+			<div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+				<h1 className="text-2xl font-bold text-brand-navy">Admin — User Management</h1>
+				<button className="btn-primary" onClick={() => openCreate(tab === "doctors" ? "doctor" : "assistant")}>
 					+ Add {tab === "doctors" ? "doctor" : "assistant"}
-				</Button>
+				</button>
 			</div>
 
-			<Card>
-				<Tabs activeKey={tab} onChange={setTab} items={tabItems} />
-			</Card>
+			<div className="card">
+				<div className="flex gap-1 border-b border-gray-200 mb-4">
+					<button
+						className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+							tab === "doctors"
+								? "border-brand-primary text-brand-primary"
+								: "border-transparent text-gray-500 hover:text-gray-700"
+						}`}
+						onClick={() => setTab("doctors")}
+					>
+						Doctors ({doctors.length})
+					</button>
+					<button
+						className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+							tab === "assistants"
+								? "border-brand-primary text-brand-primary"
+								: "border-transparent text-gray-500 hover:text-gray-700"
+						}`}
+						onClick={() => setTab("assistants")}
+					>
+						Assistants ({assistants.length})
+					</button>
+				</div>
+				{tab === "doctors" ? renderTable(doctors, "doctor") : renderTable(assistants, "assistant")}
+			</div>
 
-			<Modal
-				open={modalOpen}
-				title={`${isEdit ? "Edit" : "Add"} ${isDoctor ? "doctor" : "assistant"}`}
-				onCancel={() => setModalOpen(false)}
-				onOk={() => {
-					void handleSubmit();
-				}}
-				okText={saving ? "Saving..." : "Save"}
-				confirmLoading={saving}
-				destroyOnHidden
-			>
-				<Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-					<Form.Item name="firstName" label="First name" rules={[{ required: true }]}>
-						<Input />
-					</Form.Item>
-					<Form.Item name="lastName" label="Last name" rules={[{ required: true }]}>
-						<Input />
-					</Form.Item>
-					<Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}>
-						<Input disabled={isEdit} />
-					</Form.Item>
-					{isDoctor ? (
-						<>
-							<Form.Item name="specialization" label="Specialization" rules={[{ required: true }]}>
-								<Input />
-							</Form.Item>
-							<Form.Item name="licenseNumber" label="License number" rules={[{ required: true }]}>
-								<Input />
-							</Form.Item>
-						</>
-					) : (
-						<Form.Item name="department" label="Department" rules={[{ required: true }]}>
-							<Input />
-						</Form.Item>
-					)}
-				</Form>
-			</Modal>
+			{/* Modal */}
+			{modalOpen && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setModalOpen(false)}>
+					<div className="absolute inset-0 bg-black/30" />
+					<div
+						className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+						onClick={e => e.stopPropagation()}
+					>
+						<h2 className="text-lg font-bold text-brand-navy mb-4">
+							{isEdit ? "Edit" : "Add"} {isDoctor ? "doctor" : "assistant"}
+						</h2>
+						<form
+							onSubmit={e => {
+								void rhfSubmit(onModalSubmit)(e);
+							}}
+							className="space-y-3"
+						>
+							<div>
+								<label className="form-label">First name</label>
+								<input {...register("firstName", { required: "Required" })} className="form-input w-full" />
+								{errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>}
+							</div>
+							<div>
+								<label className="form-label">Last name</label>
+								<input {...register("lastName", { required: "Required" })} className="form-input w-full" />
+								{errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>}
+							</div>
+							<div>
+								<label className="form-label">Email</label>
+								<input
+									{...register("email", { required: "Required", pattern: { value: /^\S+@\S+$/i, message: "Invalid email" } })}
+									disabled={isEdit}
+									className="form-input w-full disabled:opacity-50"
+								/>
+								{errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+							</div>
+							{isDoctor ? (
+								<>
+									<div>
+										<label className="form-label">Specialization</label>
+										<input {...register("specialization", { required: "Required" })} className="form-input w-full" />
+										{errors.specialization && (
+											<p className="text-red-500 text-xs mt-1">{errors.specialization.message}</p>
+										)}
+									</div>
+									<div>
+										<label className="form-label">License number</label>
+										<input {...register("licenseNumber", { required: "Required" })} className="form-input w-full" />
+										{errors.licenseNumber && (
+											<p className="text-red-500 text-xs mt-1">{errors.licenseNumber.message}</p>
+										)}
+									</div>
+								</>
+							) : (
+								<div>
+									<label className="form-label">Department</label>
+									<input {...register("department", { required: "Required" })} className="form-input w-full" />
+									{errors.department && <p className="text-red-500 text-xs mt-1">{errors.department.message}</p>}
+								</div>
+							)}
+
+							<div className="flex gap-2 justify-end pt-2">
+								<button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
+									Cancel
+								</button>
+								<button type="submit" className="btn-primary" disabled={saving}>
+									{saving ? "Saving..." : "Save"}
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
