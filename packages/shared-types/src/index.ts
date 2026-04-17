@@ -290,6 +290,8 @@ export interface UpdateFeatureToggleDto {
 export const FEATURE_TOGGLE_KEYS = {
 	API_SLOWDOWN: "bug:api-slowdown",
 	SAME_DAY_RESTRICTION: "bug:same-day-restriction",
+	PROFILE_VALIDATION_FRONTEND: "bug:profile-validation-frontend",
+	PROFILE_VALIDATION_BACKEND: "bug:profile-validation-backend",
 } as const;
 
 export interface ApiSlowdownConfig {

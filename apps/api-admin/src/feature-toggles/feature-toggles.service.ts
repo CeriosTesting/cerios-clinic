@@ -59,6 +59,16 @@ export class FeatureTogglesService implements OnModuleInit {
 					"When enabled, disables API-side same-day appointment cancel/reschedule restriction (UI-only enforcement)",
 				config: {},
 			},
+			{
+				key: FEATURE_TOGGLE_KEYS.PROFILE_VALIDATION_FRONTEND,
+				description: "When enabled, disables client-side profile form validation (bug simulation)",
+				config: {},
+			},
+			{
+				key: FEATURE_TOGGLE_KEYS.PROFILE_VALIDATION_BACKEND,
+				description: "When enabled, disables server-side profile update validation (bug simulation)",
+				config: {},
+			},
 		];
 
 		for (const d of defaults) {
