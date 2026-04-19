@@ -56,8 +56,8 @@ export default function PrescriptionsScreen(): React.JSX.Element {
 		const q = search.toLowerCase();
 		return prescriptions.filter(
 			p =>
-				p.doctor?.user?.firstName.toLowerCase().includes(q) ||
-				p.doctor?.user?.lastName.toLowerCase().includes(q) ||
+				(p.doctor?.user?.firstName.toLowerCase().includes(q) ?? false) ||
+				(p.doctor?.user?.lastName.toLowerCase().includes(q) ?? false) ||
 				p.items.some(i => i.medicationName.toLowerCase().includes(q))
 		);
 	}, [prescriptions, search]);

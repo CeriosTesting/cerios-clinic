@@ -36,6 +36,52 @@ type FieldHandlers = {
 	insuranceNumber: (v: string) => void;
 };
 
+function SaveButton({ isPending, onSave }: { isPending: boolean; onSave: () => void }): React.JSX.Element {
+	return (
+		<TouchableOpacity
+			style={[styles.saveBtn, isPending && styles.saveBtnDisabled]}
+			onPress={onSave}
+			disabled={isPending}
+		>
+			{isPending ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+		</TouchableOpacity>
+	);
+}
+
+function AvatarSection({
+	photoUri,
+	initials,
+	onPickPhoto,
+	uploadingPhoto,
+}: {
+	photoUri: string | null;
+	initials: string;
+	onPickPhoto: () => void;
+	uploadingPhoto: boolean;
+}): React.JSX.Element {
+	return (
+		<View style={styles.avatarSection}>
+			<TouchableOpacity onPress={onPickPhoto} disabled={uploadingPhoto} activeOpacity={0.7}>
+				{photoUri ? (
+					<Image source={{ uri: photoUri }} style={styles.avatarImage} />
+				) : (
+					<View style={styles.avatarPlaceholder}>
+						<Text style={styles.avatarInitials}>{initials}</Text>
+					</View>
+				)}
+				<View style={styles.cameraBadge}>
+					{uploadingPhoto ? (
+						<ActivityIndicator size="small" color="#ffffff" />
+					) : (
+						<Text style={styles.cameraBadgeText}>📷</Text>
+					)}
+				</View>
+			</TouchableOpacity>
+			<Text style={styles.changePhotoText}>Tap to change photo</Text>
+		</View>
+	);
+}
+
 function ProfileFormContent({
 	profile,
 	form,
@@ -61,25 +107,12 @@ function ProfileFormContent({
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
 			{/* Profile photo */}
-			<View style={styles.avatarSection}>
-				<TouchableOpacity onPress={onPickPhoto} disabled={uploadingPhoto} activeOpacity={0.7}>
-					{photoUri ? (
-						<Image source={{ uri: photoUri }} style={styles.avatarImage} />
-					) : (
-						<View style={styles.avatarPlaceholder}>
-							<Text style={styles.avatarInitials}>{initials}</Text>
-						</View>
-					)}
-					<View style={styles.cameraBadge}>
-						{uploadingPhoto ? (
-							<ActivityIndicator size="small" color="#ffffff" />
-						) : (
-							<Text style={styles.cameraBadgeText}>📷</Text>
-						)}
-					</View>
-				</TouchableOpacity>
-				<Text style={styles.changePhotoText}>Tap to change photo</Text>
-			</View>
+			<AvatarSection
+				photoUri={photoUri}
+				initials={initials}
+				onPickPhoto={onPickPhoto}
+				uploadingPhoto={uploadingPhoto}
+			/>
 			{/* Email (read-only) */}
 			<View style={styles.emailCard}>
 				<Text style={styles.emailLabel}>Email address</Text>
@@ -123,17 +156,7 @@ function ProfileFormContent({
 			{update.isSuccess ? <Text style={styles.success}>Profile saved successfully.</Text> : null}
 			{update.isError ? <Text style={styles.error}>Could not save profile. Please try again.</Text> : null}
 
-			<TouchableOpacity
-				style={[styles.saveBtn, update.isPending && styles.saveBtnDisabled]}
-				onPress={onSave}
-				disabled={update.isPending}
-			>
-				{update.isPending ? (
-					<ActivityIndicator color="#ffffff" />
-				) : (
-					<Text style={styles.saveBtnText}>Save Changes</Text>
-				)}
-			</TouchableOpacity>
+			<SaveButton isPending={update.isPending} onSave={onSave} />
 
 			<TouchableOpacity style={styles.signOutBtn} onPress={onSignOut}>
 				<Text style={styles.signOutBtnText}>Sign Out</Text>
@@ -202,12 +225,12 @@ export default function ProfileScreen(): React.JSX.Element {
 		Alert.alert("Profile Photo", "Choose a source", [
 			{
 				text: "Camera",
-				onPress: () =>
+				onPress: (): void =>
 					void launchCamera({ mediaType: "photo", maxWidth: 600, maxHeight: 800, quality: 0.8 }, processPickerResult),
 			},
 			{
 				text: "Gallery",
-				onPress: () =>
+				onPress: (): void =>
 					void launchImageLibrary(
 						{ mediaType: "photo", maxWidth: 600, maxHeight: 800, quality: 0.8 },
 						processPickerResult

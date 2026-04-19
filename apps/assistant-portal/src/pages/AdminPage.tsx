@@ -1,8 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { type FieldErrors, type UseFormRegister, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
 import api from "../api";
+
+function getDeleteEndpoint(u: AdminUser): string {
+	return u.role === "doctor" ? `/admin/doctors/${u.doctor?.id}` : `/admin/assistants/${u.assistant?.id}`;
+}
+
+function getSubmitAction(modalMode: string, selected: AdminUser | null, values: FormValues): Promise<unknown> {
+	if (modalMode === "create-doctor") return api.post("/admin/doctors", values);
+	if (modalMode === "edit-doctor") return api.put(`/admin/doctors/${selected!.doctor?.id}`, values);
+	if (modalMode === "create-assistant") return api.post("/admin/assistants", values);
+	return api.put(`/admin/assistants/${selected!.assistant?.id}`, values);
+}
 
 interface AdminUser {
 	id: string;
@@ -68,22 +79,12 @@ export default function AdminPage(): React.ReactElement {
 
 	const openEdit = (u: AdminUser): void => {
 		setSelected(u);
+		const base = { firstName: u.firstName, lastName: u.lastName, email: u.email };
 		if (u.role === "doctor") {
-			reset({
-				firstName: u.firstName,
-				lastName: u.lastName,
-				email: u.email,
-				specialization: u.doctor?.specialization,
-				licenseNumber: u.doctor?.licenseNumber,
-			});
+			reset({ ...base, specialization: u.doctor?.specialization, licenseNumber: u.doctor?.licenseNumber });
 			setModalMode("edit-doctor");
 		} else {
-			reset({
-				firstName: u.firstName,
-				lastName: u.lastName,
-				email: u.email,
-				department: u.assistant?.department,
-			});
+			reset({ ...base, department: u.assistant?.department });
 			setModalMode("edit-assistant");
 		}
 		setModalOpen(true);
@@ -91,8 +92,7 @@ export default function AdminPage(): React.ReactElement {
 
 	const handleDelete = async (u: AdminUser): Promise<void> => {
 		try {
-			if (u.role === "doctor") await api.delete(`/admin/doctors/${u.doctor?.id}`);
-			else await api.delete(`/admin/assistants/${u.assistant?.id}`);
+			await api.delete(getDeleteEndpoint(u));
 			toast.success("User removed.");
 			setDeleteConfirm(null);
 			load();
@@ -104,10 +104,7 @@ export default function AdminPage(): React.ReactElement {
 	const onModalSubmit = async (values: FormValues): Promise<void> => {
 		setSaving(true);
 		try {
-			if (modalMode === "create-doctor") await api.post("/admin/doctors", values);
-			else if (modalMode === "edit-doctor") await api.put(`/admin/doctors/${selected!.doctor?.id}`, values);
-			else if (modalMode === "create-assistant") await api.post("/admin/assistants", values);
-			else await api.put(`/admin/assistants/${selected!.assistant?.id}`, values);
+			await getSubmitAction(modalMode, selected, values);
 			toast.success("Saved!");
 			setModalOpen(false);
 			load();
@@ -120,68 +117,6 @@ export default function AdminPage(): React.ReactElement {
 
 	const isDoctor = modalMode.includes("doctor");
 	const isEdit = modalMode.startsWith("edit");
-
-	const renderTable = (data: AdminUser[], type: "doctor" | "assistant"): React.ReactElement => (
-		<div className="overflow-x-auto">
-			{loading && <p className="text-gray-400 text-sm">Loading...</p>}
-			{!loading && data.length === 0 && <p className="text-gray-400 text-sm">No {type}s found.</p>}
-			{!loading && data.length > 0 && (
-				<table className="w-full text-sm min-w-[500px]">
-					<thead className="border-b border-gray-100">
-						<tr>
-							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Name</th>
-							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Email</th>
-							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">
-								{type === "doctor" ? "Specialization" : "Department"}
-							</th>
-							<th className="px-3 py-2 w-36"></th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-gray-50">
-						{data.map(u => (
-							<tr key={u.id} className="hover:bg-gray-50 transition-colors">
-								<td className="px-3 py-2 font-medium text-brand-navy">
-									{u.firstName} {u.lastName}
-								</td>
-								<td className="px-3 py-2 text-gray-600">{u.email}</td>
-								<td className="px-3 py-2 text-gray-500">
-									{type === "doctor" ? (u.doctor?.specialization ?? "—") : (u.assistant?.department ?? "—")}
-								</td>
-								<td className="px-3 py-2">
-									<div className="flex gap-2 items-center relative">
-										<button className="btn-link" onClick={() => openEdit(u)}>
-											Edit
-										</button>
-										<button className="btn-link-danger" onClick={() => setDeleteConfirm(u.id)}>
-											Delete
-										</button>
-										{deleteConfirm === u.id && (
-											<div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[180px]">
-												<p className="text-sm text-gray-600 mb-2">Remove this {type}?</p>
-												<div className="flex gap-2 justify-end">
-													<button className="btn-ghost text-xs" onClick={() => setDeleteConfirm(null)}>
-														No
-													</button>
-													<button
-														className="btn-primary text-xs"
-														onClick={() => {
-															void handleDelete(u);
-														}}
-													>
-														Yes
-													</button>
-												</div>
-											</div>
-										)}
-									</div>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			)}
-		</div>
-	);
 
 	return (
 		<div>
@@ -215,84 +150,206 @@ export default function AdminPage(): React.ReactElement {
 						Assistants ({assistants.length})
 					</button>
 				</div>
-				{tab === "doctors" ? renderTable(doctors, "doctor") : renderTable(assistants, "assistant")}
+				{tab === "doctors" ? (
+					<UserTable
+						data={doctors}
+						type="doctor"
+						loading={loading}
+						deleteConfirm={deleteConfirm}
+						onEdit={openEdit}
+						onDeleteConfirm={setDeleteConfirm}
+						onDelete={handleDelete}
+					/>
+				) : (
+					<UserTable
+						data={assistants}
+						type="assistant"
+						loading={loading}
+						deleteConfirm={deleteConfirm}
+						onEdit={openEdit}
+						onDeleteConfirm={setDeleteConfirm}
+						onDelete={handleDelete}
+					/>
+				)}
 			</div>
 
-			{/* Modal */}
 			{modalOpen && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setModalOpen(false)}>
-					<div className="absolute inset-0 bg-black/30" />
-					<div
-						className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
-						onClick={e => e.stopPropagation()}
-					>
-						<h2 className="text-lg font-bold text-brand-navy mb-4">
-							{isEdit ? "Edit" : "Add"} {isDoctor ? "doctor" : "assistant"}
-						</h2>
-						<form
-							onSubmit={e => {
-								void rhfSubmit(onModalSubmit)(e);
-							}}
-							className="space-y-3"
-						>
-							<div>
-								<label className="form-label">First name</label>
-								<input {...register("firstName", { required: "Required" })} className="form-input w-full" />
-								{errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>}
-							</div>
-							<div>
-								<label className="form-label">Last name</label>
-								<input {...register("lastName", { required: "Required" })} className="form-input w-full" />
-								{errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>}
-							</div>
-							<div>
-								<label className="form-label">Email</label>
-								<input
-									{...register("email", {
-										required: "Required",
-										pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
-									})}
-									disabled={isEdit}
-									className="form-input w-full disabled:opacity-50"
-								/>
-								{errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-							</div>
-							{isDoctor ? (
-								<>
-									<div>
-										<label className="form-label">Specialization</label>
-										<input {...register("specialization", { required: "Required" })} className="form-input w-full" />
-										{errors.specialization && (
-											<p className="text-red-500 text-xs mt-1">{errors.specialization.message}</p>
-										)}
-									</div>
-									<div>
-										<label className="form-label">License number</label>
-										<input {...register("licenseNumber", { required: "Required" })} className="form-input w-full" />
-										{errors.licenseNumber && (
-											<p className="text-red-500 text-xs mt-1">{errors.licenseNumber.message}</p>
-										)}
-									</div>
-								</>
-							) : (
-								<div>
-									<label className="form-label">Department</label>
-									<input {...register("department", { required: "Required" })} className="form-input w-full" />
-									{errors.department && <p className="text-red-500 text-xs mt-1">{errors.department.message}</p>}
-								</div>
-							)}
+				<UserFormModal
+					isDoctor={isDoctor}
+					isEdit={isEdit}
+					saving={saving}
+					register={register}
+					errors={errors}
+					onSubmit={e => {
+						void rhfSubmit(onModalSubmit)(e);
+					}}
+					onClose={() => setModalOpen(false)}
+				/>
+			)}
+		</div>
+	);
+}
 
-							<div className="flex gap-2 justify-end pt-2">
-								<button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
-									Cancel
-								</button>
-								<button type="submit" className="btn-primary" disabled={saving}>
-									{saving ? "Saving..." : "Save"}
-								</button>
-							</div>
-						</form>
+function UserFormModal({
+	isDoctor,
+	isEdit,
+	saving,
+	register,
+	errors,
+	onSubmit,
+	onClose,
+}: {
+	isDoctor: boolean;
+	isEdit: boolean;
+	saving: boolean;
+	register: UseFormRegister<FormValues>;
+	errors: FieldErrors<FormValues>;
+	onSubmit: (e: React.BaseSyntheticEvent) => void;
+	onClose: () => void;
+}): React.ReactElement {
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+			<div className="absolute inset-0 bg-black/30" />
+			<div
+				className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+				onClick={e => e.stopPropagation()}
+			>
+				<h2 className="text-lg font-bold text-brand-navy mb-4">
+					{isEdit ? "Edit" : "Add"} {isDoctor ? "doctor" : "assistant"}
+				</h2>
+				<form onSubmit={onSubmit} className="space-y-3">
+					<div>
+						<label className="form-label">First name</label>
+						<input {...register("firstName", { required: "Required" })} className="form-input w-full" />
+						{errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>}
 					</div>
-				</div>
+					<div>
+						<label className="form-label">Last name</label>
+						<input {...register("lastName", { required: "Required" })} className="form-input w-full" />
+						{errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>}
+					</div>
+					<div>
+						<label className="form-label">Email</label>
+						<input
+							{...register("email", {
+								required: "Required",
+								pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
+							})}
+							disabled={isEdit}
+							className="form-input w-full disabled:opacity-50"
+						/>
+						{errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+					</div>
+					{isDoctor ? (
+						<>
+							<div>
+								<label className="form-label">Specialization</label>
+								<input {...register("specialization", { required: "Required" })} className="form-input w-full" />
+								{errors.specialization && <p className="text-red-500 text-xs mt-1">{errors.specialization.message}</p>}
+							</div>
+							<div>
+								<label className="form-label">License number</label>
+								<input {...register("licenseNumber", { required: "Required" })} className="form-input w-full" />
+								{errors.licenseNumber && <p className="text-red-500 text-xs mt-1">{errors.licenseNumber.message}</p>}
+							</div>
+						</>
+					) : (
+						<div>
+							<label className="form-label">Department</label>
+							<input {...register("department", { required: "Required" })} className="form-input w-full" />
+							{errors.department && <p className="text-red-500 text-xs mt-1">{errors.department.message}</p>}
+						</div>
+					)}
+
+					<div className="flex gap-2 justify-end pt-2">
+						<button type="button" className="btn-ghost" onClick={onClose}>
+							Cancel
+						</button>
+						<button type="submit" className="btn-primary" disabled={saving}>
+							{saving ? "Saving..." : "Save"}
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	);
+}
+
+function UserTable({
+	data,
+	type,
+	loading,
+	deleteConfirm,
+	onEdit,
+	onDeleteConfirm,
+	onDelete,
+}: {
+	data: AdminUser[];
+	type: "doctor" | "assistant";
+	loading: boolean;
+	deleteConfirm: string | null;
+	onEdit: (u: AdminUser) => void;
+	onDeleteConfirm: (id: string | null) => void;
+	onDelete: (u: AdminUser) => Promise<void>;
+}): React.ReactElement {
+	return (
+		<div className="overflow-x-auto">
+			{loading && <p className="text-gray-400 text-sm">Loading...</p>}
+			{!loading && data.length === 0 && <p className="text-gray-400 text-sm">No {type}s found.</p>}
+			{!loading && data.length > 0 && (
+				<table className="w-full text-sm min-w-[500px]">
+					<thead className="border-b border-gray-100">
+						<tr>
+							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Name</th>
+							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">Email</th>
+							<th className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase">
+								{type === "doctor" ? "Specialization" : "Department"}
+							</th>
+							<th className="px-3 py-2 w-36"></th>
+						</tr>
+					</thead>
+					<tbody className="divide-y divide-gray-50">
+						{data.map(u => (
+							<tr key={u.id} className="hover:bg-gray-50 transition-colors">
+								<td className="px-3 py-2 font-medium text-brand-navy">
+									{u.firstName} {u.lastName}
+								</td>
+								<td className="px-3 py-2 text-gray-600">{u.email}</td>
+								<td className="px-3 py-2 text-gray-500">
+									{type === "doctor" ? (u.doctor?.specialization ?? "—") : (u.assistant?.department ?? "—")}
+								</td>
+								<td className="px-3 py-2">
+									<div className="flex gap-2 items-center relative">
+										<button className="btn-link" onClick={() => onEdit(u)}>
+											Edit
+										</button>
+										<button className="btn-link-danger" onClick={() => onDeleteConfirm(u.id)}>
+											Delete
+										</button>
+										{deleteConfirm === u.id && (
+											<div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-[180px]">
+												<p className="text-sm text-gray-600 mb-2">Remove this {type}?</p>
+												<div className="flex gap-2 justify-end">
+													<button className="btn-ghost text-xs" onClick={() => onDeleteConfirm(null)}>
+														No
+													</button>
+													<button
+														className="btn-primary text-xs"
+														onClick={() => {
+															void onDelete(u);
+														}}
+													>
+														Yes
+													</button>
+												</div>
+											</div>
+										)}
+									</div>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			)}
 		</div>
 	);

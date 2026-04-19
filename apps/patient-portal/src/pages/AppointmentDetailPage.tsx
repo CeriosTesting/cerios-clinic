@@ -6,6 +6,10 @@ import api from "../api";
 import RescheduleModal from "../components/RescheduleModal";
 import { formatDate, formatTime, isSameUTCDay } from "../utils/formatDate";
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+	return (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+}
+
 const STATUS_STYLES: Record<string, string> = {
 	SCHEDULED: "bg-blue-100 text-blue-800",
 	CONFIRMED: "bg-green-100 text-green-800",
@@ -59,8 +63,7 @@ export default function AppointmentDetailPage(): React.ReactElement {
 			setReview(r.data.data);
 			setReviewSuccess(true);
 		} catch (err: unknown) {
-			const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-			setReviewError(msg ?? "Could not submit review.");
+			setReviewError(extractErrorMessage(err, "Could not submit review."));
 		} finally {
 			setReviewSubmitting(false);
 		}
@@ -74,8 +77,7 @@ export default function AppointmentDetailPage(): React.ReactElement {
 			setAppointment(r.data.data);
 			setShowConfirm(false);
 		} catch (err: unknown) {
-			const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-			setError(msg ?? "Could not cancel appointment. Please try again.");
+			setError(extractErrorMessage(err, "Could not cancel appointment. Please try again."));
 		} finally {
 			setCancelling(false);
 		}
@@ -88,19 +90,10 @@ export default function AppointmentDetailPage(): React.ReactElement {
 	};
 
 	if (loading) return <div className="text-center py-16 text-gray-400">Loading...</div>;
-	if (error && !appointment)
-		return (
-			<div className="text-center py-16">
-				<p className="text-red-500 mb-4">{error}</p>
-				<Link to="/appointments" className="btn-outline">
-					← Back to appointments
-				</Link>
-			</div>
-		);
 	if (!appointment)
 		return (
 			<div className="text-center py-16">
-				<p className="text-red-500 mb-4">Appointment not found.</p>
+				<p className="text-red-500 mb-4">{error || "Appointment not found."}</p>
 				<Link to="/appointments" className="btn-outline">
 					← Back to appointments
 				</Link>
@@ -166,62 +159,15 @@ export default function AppointmentDetailPage(): React.ReactElement {
 
 					{/* Review Section — only for completed appointments */}
 					{appointment.status === "COMPLETED" && (
-						<div className="mt-6 pt-4 border-t border-gray-100">
-							<h2 className="text-lg font-semibold text-brand-navy mb-3">Review</h2>
-							{review ? (
-								<div className="bg-gray-50 rounded-lg p-4">
-									<div className="flex items-center gap-2 mb-2">
-										<span className="text-yellow-500 text-lg">
-											{"★".repeat(review.rating)}
-											{"☆".repeat(5 - review.rating)}
-										</span>
-										<span className="text-sm text-gray-400">{review.rating}/5</span>
-									</div>
-									{review.comment && <p className="text-sm text-gray-600">{review.comment}</p>}
-									{reviewSuccess && <p className="text-green-600 text-xs mt-2">Thank you for your review!</p>}
-								</div>
-							) : (
-								<form
-									onSubmit={e => {
-										void handleSubmitReview(e);
-									}}
-									className="space-y-3"
-								>
-									<div>
-										<label className="block text-sm font-medium text-gray-600 mb-1">Rating</label>
-										<div className="flex gap-1">
-											{[1, 2, 3, 4, 5].map(star => (
-												<button
-													key={star}
-													type="button"
-													onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
-													className={`text-2xl ${star <= reviewForm.rating ? "text-yellow-400" : "text-gray-300"} hover:text-yellow-400 transition-colors`}
-												>
-													★
-												</button>
-											))}
-										</div>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="review-comment">
-											Comment (optional)
-										</label>
-										<textarea
-											id="review-comment"
-											value={reviewForm.comment}
-											onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
-											className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
-											rows={3}
-											placeholder="Share your experience..."
-										/>
-									</div>
-									{reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
-									<button type="submit" disabled={reviewSubmitting} className="btn-primary text-sm px-4 py-2">
-										{reviewSubmitting ? "Submitting..." : "Submit review"}
-									</button>
-								</form>
-							)}
-						</div>
+						<ReviewSection
+							review={review}
+							reviewSuccess={reviewSuccess}
+							reviewForm={reviewForm}
+							reviewSubmitting={reviewSubmitting}
+							reviewError={reviewError}
+							onSubmit={handleSubmitReview}
+							onChangeForm={setReviewForm}
+						/>
 					)}
 				</div>
 			</div>
@@ -236,6 +182,88 @@ export default function AppointmentDetailPage(): React.ReactElement {
 				/>
 			)}
 		</>
+	);
+}
+
+function ReviewSection({
+	review,
+	reviewSuccess,
+	reviewForm,
+	reviewSubmitting,
+	reviewError,
+	onSubmit,
+	onChangeForm,
+}: {
+	review: Review | null;
+	reviewSuccess: boolean;
+	reviewForm: { rating: number; comment: string };
+	reviewSubmitting: boolean;
+	reviewError: string;
+	onSubmit: (e: React.SyntheticEvent<HTMLFormElement>) => Promise<void>;
+	onChangeForm: React.Dispatch<React.SetStateAction<{ rating: number; comment: string }>>;
+}): React.ReactElement {
+	if (review) {
+		return (
+			<div className="mt-6 pt-4 border-t border-gray-100">
+				<h2 className="text-lg font-semibold text-brand-navy mb-3">Review</h2>
+				<div className="bg-gray-50 rounded-lg p-4">
+					<div className="flex items-center gap-2 mb-2">
+						<span className="text-yellow-500 text-lg">
+							{"★".repeat(review.rating)}
+							{"☆".repeat(5 - review.rating)}
+						</span>
+						<span className="text-sm text-gray-400">{review.rating}/5</span>
+					</div>
+					{review.comment && <p className="text-sm text-gray-600">{review.comment}</p>}
+					{reviewSuccess && <p className="text-green-600 text-xs mt-2">Thank you for your review!</p>}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="mt-6 pt-4 border-t border-gray-100">
+			<h2 className="text-lg font-semibold text-brand-navy mb-3">Review</h2>
+			<form
+				onSubmit={e => {
+					void onSubmit(e);
+				}}
+				className="space-y-3"
+			>
+				<div>
+					<label className="block text-sm font-medium text-gray-600 mb-1">Rating</label>
+					<div className="flex gap-1">
+						{[1, 2, 3, 4, 5].map(star => (
+							<button
+								key={star}
+								type="button"
+								onClick={() => onChangeForm(f => ({ ...f, rating: star }))}
+								className={`text-2xl ${star <= reviewForm.rating ? "text-yellow-400" : "text-gray-300"} hover:text-yellow-400 transition-colors`}
+							>
+								★
+							</button>
+						))}
+					</div>
+				</div>
+				<div>
+					<label className="block text-sm font-medium text-gray-600 mb-1" htmlFor="review-comment">
+						Comment (optional)
+					</label>
+					<textarea
+						id="review-comment"
+						value={reviewForm.comment}
+						onChange={e => onChangeForm(f => ({ ...f, comment: e.target.value }))}
+						className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"
+						rows={3}
+						placeholder="Share your experience..."
+					/>
+				</div>
+				{reviewError && <p className="text-red-500 text-sm">{reviewError}</p>}
+				<button type="submit" disabled={reviewSubmitting} className="btn-primary text-sm px-4 py-2">
+					{reviewSubmitting ? "Submitting..." : "Submit review"}
+				</button>
+			</form>
+		</div>
 	);
 }
 

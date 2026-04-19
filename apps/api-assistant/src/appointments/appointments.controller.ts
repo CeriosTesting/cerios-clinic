@@ -278,14 +278,7 @@ export class AppointmentsController {
 		const appointment = await this.prisma.appointment.findUnique({ where: { id } });
 		if (!appointment) throw new NotFoundException("Appointment not found");
 
-		if (dto.status && dto.status !== appointment.status) {
-			const allowed = ALLOWED_TRANSITIONS[appointment.status as AppointmentStatus];
-			if (!allowed.includes(dto.status)) {
-				throw new BadRequestException(
-					`Cannot transition from ${appointment.status} to ${dto.status}. Allowed: ${allowed.join(", ") || "none (terminal state)"}`
-				);
-			}
-		}
+		this.validateStatusTransition(dto, appointment);
 
 		const updated = await this.prisma.appointment.update({
 			where: { id },
@@ -302,45 +295,60 @@ export class AppointmentsController {
 		});
 
 		if (dto.status && dto.status !== appointment.status) {
-			await this.prisma.appointmentStatusChange.create({
-				data: {
-					appointmentId: id,
-					previousStatus: appointment.status,
-					newStatus: dto.status,
-					changedByKeycloakId: user.sub,
-				},
-			});
-
-			// Send email notifications based on the new status
-			const patientUser = updated.patient?.user;
-			const doctorUser = updated.doctor?.user;
-			if (patientUser && doctorUser) {
-				const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
-				const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
-				if (dto.status === "CONFIRMED") {
-					void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, updated.scheduledAt);
-				} else if (dto.status === "CANCELLED") {
-					void this.mail.sendAppointmentCancellation(
-						patientUser.email,
-						patientName,
-						doctorName,
-						patientName,
-						updated.scheduledAt
-					);
-				}
-			}
-
-			this.events.emitAppointmentEvent({
-				type: dto.status === "CANCELLED" ? "appointment.cancelled" : "appointment.updated",
-				appointmentId: updated.id,
-				patientId: updated.patientId,
-				doctorId: updated.doctorId,
-				status: updated.status,
-				scheduledAt: updated.scheduledAt.toISOString(),
-			});
+			await this.recordStatusChangeAndNotify(id, appointment.status, dto.status, user.sub, updated);
 		}
 
 		return { data: updated };
+	}
+
+	private validateStatusTransition(dto: UpdateAppointmentDto, appointment: { status: string }): void {
+		if (dto.status && dto.status !== appointment.status) {
+			const allowed = ALLOWED_TRANSITIONS[appointment.status as AppointmentStatus];
+			if (!allowed.includes(dto.status)) {
+				throw new BadRequestException(
+					`Cannot transition from ${appointment.status} to ${dto.status}. Allowed: ${allowed.join(", ") || "none (terminal state)"}`
+				);
+			}
+		}
+	}
+
+	private async recordStatusChangeAndNotify(
+		appointmentId: string,
+		previousStatus: string,
+		newStatus: string,
+		changedByKeycloakId: string,
+		updated: ApptWithAll
+	): Promise<void> {
+		await this.prisma.appointmentStatusChange.create({
+			data: { appointmentId, previousStatus, newStatus, changedByKeycloakId },
+		});
+
+		const patientUser = updated.patient?.user;
+		const doctorUser = updated.doctor?.user;
+		if (patientUser && doctorUser) {
+			const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
+			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
+			if (newStatus === "CONFIRMED") {
+				void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, updated.scheduledAt);
+			} else if (newStatus === "CANCELLED") {
+				void this.mail.sendAppointmentCancellation(
+					patientUser.email,
+					patientName,
+					doctorName,
+					patientName,
+					updated.scheduledAt
+				);
+			}
+		}
+
+		this.events.emitAppointmentEvent({
+			type: newStatus === "CANCELLED" ? "appointment.cancelled" : "appointment.updated",
+			appointmentId: updated.id,
+			patientId: updated.patientId,
+			doctorId: updated.doctorId,
+			status: updated.status,
+			scheduledAt: updated.scheduledAt.toISOString(),
+		});
 	}
 
 	@Delete(":id")

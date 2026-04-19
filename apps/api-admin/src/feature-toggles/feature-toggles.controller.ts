@@ -24,28 +24,31 @@ export class FeatureTogglesController {
 
 	@Get()
 	@ApiOperation({ summary: "List all feature toggles" })
-	async list() {
+	async list(): Promise<{ data: Awaited<ReturnType<FeatureTogglesService["findAll"]>> }> {
 		const toggles = await this.service.findAll();
 		return { data: toggles };
 	}
 
 	@Get(":key")
 	@ApiOperation({ summary: "Get a feature toggle by key" })
-	async get(@Param("key") key: string) {
+	async get(@Param("key") key: string): Promise<{ data: Awaited<ReturnType<FeatureTogglesService["findByKey"]>> }> {
 		const toggle = await this.service.findByKey(key);
 		return { data: toggle };
 	}
 
 	@Put(":key")
 	@ApiOperation({ summary: "Update a feature toggle" })
-	async update(@Param("key") key: string, @Body() dto: UpdateToggleDto) {
+	async update(
+		@Param("key") key: string,
+		@Body() dto: UpdateToggleDto
+	): Promise<{ data: Awaited<ReturnType<FeatureTogglesService["upsert"]>> }> {
 		const toggle = await this.service.upsert(key, dto);
 		return { data: toggle };
 	}
 
 	@Post("seed")
 	@ApiOperation({ summary: "Seed default feature toggles" })
-	async seed() {
+	async seed(): Promise<{ message: string }> {
 		await this.service.seed();
 		return { message: "Feature toggles seeded" };
 	}

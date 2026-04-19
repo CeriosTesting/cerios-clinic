@@ -35,6 +35,31 @@ class UpdateProfileDto {
 
 type UserWithPatient = Prisma.UserGetPayload<{ include: { patient: true } }>;
 
+function isInvalidDateOfBirth(dateOfBirth: string): boolean {
+	const dob = new Date(dateOfBirth);
+	return isNaN(dob.getTime()) || dob >= new Date();
+}
+
+function validateProfileDto(dto: UpdateProfileDto): string[] {
+	const errors: string[] = [];
+	if (dto.firstName !== undefined && (dto.firstName.trim().length === 0 || dto.firstName.length > 50)) {
+		errors.push("First name is required and must be at most 50 characters");
+	}
+	if (dto.lastName !== undefined && (dto.lastName.trim().length === 0 || dto.lastName.length > 50)) {
+		errors.push("Last name is required and must be at most 50 characters");
+	}
+	if (dto.phone !== undefined && dto.phone !== "" && !PHONE_REGEX.test(dto.phone)) {
+		errors.push("Invalid phone number format");
+	}
+	if (dto.dateOfBirth !== undefined && dto.dateOfBirth !== "" && isInvalidDateOfBirth(dto.dateOfBirth)) {
+		errors.push("Date of birth must be a valid date in the past");
+	}
+	if (dto.insuranceNumber !== undefined && dto.insuranceNumber.length > 30) {
+		errors.push("Insurance number must be at most 30 characters");
+	}
+	return errors;
+}
+
 @ApiTags("profile")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -85,25 +110,7 @@ export class ProfileController {
 			.catch(() => null);
 
 		if (!validationToggle?.enabled) {
-			const errors: string[] = [];
-			if (firstName !== undefined && (firstName.trim().length === 0 || firstName.length > 50)) {
-				errors.push("First name is required and must be at most 50 characters");
-			}
-			if (lastName !== undefined && (lastName.trim().length === 0 || lastName.length > 50)) {
-				errors.push("Last name is required and must be at most 50 characters");
-			}
-			if (phone !== undefined && phone !== "" && !PHONE_REGEX.test(phone)) {
-				errors.push("Invalid phone number format");
-			}
-			if (dateOfBirth !== undefined && dateOfBirth !== "") {
-				const dob = new Date(dateOfBirth);
-				if (isNaN(dob.getTime()) || dob >= new Date()) {
-					errors.push("Date of birth must be a valid date in the past");
-				}
-			}
-			if (insuranceNumber !== undefined && insuranceNumber.length > 30) {
-				errors.push("Insurance number must be at most 30 characters");
-			}
+			const errors = validateProfileDto(dto);
 			if (errors.length > 0) {
 				throw new BadRequestException(errors);
 			}

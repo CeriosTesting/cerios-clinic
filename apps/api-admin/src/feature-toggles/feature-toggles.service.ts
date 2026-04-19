@@ -1,6 +1,6 @@
 import { FEATURE_TOGGLE_KEYS } from "@clinic/shared-types";
 import { Injectable, NotFoundException, OnModuleInit } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { type FeatureToggle, Prisma } from "@prisma/client";
 
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -8,23 +8,26 @@ import { PrismaService } from "../prisma/prisma.service";
 export class FeatureTogglesService implements OnModuleInit {
 	constructor(private readonly prisma: PrismaService) {}
 
-	async onModuleInit() {
+	async onModuleInit(): Promise<void> {
 		await this.seed();
 	}
 
-	async findAll() {
+	async findAll(): Promise<FeatureToggle[]> {
 		return this.prisma.featureToggle.findMany({
 			orderBy: { key: "asc" },
 		});
 	}
 
-	async findByKey(key: string) {
+	async findByKey(key: string): Promise<FeatureToggle> {
 		const toggle = await this.prisma.featureToggle.findUnique({ where: { key } });
 		if (!toggle) throw new NotFoundException(`Feature toggle "${key}" not found`);
 		return toggle;
 	}
 
-	async upsert(key: string, data: { enabled?: boolean; description?: string; config?: Prisma.InputJsonValue }) {
+	async upsert(
+		key: string,
+		data: { enabled?: boolean; description?: string; config?: Prisma.InputJsonValue }
+	): Promise<FeatureToggle> {
 		return this.prisma.featureToggle.upsert({
 			where: { key },
 			update: {
@@ -46,7 +49,7 @@ export class FeatureTogglesService implements OnModuleInit {
 		return toggle?.enabled ?? false;
 	}
 
-	async seed() {
+	async seed(): Promise<void> {
 		const defaults = [
 			{
 				key: FEATURE_TOGGLE_KEYS.API_SLOWDOWN,

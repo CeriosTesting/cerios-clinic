@@ -68,7 +68,7 @@ function resolveHost() {
 	}
 
 	const argIp = extraArgs.find(arg => arg.startsWith("--ip="))?.slice("--ip=".length);
-	const ip = argIp || process.env.MOBILE_LAN_IP || detectLanIpv4();
+	const ip = argIp ?? process.env.MOBILE_LAN_IP ?? detectLanIpv4();
 	if (!ip || !isPrivateIpv4(ip)) {
 		console.error(
 			"Could not determine a private LAN IPv4 address.\n" +

@@ -37,7 +37,7 @@ export default function PatientsPage(): React.ReactElement {
 		search("");
 	}, [search]);
 
-	const handleSearch = (e: React.FormEvent<HTMLFormElement>): void => {
+	const handleSearch = (e: React.SyntheticEvent<HTMLFormElement>): void => {
 		e.preventDefault();
 		search(query);
 	};

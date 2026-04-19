@@ -23,6 +23,10 @@ import { StatusBadge } from "../components/StatusBadge";
 import type { AppointmentsStackParamList } from "../navigation/AppNavigator";
 import { formatDate, formatTime, isSameDay } from "../utils/dateUtils";
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+	return (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
+}
+
 type Route = RouteProp<AppointmentsStackParamList, "AppointmentDetail">;
 
 const ACTIONABLE = ["SCHEDULED", "CONFIRMED"] as const;
@@ -67,10 +71,7 @@ export default function AppointmentDetailScreen(): React.JSX.Element {
 	const handleCancelConfirm = (): void => {
 		cancel.mutate(apt.id, {
 			onError: (err: unknown) => {
-				const msg =
-					(err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-					"Could not cancel. Please try again.";
-				Alert.alert("Error", msg);
+				Alert.alert("Error", extractErrorMessage(err, "Could not cancel. Please try again."));
 			},
 		});
 	};
@@ -96,10 +97,7 @@ export default function AppointmentDetailScreen(): React.JSX.Element {
 			{
 				onSuccess: () => Alert.alert("Thank you!", "Your review has been submitted."),
 				onError: (err: unknown) => {
-					const msg =
-						(err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-						"Could not submit review.";
-					Alert.alert("Error", msg);
+					Alert.alert("Error", extractErrorMessage(err, "Could not submit review."));
 				},
 			}
 		);
@@ -123,73 +121,19 @@ export default function AppointmentDetailScreen(): React.JSX.Element {
 					{apt.notes ? <Row label="Doctor's Notes">{apt.notes}</Row> : null}
 				</View>
 
-				{/* Prescription section */}
-				{isCompleted && prescription && (
-					<View style={styles.card}>
-						<Text style={styles.title}>Prescription</Text>
-						{prescription.notes ? <Text style={styles.prescriptionNotes}>{prescription.notes}</Text> : null}
-						{prescription.items.map(item => (
-							<View key={item.id} style={styles.medItem}>
-								<Text style={styles.medName}>{item.medicationName}</Text>
-								<Text style={styles.medDetail}>
-									{item.dosage} · {item.frequency} · {item.duration}
-								</Text>
-								{item.instructions ? <Text style={styles.medInstructions}>{item.instructions}</Text> : null}
-							</View>
-						))}
-					</View>
-				)}
-
-				{/* Review section */}
 				{isCompleted && (
-					<View style={styles.card}>
-						<Text style={styles.title}>Review</Text>
-						{existingReview ? (
-							<>
-								<View style={styles.starRow}>
-									{[1, 2, 3, 4, 5].map(s => (
-										<Text key={s} style={styles.starDisplay}>
-											{s <= existingReview.rating ? "★" : "☆"}
-										</Text>
-									))}
-								</View>
-								{existingReview.comment ? <Text style={styles.reviewComment}>{existingReview.comment}</Text> : null}
-							</>
-						) : (
-							<>
-								<Text style={styles.reviewPrompt}>How was your experience?</Text>
-								<View style={styles.starRow}>
-									{[1, 2, 3, 4, 5].map(s => (
-										<TouchableOpacity key={s} onPress={() => setReviewRating(s)}>
-											<Text style={[styles.starInput, s <= reviewRating && styles.starActive]}>
-												{s <= reviewRating ? "★" : "☆"}
-											</Text>
-										</TouchableOpacity>
-									))}
-								</View>
-								<TextInput
-									style={styles.reviewInput}
-									placeholder="Leave a comment (optional)"
-									placeholderTextColor="#9CA3AF"
-									value={reviewComment}
-									onChangeText={setReviewComment}
-									multiline
-									numberOfLines={3}
-								/>
-								<TouchableOpacity
-									style={[styles.btnPrimary, submitReview.isPending && styles.btnDisabled]}
-									onPress={handleSubmitReview}
-									disabled={submitReview.isPending}
-								>
-									{submitReview.isPending ? (
-										<ActivityIndicator color="#fff" />
-									) : (
-										<Text style={styles.btnPrimaryText}>Submit Review</Text>
-									)}
-								</TouchableOpacity>
-							</>
-						)}
-					</View>
+					<>
+						{prescription ? <PrescriptionSection prescription={prescription} /> : null}
+						<ReviewSection
+							existingReview={existingReview}
+							reviewRating={reviewRating}
+							reviewComment={reviewComment}
+							onSetRating={setReviewRating}
+							onSetComment={setReviewComment}
+							onSubmit={handleSubmitReview}
+							isPending={submitReview.isPending}
+						/>
+					</>
 				)}
 
 				{isActionable && (
@@ -215,6 +159,103 @@ export default function AppointmentDetailScreen(): React.JSX.Element {
 				/>
 			) : null}
 		</>
+	);
+}
+
+function PrescriptionSection({
+	prescription,
+}: {
+	prescription: {
+		notes?: string | null;
+		items: Array<{
+			id: string;
+			medicationName: string;
+			dosage: string;
+			frequency: string;
+			duration: string;
+			instructions?: string | null;
+		}>;
+	};
+}): React.JSX.Element {
+	return (
+		<View style={styles.card}>
+			<Text style={styles.title}>Prescription</Text>
+			{prescription.notes ? <Text style={styles.prescriptionNotes}>{prescription.notes}</Text> : null}
+			{prescription.items.map(item => (
+				<View key={item.id} style={styles.medItem}>
+					<Text style={styles.medName}>{item.medicationName}</Text>
+					<Text style={styles.medDetail}>
+						{item.dosage} · {item.frequency} · {item.duration}
+					</Text>
+					{item.instructions ? <Text style={styles.medInstructions}>{item.instructions}</Text> : null}
+				</View>
+			))}
+		</View>
+	);
+}
+
+function ReviewSection({
+	existingReview,
+	reviewRating,
+	reviewComment,
+	onSetRating,
+	onSetComment,
+	onSubmit,
+	isPending,
+}: {
+	existingReview?: { rating: number; comment?: string | null } | null;
+	reviewRating: number;
+	reviewComment: string;
+	onSetRating: (n: number) => void;
+	onSetComment: (s: string) => void;
+	onSubmit: () => void;
+	isPending: boolean;
+}): React.JSX.Element {
+	return (
+		<View style={styles.card}>
+			<Text style={styles.title}>Review</Text>
+			{existingReview ? (
+				<>
+					<View style={styles.starRow}>
+						{[1, 2, 3, 4, 5].map(s => (
+							<Text key={s} style={styles.starDisplay}>
+								{s <= existingReview.rating ? "★" : "☆"}
+							</Text>
+						))}
+					</View>
+					{existingReview.comment ? <Text style={styles.reviewComment}>{existingReview.comment}</Text> : null}
+				</>
+			) : (
+				<>
+					<Text style={styles.reviewPrompt}>How was your experience?</Text>
+					<View style={styles.starRow}>
+						{[1, 2, 3, 4, 5].map(s => (
+							<TouchableOpacity key={s} onPress={() => onSetRating(s)}>
+								<Text style={[styles.starInput, s <= reviewRating && styles.starActive]}>
+									{s <= reviewRating ? "★" : "☆"}
+								</Text>
+							</TouchableOpacity>
+						))}
+					</View>
+					<TextInput
+						style={styles.reviewInput}
+						placeholder="Leave a comment (optional)"
+						placeholderTextColor="#9CA3AF"
+						value={reviewComment}
+						onChangeText={onSetComment}
+						multiline
+						numberOfLines={3}
+					/>
+					<TouchableOpacity
+						style={[styles.btnPrimary, isPending && styles.btnDisabled]}
+						onPress={onSubmit}
+						disabled={isPending}
+					>
+						{isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnPrimaryText}>Submit Review</Text>}
+					</TouchableOpacity>
+				</>
+			)}
+		</View>
 	);
 }
 
