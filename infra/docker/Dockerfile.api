@@ -82,4 +82,4 @@ COPY --from=build /app/node_modules/@clinic ./node_modules/@clinic
 ENV NODE_ENV=production
 ENV APP_NAME=${APP_NAME}
 
-CMD node apps/${APP_NAME}/dist/main.js
+CMD ["sh", "-c", "node apps/${APP_NAME}/dist/main.js"]

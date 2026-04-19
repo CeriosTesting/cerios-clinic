@@ -53,4 +53,4 @@ RUN touch /app/.env
 
 # migrate deploy applies only unapplied migrations (idempotent).
 # seed script checks for existing Keycloak users before creating (idempotent).
-CMD pnpm --filter database migrate:deploy && pnpm --filter database seed
+CMD ["sh", "-c", "pnpm --filter database migrate:deploy && pnpm --filter database seed"]
