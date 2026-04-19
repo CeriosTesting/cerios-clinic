@@ -1,0 +1,4 @@
+FROM quay.io/keycloak/keycloak:24.0.1
+
+COPY infra/keycloak/clinic-realm.json /opt/keycloak/data/import/clinic-realm.json
+COPY infra/keycloak/themes/           /opt/keycloak/themes/

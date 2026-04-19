@@ -28,7 +28,7 @@ Only `api-service-client` supports programmatic token requests.
 ## Token Endpoint
 
 ```
-POST http://localhost:8080/realms/clinic/protocol/openid-connect/token
+POST http://localhost:8180/realms/clinic/protocol/openid-connect/token
 ```
 
 The general form is:
@@ -101,7 +101,7 @@ A token obtained for a doctor account will be rejected by the Patient API, and v
 **Doctor token:**
 
 ```bash
-curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/token" \
+curl -s -X POST "http://localhost:8180/realms/clinic/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "client_id=api-service-client" \
@@ -114,7 +114,7 @@ curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/tok
 **Patient token:**
 
 ```bash
-curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/token" \
+curl -s -X POST "http://localhost:8180/realms/clinic/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "client_id=api-service-client" \
@@ -138,7 +138,7 @@ $body = @{
     scope         = "openid"
 }
 $response = Invoke-RestMethod -Method Post `
-    -Uri "http://localhost:8080/realms/clinic/protocol/openid-connect/token" `
+    -Uri "http://localhost:8180/realms/clinic/protocol/openid-connect/token" `
     -ContentType "application/x-www-form-urlencoded" `
     -Body $body
 $response.access_token
@@ -156,7 +156,7 @@ $body = @{
     scope         = "openid"
 }
 $response = Invoke-RestMethod -Method Post `
-    -Uri "http://localhost:8080/realms/clinic/protocol/openid-connect/token" `
+    -Uri "http://localhost:8180/realms/clinic/protocol/openid-connect/token" `
     -ContentType "application/x-www-form-urlencoded" `
     -Body $body
 $response.access_token
@@ -229,7 +229,7 @@ $tokenBody = @{
     scope         = "openid"
 }
 $tokenResponse = Invoke-RestMethod -Method Post `
-    -Uri "http://localhost:8080/realms/clinic/protocol/openid-connect/token" `
+    -Uri "http://localhost:8180/realms/clinic/protocol/openid-connect/token" `
     -ContentType "application/x-www-form-urlencoded" `
     -Body $tokenBody
 
@@ -245,7 +245,7 @@ And the equivalent in bash:
 
 ```bash
 # 1. Get a doctor token
-TOKEN=$(curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/token" \
+TOKEN=$(curl -s -X POST "http://localhost:8180/realms/clinic/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "client_id=api-service-client" \

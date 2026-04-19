@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
-const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://localhost:8080";
+const KEYCLOAK_URL = process.env.KEYCLOAK_URL ?? "http://localhost:8180";
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM ?? "clinic";
 const KEYCLOAK_ADMIN_USER = process.env.KEYCLOAK_ADMIN_USER ?? "admin";
 const KEYCLOAK_ADMIN_PASSWORD = process.env.KEYCLOAK_ADMIN_PASSWORD ?? "admin_secret";

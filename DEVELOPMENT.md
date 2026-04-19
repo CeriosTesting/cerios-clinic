@@ -151,7 +151,7 @@ You should see output like:
 
 Keycloak takes about **60–120 seconds** to start the very first time because it imports the realm configuration and sets up its database tables.
 
-Check that it is ready by opening http://localhost:8080 in a browser. You should see the Keycloak welcome page.
+Check that it is ready by opening http://localhost:8180 in a browser. You should see the Keycloak welcome page.
 
 Alternatively, check the container status:
 
@@ -235,7 +235,7 @@ pnpm run db:migrate  # Re-applies all migrations to recreate the tables
 pnpm run db:seed     # Re-creates all test users in PostgreSQL and Keycloak
 ```
 
-> `db:reset` only affects PostgreSQL. If Keycloak already has the seed users from a previous run, `db:seed` may fail with "user already exists". In that case, delete the conflicting users in the [Keycloak admin console](http://localhost:8080) first, or re-run `pnpm run infra:down && pnpm run infra:up` to reset Keycloak as well (this wipes its database too).
+> `db:reset` only affects PostgreSQL. If Keycloak already has the seed users from a previous run, `db:seed` may fail with "user already exists". In that case, delete the conflicting users in the [Keycloak admin console](http://localhost:8180) first, or re-run `pnpm run infra:down && pnpm run infra:up` to reset Keycloak as well (this wipes its database too).
 
 ---
 
@@ -357,7 +357,7 @@ Then open `apps/patient-mobile/.env` and replace `LAN_IP` with your actual IP:
 
 ```env
 API_URL=http://192.168.1.42:3001/api
-KEYCLOAK_URL=http://192.168.1.42:8080
+KEYCLOAK_URL=http://192.168.1.42:8180
 KEYCLOAK_REALM=clinic
 KEYCLOAK_CLIENT_ID=patient-mobile-client
 ```
@@ -366,7 +366,7 @@ KEYCLOAK_CLIENT_ID=patient-mobile-client
 >
 > ```env
 > API_URL=http://10.0.2.2:3001/api
-> KEYCLOAK_URL=http://10.0.2.2:8080
+> KEYCLOAK_URL=http://10.0.2.2:8180
 > ```
 
 ### 8.4 — Set Up a Device or Emulator
@@ -488,7 +488,7 @@ The easiest method for API testing is the **Resource Owner Password Credentials*
 Open a terminal and run the following command. Replace `<email>` and `<password>` with a valid test account:
 
 ```bash
-curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/token" \
+curl -s -X POST "http://localhost:8180/realms/clinic/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "client_id=api-service-client" \
@@ -501,7 +501,7 @@ curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/tok
 For a patient token, use a patient account and `SEED_PATIENT_PASSWORD`:
 
 ```bash
-curl -s -X POST "http://localhost:8080/realms/clinic/protocol/openid-connect/token" \
+curl -s -X POST "http://localhost:8180/realms/clinic/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "client_id=api-service-client" \
@@ -536,7 +536,7 @@ The response is a JSON object. Copy the `access_token` value — it is the Beare
 >     scope         = "openid"
 > }
 > $r = Invoke-RestMethod -Method Post `
->     -Uri "http://localhost:8080/realms/clinic/protocol/openid-connect/token" `
+>     -Uri "http://localhost:8180/realms/clinic/protocol/openid-connect/token" `
 >     -ContentType "application/x-www-form-urlencoded" `
 >     -Body $body
 > $r.access_token
@@ -554,7 +554,7 @@ The response is a JSON object. Copy the `access_token` value — it is the Beare
 >     scope         = "openid"
 > }
 > $r = Invoke-RestMethod -Method Post `
->     -Uri "http://localhost:8080/realms/clinic/protocol/openid-connect/token" `
+>     -Uri "http://localhost:8180/realms/clinic/protocol/openid-connect/token" `
 >     -ContentType "application/x-www-form-urlencoded" `
 >     -Body $body
 > $r.access_token
@@ -565,7 +565,7 @@ The response is a JSON object. Copy the `access_token` value — it is the Beare
 1. Open Postman and create a new **POST** request.
 2. Set the URL to:
    ```
-   http://localhost:8080/realms/clinic/protocol/openid-connect/token
+   http://localhost:8180/realms/clinic/protocol/openid-connect/token
    ```
 3. Under the **Body** tab, select **x-www-form-urlencoded** and add these key/value pairs:
 
@@ -614,7 +614,7 @@ Tokens are valid for **5 minutes** by default. Request a new one when it expires
 
 To manage users, roles, and clients directly:
 
-1. Open http://localhost:8080
+1. Open http://localhost:8180
 2. Click **Administration Console**
 3. Log in with:
    - **Username:** `admin` (or the value of `KEYCLOAK_ADMIN_USER` in your `.env`)

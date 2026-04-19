@@ -38,7 +38,7 @@ COPY apps/${APP_NAME}/ apps/${APP_NAME}/
 # VITE_* variables are inlined at build time by Vite.
 # Defaults point to localhost which is correct — the user's browser
 # (not the container) makes these requests.
-ARG VITE_KEYCLOAK_URL=http://localhost:8080
+ARG VITE_KEYCLOAK_URL=http://localhost:8180
 ARG VITE_KEYCLOAK_REALM=clinic
 ARG VITE_PATIENT_KEYCLOAK_CLIENT_ID=patient-portal-client
 ARG VITE_DOCTOR_KEYCLOAK_CLIENT_ID=doctor-portal-client

@@ -1,6 +1,20 @@
+# ─────────────────────────────────────────────────────────────
+# Pre-built images compose file — fully self-contained, no clone needed.
+#
+# Save this file anywhere and run:
+#
+#   docker compose -f docker-compose.prebuilt.yml --profile apps up -d --pull always
+#
+# To stop:
+#   docker compose -f docker-compose.prebuilt.yml --profile apps down
+#
+# To fully reset (removes database volume):
+#   docker compose -f docker-compose.prebuilt.yml --profile apps down -v
+# ─────────────────────────────────────────────────────────────
+
 services:
   postgres:
-    image: postgres:16-alpine
+    image: ghcr.io/ceriostesting/cerios-clinic/postgres:latest
     container_name: clinic-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-clinic}
@@ -10,7 +24,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clinic} -d ${POSTGRES_DB:-clinic_db}"]
       interval: 10s
@@ -18,7 +31,7 @@ services:
       retries: 5
 
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.1
+    image: ghcr.io/ceriostesting/cerios-clinic/keycloak:latest
     container_name: clinic-keycloak
     command: start-dev --import-realm
     environment:
@@ -33,9 +46,6 @@ services:
       KC_HTTP_PORT: "8080"
     ports:
       - "8180:8080"
-    volumes:
-      - ./keycloak:/opt/keycloak/data/import
-      - ./keycloak/themes:/opt/keycloak/themes
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,9 +76,7 @@ services:
   db-init:
     profiles: [apps]
     container_name: clinic-db-init
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.db-init
+    image: ghcr.io/ceriostesting/cerios-clinic/db-init:latest
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
@@ -87,11 +95,7 @@ services:
   api-patient:
     profiles: [apps]
     container_name: clinic-api-patient
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.api
-      args:
-        APP_NAME: api-patient
+    image: ghcr.io/ceriostesting/cerios-clinic/api-patient:latest
     ports:
       - "3001:3001"
     environment:
@@ -120,11 +124,7 @@ services:
   api-doctor:
     profiles: [apps]
     container_name: clinic-api-doctor
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.api
-      args:
-        APP_NAME: api-doctor
+    image: ghcr.io/ceriostesting/cerios-clinic/api-doctor:latest
     ports:
       - "3002:3002"
     environment:
@@ -153,11 +153,7 @@ services:
   api-assistant:
     profiles: [apps]
     container_name: clinic-api-assistant
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.api
-      args:
-        APP_NAME: api-assistant
+    image: ghcr.io/ceriostesting/cerios-clinic/api-assistant:latest
     ports:
       - "3003:3003"
     environment:
@@ -183,68 +179,10 @@ services:
       retries: 5
       start_period: 15s
 
-  patient-portal:
-    profiles: [apps]
-    container_name: clinic-patient-portal
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.frontend
-      args:
-        APP_NAME: patient-portal
-        VITE_PATIENT_API_BASE_URL: "http://localhost:3001/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
-        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-        VITE_PATIENT_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_PATIENT_CLIENT_ID:-patient-portal-client}
-    ports:
-      - "5173:80"
-    depends_on:
-      api-patient:
-        condition: service_healthy
-
-  doctor-portal:
-    profiles: [apps]
-    container_name: clinic-doctor-portal
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.frontend
-      args:
-        APP_NAME: doctor-portal
-        VITE_DOCTOR_API_BASE_URL: "http://localhost:3002/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
-        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-        VITE_DOCTOR_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_DOCTOR_CLIENT_ID:-doctor-portal-client}
-    ports:
-      - "5174:80"
-    depends_on:
-      api-doctor:
-        condition: service_healthy
-
-  assistant-portal:
-    profiles: [apps]
-    container_name: clinic-assistant-portal
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.frontend
-      args:
-        APP_NAME: assistant-portal
-        VITE_ASSISTANT_API_BASE_URL: "http://localhost:3003/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
-        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-        VITE_ASSISTANT_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_ASSISTANT_CLIENT_ID:-assistant-portal-client}
-    ports:
-      - "5175:80"
-    depends_on:
-      api-assistant:
-        condition: service_healthy
-
   api-admin:
     profiles: [apps]
     container_name: clinic-api-admin
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.api
-      args:
-        APP_NAME: api-admin
+    image: ghcr.io/ceriostesting/cerios-clinic/api-admin:latest
     ports:
       - "3004:3004"
     environment:
@@ -270,18 +208,40 @@ services:
       retries: 5
       start_period: 15s
 
+  patient-portal:
+    profiles: [apps]
+    container_name: clinic-patient-portal
+    image: ghcr.io/ceriostesting/cerios-clinic/patient-portal:latest
+    ports:
+      - "5173:80"
+    depends_on:
+      api-patient:
+        condition: service_healthy
+
+  doctor-portal:
+    profiles: [apps]
+    container_name: clinic-doctor-portal
+    image: ghcr.io/ceriostesting/cerios-clinic/doctor-portal:latest
+    ports:
+      - "5174:80"
+    depends_on:
+      api-doctor:
+        condition: service_healthy
+
+  assistant-portal:
+    profiles: [apps]
+    container_name: clinic-assistant-portal
+    image: ghcr.io/ceriostesting/cerios-clinic/assistant-portal:latest
+    ports:
+      - "5175:80"
+    depends_on:
+      api-assistant:
+        condition: service_healthy
+
   admin-portal:
     profiles: [apps]
     container_name: clinic-admin-portal
-    build:
-      context: ../
-      dockerfile: infra/docker/Dockerfile.frontend
-      args:
-        APP_NAME: admin-portal
-        VITE_ADMIN_API_BASE_URL: "http://localhost:3004/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
-        VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
-        VITE_ADMIN_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_ADMIN_PORTAL_CLIENT_ID:-admin-portal-client}
+    image: ghcr.io/ceriostesting/cerios-clinic/admin-portal:latest
     ports:
       - "5176:80"
     depends_on:

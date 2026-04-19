@@ -13,7 +13,7 @@ export interface KeycloakRuntimeConfig {
 }
 
 export function loadKeycloakConfig(audienceEnvVar: string): KeycloakRuntimeConfig {
-	const url = parseHttpUrlEnv("KEYCLOAK_URL", "http://localhost:8080");
+	const url = parseHttpUrlEnv("KEYCLOAK_URL", "http://localhost:8180");
 	const realm = readEnvOrDefault("KEYCLOAK_REALM", "clinic");
 	const audience = requireEnv(audienceEnvVar);
 	const adminClientId = readEnvOrDefault("KEYCLOAK_ADMIN_CLIENT_ID", "api-service-client");
@@ -31,7 +31,7 @@ export function loadKeycloakConfig(audienceEnvVar: string): KeycloakRuntimeConfi
 
 	// When the API runs inside Docker it reaches Keycloak via an internal
 	// hostname (e.g. http://keycloak:8080), but the browser obtains tokens
-	// from the public URL (http://localhost:8080). Accept the public issuer
+	// from the public URL (http://localhost:8180). Accept the public issuer
 	// so those tokens pass validation.
 	const publicUrl = readEnvOrDefault("KEYCLOAK_PUBLIC_URL", "");
 	if (publicUrl && publicUrl !== url) {

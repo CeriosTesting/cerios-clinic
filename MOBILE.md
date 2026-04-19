@@ -1,10 +1,29 @@
 # Patient Mobile App (Android)
 
-The patient mobile app is a React Native Android app. Follow these steps to build and run it on an emulator or physical device. **The backend services must be running first** (see the [Quick Start](README.md#quick-start) section in the README).
+The patient mobile app is a React Native Android app. **The backend services must be running first** (see the [Quick Start](README.md#quick-start-pre-built-images--no-clone-needed) section in the README).
 
 ---
 
-## Prerequisites
+## Download the pre-built APK
+
+If you just want to install the app without building it yourself:
+
+1. Go to the GitHub repository → **Actions** tab → **Build Mobile APK** workflow.
+2. Click the latest successful run.
+3. Download the **cerios-patient-mobile** artifact (a `.zip` containing the APK).
+4. Extract the `.zip` and transfer `app-release.apk` to your Android device (e.g. via USB, email, or cloud storage).
+5. On the device, open the APK file and allow installation from unknown sources when prompted.
+6. Open the **Cerios Patient** app and sign in (see [Test Accounts](README.md#test-accounts)).
+
+> The APK is configured for the Android emulator by default (`10.0.2.2` as the host address). To use it on a physical device, the backend must be reachable from the device's network — this requires building from source with the LAN profile (see below).
+
+---
+
+## Building from source
+
+Follow the steps below if you need a custom build (e.g. for a physical device on your network).
+
+### Prerequisites
 
 1. **Node.js 22+** and **pnpm** — See [DEVELOPMENT.md](DEVELOPMENT.md) for installation.
    **pnpm** is not bundled with Node.js. If `pnpm` is not recognised, install it with:
@@ -32,7 +51,7 @@ The patient mobile app is a React Native Android app. Follow these steps to buil
 
 ---
 
-## Step 1 — Install dependencies
+### Step 1 — Install dependencies
 
 From the monorepo root:
 
@@ -40,7 +59,7 @@ From the monorepo root:
 pnpm install
 ```
 
-## Step 2 — Generate Android configuration
+### Step 2 — Generate Android configuration
 
 ```bash
 pnpm run mobile:setup
@@ -48,7 +67,7 @@ pnpm run mobile:setup
 
 This detects your Android SDK and writes `apps/patient-mobile/android/local.properties`. It also patches Gradle's JDK config if your system JDK is newer than 21.
 
-## Step 3 — Configure environment
+### Step 3 — Configure environment
 
 Choose the profile that matches your setup:
 
@@ -72,7 +91,7 @@ This auto-detects your LAN IP. To specify an IP manually:
 pnpm run mobile:env:lan -- --ip=192.168.1.42
 ```
 
-## Step 4 — Set up an emulator or device
+### Step 4 — Set up an emulator or device
 
 **Option A — Android Emulator (no physical device needed)**
 
@@ -91,7 +110,7 @@ pnpm run mobile:env:lan -- --ip=192.168.1.42
    adb devices
    ```
 
-## Step 5 — Build and install
+### Step 5 — Build and install
 
 Make sure Docker services are running, then from the monorepo root:
 
@@ -111,7 +130,7 @@ The first build takes 2–5 minutes. Subsequent builds are much faster (Gradle c
 
 > **Tip:** If Android Studio is open, make sure no Gradle sync or build is running in the IDE — concurrent Gradle processes can conflict.
 
-## Step 6 — Build and run from Android Studio (alternative)
+### Step 6 — Build and run from Android Studio (alternative)
 
 Instead of using the command line, you can build directly from Android Studio:
 
@@ -121,7 +140,7 @@ Instead of using the command line, you can build directly from Android Studio:
 4. Open **Build → Select Build Variant** and choose **release** for the `:app` module.
 5. Click the **Run ▶** button (or press `Shift+F10`).
 
-## Step 7 — Log in to the app
+### Step 7 — Log in to the app
 
 1. Tap **Sign in with Clinic Account**.
 2. The Keycloak login page opens in the device browser.

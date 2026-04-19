@@ -15,10 +15,12 @@ This is a full-stack clinic management application. This guide gets you up and r
 | **Patient Portal**   | http://localhost:5173     | React app — patients view/book appointments                                         |
 | **Doctor Portal**    | http://localhost:5174     | React app — doctors manage their schedule                                           |
 | **Assistant Portal** | http://localhost:5175     | React app — reception/admin staff manage appointments                               |
+| **Admin Portal**     | http://localhost:5176     | React app — system administration                                                   |
 | **Patient API**      | http://localhost:3001/api | NestJS backend for the Patient Portal ([Swagger](http://localhost:3001/api/docs))   |
 | **Doctor API**       | http://localhost:3002/api | NestJS backend for the Doctor Portal ([Swagger](http://localhost:3002/api/docs))    |
 | **Assistant API**    | http://localhost:3003/api | NestJS backend for the Assistant Portal ([Swagger](http://localhost:3003/api/docs)) |
-| **Keycloak**         | http://localhost:8080     | Authentication & user management                                                    |
+| **Admin API**        | http://localhost:3004/api | NestJS backend for the Admin Portal ([Swagger](http://localhost:3004/api/docs))     |
+| **Keycloak**         | http://localhost:8180     | Authentication & user management                                                    |
 | **PostgreSQL**       | localhost:5432            | Database                                                                            |
 | **Mailpit**          | http://localhost:8025     | Local email catcher (dev only)                                                      |
 
@@ -26,48 +28,57 @@ This is a full-stack clinic management application. This guide gets you up and r
 
 ## Prerequisites
 
-You only need two things installed:
+You only need **Docker Desktop** installed:
 
-1. **Docker Desktop** — https://www.docker.com/products/docker-desktop/
-   - After installation, **restart your computer**.
-   - Open Docker Desktop and wait until it shows **"Docker Desktop is running"**.
-   - Windows Home users: Docker Desktop requires WSL 2. The installer will prompt you to enable it.
+- **Docker Desktop** — https://www.docker.com/products/docker-desktop/
+  - After installation, **restart your computer**.
+  - Open Docker Desktop and wait until it shows **"Docker Desktop is running"**.
+  - Windows Home users: Docker Desktop requires WSL 2. The installer will prompt you to enable it.
 
-2. **Git** — https://git-scm.com/download/win
-
-Verify both are working:
+Verify it is working:
 
 ```bash
 docker --version
 docker compose version
-git --version
 ```
 
 ---
 
-## Quick Start
+## Quick Start (pre-built images — no clone needed)
 
-```bash
-git clone <repository-url> clinic
-cd clinic
+Download the compose file and start:
+
+**PowerShell (Windows):**
+
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml" -OutFile "docker-compose.yml"
+docker compose --profile apps up -d --pull always
 ```
 
-Then start everything:
+**Bash (macOS / Linux):**
 
 ```bash
-docker compose -f infra/docker-compose.yml --profile apps up -d --build
+curl -O https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml
+mv docker-compose.prebuilt.yml docker-compose.yml
+docker compose --profile apps up -d --pull always
 ```
 
-> If you have **pnpm** installed (see [DEVELOPMENT.md](DEVELOPMENT.md)), you can use the shorthand: `pnpm run docker:up`
+The first run downloads all images (may take a few minutes). Subsequent runs start in about 10 seconds.
 
-The first build takes several minutes (downloading images, installing dependencies, compiling). Subsequent runs use cached layers and start in about 10 seconds.
+> **Alternative (with Git):** If you prefer to clone the repo:
+>
+> ```bash
+> git clone <repository-url> clinic
+> cd clinic
+> docker compose -f infra/docker-compose.prebuilt.yml --profile apps up -d --pull always
+> ```
 
 ### What happens automatically
 
 1. PostgreSQL, Keycloak, and Mailpit start first.
 2. Once they are healthy, the **db-init** container runs database migrations and seeds test data (then exits).
-3. The three API servers start after db-init completes.
-4. The three frontend portals start after the APIs are healthy.
+3. The four API servers start after db-init completes.
+4. The four frontend portals start after the APIs are healthy.
 
 ### Check the status
 
@@ -128,12 +139,13 @@ All containers should show `Up` or `healthy`. The `clinic-db-init` container wil
 | Patient API   | http://localhost:3001/api/docs |
 | Doctor API    | http://localhost:3002/api/docs |
 | Assistant API | http://localhost:3003/api/docs |
+| Admin API     | http://localhost:3004/api/docs |
 
 ---
 
 ## Keycloak Admin Console
 
-1. Open http://localhost:8080
+1. Open http://localhost:8180
 2. Click **Administration Console**
 3. Log in with username `admin` / password `admin_secret`
 4. Select the **clinic** realm from the dropdown in the top-left corner.
@@ -150,39 +162,34 @@ Open http://localhost:8025 to view the inbox.
 
 ## Docker Commands
 
-| Command                                                                   | Description                                     |
-| ------------------------------------------------------------------------- | ----------------------------------------------- |
-| `docker compose -f infra/docker-compose.yml --profile apps up -d --build` | Build and start everything                      |
-| `docker compose -f infra/docker-compose.yml --profile apps up -d`         | Start everything (no rebuild)                   |
-| `docker compose -f infra/docker-compose.yml --profile apps down`          | Stop and remove all containers                  |
-| `docker compose -f infra/docker-compose.yml --profile apps down -v`       | Stop, remove containers **and delete all data** |
-| `docker compose -f infra/docker-compose.yml --profile apps logs -f`       | Stream logs from all services                   |
-| `docker logs clinic-api-patient -f`                                       | Stream logs from a specific container           |
+| Command                                             | Description                                     |
+| --------------------------------------------------- | ----------------------------------------------- |
+| `docker compose --profile apps up -d --pull always` | Pull latest images and start everything         |
+| `docker compose --profile apps up -d`               | Start everything (no image pull)                |
+| `docker compose --profile apps down`                | Stop and remove all containers                  |
+| `docker compose --profile apps down -v`             | Stop, remove containers **and delete all data** |
+| `docker compose --profile apps logs -f`             | Stream logs from all services                   |
+| `docker logs clinic-api-patient -f`                 | Stream logs from a specific container           |
 
-> If you have pnpm installed, use `pnpm run docker:up`, `pnpm run docker:down`, or `pnpm run docker:reset` as shorthands.
+> These commands assume you renamed the file to `docker-compose.yml`. If you kept the original name, add `-f docker-compose.prebuilt.yml` to each command.
 
 ### Resetting everything
 
 To wipe all data (database, Keycloak users) and start fresh:
 
 ```bash
-docker compose -f infra/docker-compose.yml --profile apps down -v
-docker compose -f infra/docker-compose.yml --profile apps up -d --build
+docker compose --profile apps down -v
+docker compose --profile apps up -d --pull always
 ```
 
 ### After updating Keycloak realm configuration
 
-Keycloak only imports `clinic-realm.json` when the realm does **not yet exist** in the database. If you pull changes that modify the realm (e.g. new clients, updated themes, changed redirect URIs), a normal `docker:up` will **not** apply them. You need to wipe Keycloak's stored data first:
+Keycloak only imports `clinic-realm.json` when the realm does **not yet exist** in the database. If a new version of the images includes realm changes, a normal restart will **not** apply them. You need to wipe the data first:
 
 ```bash
-# Stop all containers and delete the postgres volume (wipes Keycloak realm + all app data)
-docker compose -f infra/docker-compose.yml --profile apps down -v
-
-# Rebuild and start — realm is re-imported from clinic-realm.json, db-init re-seeds test data
-docker compose -f infra/docker-compose.yml --profile apps up -d --build
+docker compose --profile apps down -v
+docker compose --profile apps up -d --pull always
 ```
-
-> This is required any time `infra/keycloak/clinic-realm.json` changes — for example when Keycloak clients are added, renamed, or have their login theme updated.
 
 ---
 
@@ -207,15 +214,18 @@ docker logs <container-name> --tail 50
 
 ### Port already in use
 
-Another application is using one of the required ports (3001–3003, 5173–5175, 5432, 8025, 8080). Close that application or change the port mapping in `infra/docker-compose.yml`.
+Another application is using one of the required ports (3001–3004, 5173–5176, 5432, 8025, 8180). Close that application or stop the service using the port.
 
 ### Rebuilding after code changes
 
+If you are using the pre-built images, pull the latest versions:
+
 ```bash
-docker compose -f infra/docker-compose.yml --profile apps up -d --build
+docker compose --profile apps down
+docker compose --profile apps up -d --pull always
 ```
 
-The `--build` flag forces Docker to rebuild images. Without it, Docker uses cached images.
+The `--pull always` flag ensures Docker downloads the newest images.
 
 ---
 
