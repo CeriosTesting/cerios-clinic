@@ -8,12 +8,10 @@ The patient mobile app is a React Native Android app. **The backend services mus
 
 If you just want to install the app without building it yourself:
 
-1. Go to the GitHub repository → **Actions** tab → **Build Mobile APK** workflow.
-2. Click the latest successful run.
-3. Download the **cerios-patient-mobile** artifact (a `.zip` containing the APK).
-4. Extract the `.zip` and transfer `app-release.apk` to your Android device (e.g. via USB, email, or cloud storage).
-5. On the device, open the APK file and allow installation from unknown sources when prompted.
-6. Open the **Cerios Patient** app and sign in (see [Test Accounts](README.md#test-accounts)).
+1. Go to the [Releases page](https://github.com/CeriosTesting/cerios-clinic/releases) and download the latest `cerios-patient-mobile-*.apk`.
+2. Transfer the APK to your Android device (e.g. via USB, email, or cloud storage).
+3. On the device, open the APK file and allow installation from unknown sources when prompted.
+4. Open the **Cerios Patient** app and sign in (see [Test Accounts](README.md#test-accounts)).
 
 > The APK is configured for the Android emulator by default (`10.0.2.2` as the host address). To use it on a physical device, the backend must be reachable from the device's network — this requires building from source with the LAN profile (see below).
 

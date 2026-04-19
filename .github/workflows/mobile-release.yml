@@ -2,9 +2,14 @@ name: Build Mobile APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version tag (e.g. v1.0.0)"
+        required: true
+        type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -53,3 +58,21 @@ jobs:
           name: cerios-patient-mobile
           path: apps/patient-mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+      - name: Rename APK
+        run: cp apps/patient-mobile/android/app/build/outputs/apk/release/app-release.apk cerios-patient-mobile-${{ inputs.version }}.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Cerios Patient Mobile ${{ inputs.version }}
+          body: |
+            ## Cerios Patient Mobile ${{ inputs.version }}
+
+            ### Download
+            Download the APK below and install it on your Android device.
+
+            ### Setup
+            See [MOBILE.md](https://github.com/${{ github.repository }}/blob/main/MOBILE.md) for instructions.
+          files: cerios-patient-mobile-${{ inputs.version }}.apk
