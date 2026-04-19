@@ -278,8 +278,8 @@ export class AppointmentsController {
 
 	private async recordStatusChangeAndNotify(
 		appointmentId: string,
-		previousStatus: string,
-		newStatus: string,
+		previousStatus: AppointmentStatus,
+		newStatus: AppointmentStatus,
 		changedByKeycloakId: string,
 		updated: ApptWithAll
 	): Promise<void> {
