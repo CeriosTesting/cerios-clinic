@@ -46,11 +46,10 @@ docker compose version
 
 ## Quick Start (pre-built images — no clone needed)
 
-Download the compose file and start:
-
 **PowerShell (Windows):**
 
 ```powershell
+New-Item -ItemType Directory -Force -Path C:\cerios-clinic | Set-Location
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml" -OutFile "docker-compose.yml"
 docker compose --profile apps up -d --pull always
 ```
@@ -58,20 +57,12 @@ docker compose --profile apps up -d --pull always
 **Bash (macOS / Linux):**
 
 ```bash
-curl -O https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml
-mv docker-compose.prebuilt.yml docker-compose.yml
+mkdir -p ~/cerios-clinic && cd ~/cerios-clinic
+curl -o docker-compose.yml https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml
 docker compose --profile apps up -d --pull always
 ```
 
 The first run downloads all images (may take a few minutes). Subsequent runs start in about 10 seconds.
-
-> **Alternative (with Git):** If you prefer to clone the repo:
->
-> ```bash
-> git clone <repository-url> clinic
-> cd clinic
-> docker compose -f infra/docker-compose.prebuilt.yml --profile apps up -d --pull always
-> ```
 
 ### What happens automatically
 
