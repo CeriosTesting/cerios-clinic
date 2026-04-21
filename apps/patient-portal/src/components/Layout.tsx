@@ -1,13 +1,21 @@
 import { Menu, X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 
+import api from "../api";
 import keycloak from "../keycloak";
 
 interface KeycloakTokenParsed {
 	name?: string;
 	preferred_username?: string;
 }
+
+interface ProfileNameData {
+	firstName: string;
+	lastName: string;
+}
+
+export const PROFILE_UPDATED_EVENT = "profile:updated";
 
 const NAV_LINKS = [
 	{ to: "/appointments", label: "My Appointments" },
@@ -19,16 +27,40 @@ const NAV_LINKS = [
 
 export default function Layout(): React.ReactElement {
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const [profileName, setProfileName] = useState<ProfileNameData | null>(null);
 	const location = useLocation();
 
 	const handleLogout = (): void => {
 		void keycloak.logout({ redirectUri: window.location.origin + "/login" });
 	};
 
-	const displayName =
-		(keycloak.tokenParsed as KeycloakTokenParsed)?.name ??
-		(keycloak.tokenParsed as KeycloakTokenParsed)?.preferred_username ??
-		"Unknown";
+	// Keep the header name in sync with the DB profile (source of truth for
+	// edits made on the Profile page). The Keycloak token is only used as a
+	// fallback until the profile has loaded.
+	useEffect(() => {
+		let cancelled = false;
+		const loadProfile = (): void => {
+			void api
+				.get<{ data: ProfileNameData }>("/profile")
+				.then(r => {
+					if (!cancelled) {
+						setProfileName({ firstName: r.data.data.firstName, lastName: r.data.data.lastName });
+					}
+				})
+				.catch(() => {});
+		};
+		loadProfile();
+		window.addEventListener(PROFILE_UPDATED_EVENT, loadProfile);
+		return (): void => {
+			cancelled = true;
+			window.removeEventListener(PROFILE_UPDATED_EVENT, loadProfile);
+		};
+	}, []);
+
+	const tokenParsed = keycloak.tokenParsed as KeycloakTokenParsed | undefined;
+	const displayName = profileName
+		? `${profileName.firstName} ${profileName.lastName}`.trim()
+		: (tokenParsed?.name ?? tokenParsed?.preferred_username ?? "Unknown");
 
 	// Close mobile menu on navigation
 	React.useEffect(() => {

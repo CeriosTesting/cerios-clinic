@@ -3,6 +3,7 @@ import { FEATURE_TOGGLE_KEYS } from "@clinic/shared-types";
 import React, { useEffect, useState } from "react";
 
 import api from "../api";
+import { PROFILE_UPDATED_EVENT } from "../components/Layout";
 
 const PHONE_REGEX = /^[+\d\s\-().]{7,20}$/;
 
@@ -104,6 +105,7 @@ export default function ProfilePage(): React.ReactElement {
 		try {
 			await api.put("/profile", form);
 			setSuccess(true);
+			window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT));
 		} catch {
 			setError("Could not save profile. Please try again.");
 		} finally {

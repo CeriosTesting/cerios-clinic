@@ -20,6 +20,23 @@ export function requireEnv(name: string): string {
 	return value;
 }
 
+export function parseBoolEnv(name: string, fallback: boolean): boolean {
+	const value = readEnv(name);
+	if (!value) {
+		return fallback;
+	}
+
+	const normalized = value.toLowerCase();
+	if (["1", "true", "yes", "on"].includes(normalized)) {
+		return true;
+	}
+	if (["0", "false", "no", "off"].includes(normalized)) {
+		return false;
+	}
+
+	throw new Error(`${name} must be a boolean value (true/false, 1/0, yes/no, on/off)`);
+}
+
 export function parsePortEnv(name: string, fallback: number): number {
 	const value = readEnv(name);
 	if (!value) {

@@ -104,9 +104,12 @@ export class AuthController {
 	@HttpCode(HttpStatus.OK)
 	@ApiOperation({ summary: "Sync Keycloak patient user into local DB after first login" })
 	async syncUser(@CurrentUser() user: KeycloakTokenPayload): Promise<{ data: unknown }> {
+		// Only seed firstName/lastName from the Keycloak token on first login (create).
+		// On subsequent syncs, preserve any profile edits the patient has made in the portal;
+		// otherwise each visit to the home page would overwrite the DB with the token values.
 		const dbUser = await this.prisma.user.upsert({
 			where: { keycloakId: user.sub },
-			update: { email: user.email, firstName: user.given_name, lastName: user.family_name },
+			update: { email: user.email },
 			create: {
 				keycloakId: user.sub,
 				email: user.email,

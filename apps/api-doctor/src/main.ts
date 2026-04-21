@@ -1,6 +1,6 @@
 import "reflect-metadata";
 
-import { bootstrapApi } from "@clinic/api-common";
+import { bootstrapApi, parseBoolEnv } from "@clinic/api-common";
 
 import { AppModule } from "./app.module";
 import { getApiRuntimeEnv } from "./config/env";
@@ -15,7 +15,7 @@ async function bootstrap(): Promise<void> {
 		corsOrigins: env.corsOrigins,
 		swaggerTitle: "Doctor API",
 		swaggerDescription: "API for the Doctor Portal",
-		enableSwagger: env.nodeEnv !== "production",
+		enableSwagger: parseBoolEnv("ENABLE_SWAGGER", env.nodeEnv !== "production"),
 	});
 }
 void bootstrap();
