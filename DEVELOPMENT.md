@@ -196,14 +196,11 @@ The seed script creates the following accounts. Staff accounts use the password 
 
 #### Doctors — log in at http://localhost:5174
 
-| Email                      | Name             | Specialty           |
-| -------------------------- | ---------------- | ------------------- |
-| `admin@clinic.local`       | System Admin     | Doctor + Admin role |
-| `dr.smith@clinic.local`    | James Smith      | General Practice    |
-| `dr.johnson@clinic.local`  | Sarah Johnson    | Cardiology          |
-| `dr.williams@clinic.local` | Michael Williams | Neurology           |
-
-> The `admin@clinic.local` account's password is set in `KEYCLOAK_REALM_ADMIN_PASSWORD` (default: `Admin1234!`), not in `SEED_STAFF_PASSWORD`.
+| Email                      | Name             | Specialty        |
+| -------------------------- | ---------------- | ---------------- |
+| `dr.smith@clinic.local`    | James Smith      | General Practice |
+| `dr.johnson@clinic.local`  | Sarah Johnson    | Cardiology       |
+| `dr.williams@clinic.local` | Michael Williams | Neurology        |
 
 #### Assistants — log in at http://localhost:5175
 
@@ -212,6 +209,14 @@ The seed script creates the following accounts. Staff accounts use the password 
 | `assistant.brown@clinic.local`  | Emily Brown  | Reception       |
 | `assistant.davis@clinic.local`  | Robert Davis | Cardiology Wing |
 | `assistant.miller@clinic.local` | Lisa Miller  | Neurology Wing  |
+
+#### Admin — log in at http://localhost:5176
+
+| Email                | Name         | Role    |
+| -------------------- | ------------ | ------- |
+| `admin@clinic.local` | System Admin | `admin` |
+
+> The `admin@clinic.local` account's password is set in `KEYCLOAK_REALM_ADMIN_PASSWORD` (default: `Admin1234!`), not in `SEED_STAFF_PASSWORD`.
 
 #### Patients — log in at http://localhost:5173
 
@@ -604,7 +609,7 @@ Use an account that has the right role:
 - **Patient endpoints** → use `patient.wilson@example.com` (role: `patient`, password: `SEED_PATIENT_PASSWORD`)
 - **Doctor endpoints** → use `dr.smith@clinic.local` (role: `doctor`)
 - **Assistant endpoints** → use `assistant.brown@clinic.local` (role: `assistant`)
-- **All endpoints** → use `admin@clinic.local` (roles: `doctor` + `admin`)
+- **Admin endpoints** → use `admin@clinic.local` (role: `admin`, password: `KEYCLOAK_REALM_ADMIN_PASSWORD`)
 
 Tokens are valid for **5 minutes** by default. Request a new one when it expires.
 

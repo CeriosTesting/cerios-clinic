@@ -58,15 +58,15 @@ POST {KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token
 
 Default password: value of `SEED_STAFF_PASSWORD` (default `Clinic1234!`).
 
-| Email                           | Role               | Use With API                                                     |
-| ------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `admin@clinic.local`            | `doctor` + `admin` | Doctor (`:3002`) and Assistant (`:3003`) — password `Admin1234!` |
-| `dr.smith@clinic.local`         | `doctor`           | Doctor API (`:3002`)                                             |
-| `dr.johnson@clinic.local`       | `doctor`           | Doctor API (`:3002`)                                             |
-| `dr.williams@clinic.local`      | `doctor`           | Doctor API (`:3002`)                                             |
-| `assistant.brown@clinic.local`  | `assistant`        | Assistant API (`:3003`)                                          |
-| `assistant.davis@clinic.local`  | `assistant`        | Assistant API (`:3003`)                                          |
-| `assistant.miller@clinic.local` | `assistant`        | Assistant API (`:3003`)                                          |
+| Email                           | Role        | Use With API                                |
+| ------------------------------- | ----------- | ------------------------------------------- |
+| `admin@clinic.local`            | `admin`     | Admin API (`:3004`) — password `Admin1234!` |
+| `dr.smith@clinic.local`         | `doctor`    | Doctor API (`:3002`)                        |
+| `dr.johnson@clinic.local`       | `doctor`    | Doctor API (`:3002`)                        |
+| `dr.williams@clinic.local`      | `doctor`    | Doctor API (`:3002`)                        |
+| `assistant.brown@clinic.local`  | `assistant` | Assistant API (`:3003`)                     |
+| `assistant.davis@clinic.local`  | `assistant` | Assistant API (`:3003`)                     |
+| `assistant.miller@clinic.local` | `assistant` | Assistant API (`:3003`)                     |
 
 ### Patients
 

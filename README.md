@@ -111,15 +111,13 @@ All containers should show `Up` or `healthy`. The `clinic-db-init` container wil
 
 ### Doctors — log in at http://localhost:5174
 
-| Email                      | Name             | Specialty           |
-| -------------------------- | ---------------- | ------------------- |
-| `admin@clinic.local`       | System Admin     | Doctor + Admin role |
-| `dr.smith@clinic.local`    | James Smith      | General Practice    |
-| `dr.johnson@clinic.local`  | Sarah Johnson    | Cardiology          |
-| `dr.williams@clinic.local` | Michael Williams | Neurology           |
+| Email                      | Name             | Specialty        |
+| -------------------------- | ---------------- | ---------------- |
+| `dr.smith@clinic.local`    | James Smith      | General Practice |
+| `dr.johnson@clinic.local`  | Sarah Johnson    | Cardiology       |
+| `dr.williams@clinic.local` | Michael Williams | Neurology        |
 
-> `admin@clinic.local` uses password `Admin1234!` (from `KEYCLOAK_REALM_ADMIN_PASSWORD`).
-> All other staff accounts use password `Clinic1234!` (from `SEED_STAFF_PASSWORD`).
+> Staff accounts use password `Clinic1234!` (from `SEED_STAFF_PASSWORD`).
 
 ### Assistants — log in at http://localhost:5175
 
@@ -128,6 +126,14 @@ All containers should show `Up` or `healthy`. The `clinic-db-init` container wil
 | `assistant.brown@clinic.local`  | Emily Brown  | Reception       |
 | `assistant.davis@clinic.local`  | Robert Davis | Cardiology Wing |
 | `assistant.miller@clinic.local` | Lisa Miller  | Neurology Wing  |
+
+### Admin — log in at http://localhost:5176
+
+| Email                | Name         | Role    |
+| -------------------- | ------------ | ------- |
+| `admin@clinic.local` | System Admin | `admin` |
+
+> The admin account uses password `Admin1234!` (from `KEYCLOAK_REALM_ADMIN_PASSWORD`).
 
 ### Patients — log in at http://localhost:5173
 
