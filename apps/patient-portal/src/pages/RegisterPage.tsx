@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { appConfig } from "../config";
 import keycloak from "../keycloak";
 
 interface FormState {
@@ -29,6 +30,8 @@ export default function RegisterPage(): React.ReactElement {
 	const [submitting, setSubmitting] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [registeredEmail, setRegisteredEmail] = useState<string>("");
+	const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
 		setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -56,7 +59,8 @@ export default function RegisterPage(): React.ReactElement {
 			if (form.dateOfBirth) body.dateOfBirth = form.dateOfBirth;
 			if (form.phone.trim()) body.phone = form.phone.trim();
 
-			await axios.post("http://localhost:3001/api/auth/register", body);
+			await axios.post(`${appConfig.apiBaseUrl}/auth/register`, body);
+			setRegisteredEmail(body.email);
 			setSuccess(true);
 		} catch (err: unknown) {
 			if (axios.isAxiosError(err)) {
@@ -80,6 +84,17 @@ export default function RegisterPage(): React.ReactElement {
 
 	const handleSignIn = (): void => {
 		void keycloak.login({ loginHint: form.email, redirectUri: window.location.origin + "/" });
+	};
+
+	const handleResendVerification = async (): Promise<void> => {
+		if (!registeredEmail || resendState === "sending") return;
+		setResendState("sending");
+		try {
+			await axios.post(`${appConfig.apiBaseUrl}/auth/resend-verification`, { email: registeredEmail });
+		} catch {
+			// endpoint is intentionally opaque — treat any response as "sent" to avoid leaking state
+		}
+		setResendState("sent");
 	};
 
 	return (
@@ -109,10 +124,24 @@ export default function RegisterPage(): React.ReactElement {
 									<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
 								</svg>
 							</div>
-							<h2 className="text-xl font-semibold text-brand-navy mb-2">Account created!</h2>
-							<p className="text-gray-500 text-sm mb-6">
-								Your patient account has been created successfully. Sign in to get started.
+							<h2 className="text-xl font-semibold text-brand-navy mb-2">Check your email</h2>
+							<p className="text-gray-500 text-sm mb-2">
+								We sent a verification link to <span className="font-medium text-brand-navy">{registeredEmail}</span>.
 							</p>
+							<p className="text-gray-500 text-sm mb-6">Click the link in the email before signing in.</p>
+							<button
+								onClick={() => {
+									void handleResendVerification();
+								}}
+								disabled={resendState !== "idle"}
+								className="btn-outline w-full mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+							>
+								{resendState === "sending"
+									? "Sending…"
+									: resendState === "sent"
+										? "Verification email re-sent"
+										: "Resend verification email"}
+							</button>
 							<button onClick={handleSignIn} className="btn-primary w-full">
 								Sign in
 							</button>

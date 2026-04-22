@@ -62,6 +62,26 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/CeriosTesting/cerio
 docker compose --profile apps up -d --pull always
 ```
 
+### Updating an existing installation (faster)
+
+If you already ran setup before, use these commands instead of repeating first-time setup.
+
+**PowerShell (Windows):**
+
+```powershell
+Set-Location C:\cerios-clinic
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml" -OutFile "docker-compose.yml"
+docker compose --profile apps up -d --pull always --remove-orphans
+```
+
+**Bash (macOS / Linux):**
+
+```bash
+cd ~/cerios-clinic
+curl -o docker-compose.yml https://raw.githubusercontent.com/CeriosTesting/cerios-clinic/main/infra/docker-compose.prebuilt.yml
+docker compose --profile apps up -d --pull always --remove-orphans
+```
+
 The first run downloads all images (may take a few minutes). Subsequent runs start in about 10 seconds.
 
 ### What happens automatically
@@ -153,14 +173,15 @@ Open http://localhost:8025 to view the inbox.
 
 ## Docker Commands
 
-| Command                                             | Description                                     |
-| --------------------------------------------------- | ----------------------------------------------- |
-| `docker compose --profile apps up -d --pull always` | Pull latest images and start everything         |
-| `docker compose --profile apps up -d`               | Start everything (no image pull)                |
-| `docker compose --profile apps down`                | Stop and remove all containers                  |
-| `docker compose --profile apps down -v`             | Stop, remove containers **and delete all data** |
-| `docker compose --profile apps logs -f`             | Stream logs from all services                   |
-| `docker logs clinic-api-patient -f`                 | Stream logs from a specific container           |
+| Command                                                              | Description                                     |
+| -------------------------------------------------------------------- | ----------------------------------------------- |
+| `docker compose --profile apps up -d --pull always`                  | Pull latest images and start everything         |
+| `docker compose --profile apps up -d --pull always --remove-orphans` | Update existing installation (recommended)      |
+| `docker compose --profile apps up -d`                                | Start everything (no image pull)                |
+| `docker compose --profile apps down`                                 | Stop and remove all containers                  |
+| `docker compose --profile apps down -v`                              | Stop, remove containers **and delete all data** |
+| `docker compose --profile apps logs -f`                              | Stream logs from all services                   |
+| `docker logs clinic-api-patient -f`                                  | Stream logs from a specific container           |
 
 > These commands assume you renamed the file to `docker-compose.yml`. If you kept the original name, add `-f docker-compose.prebuilt.yml` to each command.
 

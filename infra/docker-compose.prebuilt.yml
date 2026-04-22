@@ -109,6 +109,7 @@ services:
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-api_service_secret_change_in_prod}
       API_PATIENT_CORS_ORIGINS: "http://localhost:5173"
+      PATIENT_PORTAL_URL: "http://localhost:5173"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
     depends_on:

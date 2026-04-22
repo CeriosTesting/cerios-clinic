@@ -1,5 +1,4 @@
-import { MailService } from "@clinic/api-common";
-import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException, Logger } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { IsEmail, IsString, MinLength, IsOptional, IsDateString, Matches } from "class-validator";
 
@@ -38,19 +37,30 @@ class RegisterDto {
 	phone?: string;
 }
 
+class ResendVerificationDto {
+	@IsEmail()
+	email!: string;
+}
+
+// Minimum seconds between resend-verification attempts for the same email.
+// Intentionally in-memory: this is a test/demo app, not a production throttle.
+const RESEND_THROTTLE_SECONDS = 60;
+
 @ApiTags("auth")
 @Controller("auth")
 export class AuthController {
+	private readonly logger = new Logger(AuthController.name);
+	private readonly resendLastSent = new Map<string, number>();
+
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly keycloakAdmin: KeycloakAdminService,
-		private readonly mail: MailService
+		private readonly keycloakAdmin: KeycloakAdminService
 	) {}
 
 	@Post("register")
 	@HttpCode(HttpStatus.CREATED)
 	@ApiOperation({ summary: "Register a new patient account" })
-	@ApiResponse({ status: 201, description: "Account created successfully" })
+	@ApiResponse({ status: 201, description: "Account created — verification email sent" })
 	@ApiResponse({ status: 409, description: "Email already registered" })
 	async register(@Body() dto: RegisterDto): Promise<{ message: string }> {
 		if (dto.password !== dto.confirmPassword) {
@@ -92,10 +102,43 @@ export class AuthController {
 			throw err;
 		}
 
-		// Send welcome email
-		void this.mail.sendWelcome(dto.email, `${dto.firstName} ${dto.lastName}`);
+		// Trigger Keycloak to send the verification email. If this fails we still
+		// keep the account (user can use resend-verification), so swallow errors.
+		try {
+			await this.keycloakAdmin.sendVerifyEmail(keycloakId);
+			this.resendLastSent.set(dto.email.toLowerCase(), Date.now());
+		} catch (err) {
+			this.logger.warn(`Verification email send failed for ${dto.email}: ${(err as Error).message}`);
+		}
 
-		return { message: "Account created successfully" };
+		return { message: "Account created. Please check your email to verify your address before signing in." };
+	}
+
+	@Post("resend-verification")
+	@HttpCode(HttpStatus.NO_CONTENT)
+	@ApiOperation({ summary: "Resend the email verification link for a patient account" })
+	@ApiResponse({ status: 204, description: "Request accepted (response is intentionally opaque)" })
+	async resendVerification(@Body() dto: ResendVerificationDto): Promise<void> {
+		const email = dto.email.trim().toLowerCase();
+
+		// Per-email throttle. Return 204 regardless so callers can't probe timing.
+		const last = this.resendLastSent.get(email);
+		if (last && Date.now() - last < RESEND_THROTTLE_SECONDS * 1000) {
+			return;
+		}
+		this.resendLastSent.set(email, Date.now());
+
+		const user = await this.keycloakAdmin.findUserByEmail(email);
+		if (!user || user.emailVerified) {
+			// Don't reveal whether the email exists or is already verified.
+			return;
+		}
+
+		try {
+			await this.keycloakAdmin.sendVerifyEmail(user.id);
+		} catch (err) {
+			this.logger.warn(`Resend verification failed for ${email}: ${(err as Error).message}`);
+		}
 	}
 
 	@Post("sync")

@@ -629,6 +629,20 @@ All emails sent by the application (password resets, etc.) are captured locally 
 
 Open http://localhost:8025 to view the inbox.
 
+### Patient self-registration with email verification (test walkthrough)
+
+Patient self-registration creates an unverified Keycloak user and sends a verification email through Mailpit. Login is blocked until the user clicks the link.
+
+1. Ensure the stack is running from a clean install so the updated realm import and service-account permissions are applied: `pnpm run docker:reset`.
+2. Open the patient portal at http://localhost:5173 and click **Create account**.
+3. Fill in the form and submit. The portal confirms the account was created and points you to your inbox.
+4. Open Mailpit at http://localhost:8025. A **"Verify email"** message from `noreply@clinic.local` should appear within a few seconds.
+5. Click the **Link to e-mail address verification** link in the message. Keycloak completes verification and redirects back to the portal.
+6. Sign in from the portal using the email and password you registered with. Login should now succeed.
+7. (Optional) To exercise the resend flow, register a second account and click **Resend verification email** on the success panel before clicking the first link. A new verification email appears in Mailpit. The resend endpoint is throttled to one request per minute per email and returns `204` regardless of whether the email exists, to avoid enumeration.
+
+If login fails with "Email not verified", return to Mailpit and click the verification link first. If no email arrives, check `docker logs clinic-api-patient` for a `[send verification email]` error line — this is the only place the real Keycloak response is surfaced.
+
 ---
 
 ## Useful Commands
