@@ -224,7 +224,7 @@
 			"enabled": true,
 			"serviceAccountClientId": "api-service-client",
 			"clientRoles": {
-				"realm-management": ["manage-users", "view-users", "query-users", "view-clients"]
+				"realm-management": ["manage-users", "view-users", "query-users", "view-clients", "manage-realm", "view-realm"]
 			}
 		}
 	]

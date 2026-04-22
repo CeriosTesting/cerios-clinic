@@ -9,8 +9,16 @@ import {
 
 import { getApiRuntimeEnv } from "../config/env";
 
-/** realm-management client roles required by this service to create/manage patients. */
-const REQUIRED_REALM_MGMT_ROLES = ["manage-users", "view-users", "query-users", "view-clients"] as const;
+/** realm-management client roles required by this service to create/manage patients
+ * and keep critical realm flags (e.g. verifyEmail) in sync. */
+const REQUIRED_REALM_MGMT_ROLES = [
+	"manage-users",
+	"view-users",
+	"query-users",
+	"view-clients",
+	"manage-realm",
+	"view-realm",
+] as const;
 
 @Injectable()
 export class KeycloakAdminService implements OnApplicationBootstrap {
@@ -50,6 +58,46 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 				`Could not verify/assign realm-management roles for service account on startup: ${(err as Error).message}`
 			);
 		}
+		try {
+			await this.ensureRealmVerifyEmail();
+		} catch (err) {
+			this.logger.warn(`Could not verify/enable realm verifyEmail flag on startup: ${(err as Error).message}`);
+		}
+	}
+
+	/**
+	 * Ensures the realm has `verifyEmail: true` so new users must verify their
+	 * email before they can log in. Self-heals installations whose realm was
+	 * imported from an older `clinic-realm.json` with the flag disabled
+	 * (Keycloak skips re-import once the realm exists in the database).
+	 *
+	 * Idempotent and best-effort: any failure is logged but does not prevent
+	 * app startup.
+	 */
+	private async ensureRealmVerifyEmail(): Promise<void> {
+		const token = await this.getAdminToken();
+		const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+		const realmEndpoint = `${this.baseUrl}/admin/realms/${this.realm}`;
+
+		const getRes = await fetch(realmEndpoint, { headers });
+		if (!getRes.ok) {
+			await this.failKeycloak("read realm configuration", realmEndpoint, getRes);
+		}
+		const realm = (await getRes.json()) as { verifyEmail?: boolean };
+		if (realm.verifyEmail === true) {
+			this.logger.log(`Realm '${this.realm}' already enforces email verification.`);
+			return;
+		}
+
+		const putRes = await fetch(realmEndpoint, {
+			method: "PUT",
+			headers: { ...headers, "Content-Type": "application/json" },
+			body: JSON.stringify({ ...realm, verifyEmail: true }),
+		});
+		if (!putRes.ok) {
+			await this.failKeycloak("enable verifyEmail on realm", realmEndpoint, putRes);
+		}
+		this.logger.log(`Self-healed realm '${this.realm}': set verifyEmail = true.`);
 	}
 
 	private async ensureServiceAccountRoles(): Promise<void> {
@@ -234,8 +282,11 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 	}
 
 	/**
-	 * Triggers Keycloak to send a VERIFY_EMAIL action email to the user. The
-	 * verification link returns the user to the patient portal on completion.
+	 * Triggers Keycloak to send a "Verify email" activation email to the user.
+	 * Uses the dedicated `send-verify-email` endpoint (which renders the
+	 * "Verify email" template) rather than `execute-actions-email` (which
+	 * renders the generic "Update your account" template). The verification
+	 * link returns the user to the patient portal on completion.
 	 */
 	async sendVerifyEmail(keycloakId: string): Promise<void> {
 		const token = await this.getAdminToken();
@@ -243,14 +294,12 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 			client_id: this.patientClientId,
 			redirect_uri: this.patientPortalUrl,
 		});
-		const endpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}/execute-actions-email?${params.toString()}`;
+		const endpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}/send-verify-email?${params.toString()}`;
 		const res = await fetch(endpoint, {
 			method: "PUT",
 			headers: {
 				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
 			},
-			body: JSON.stringify(["VERIFY_EMAIL"]),
 		});
 		if (!res.ok) {
 			await this.failKeycloak("send verification email", endpoint, res);

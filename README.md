@@ -84,6 +84,28 @@ docker compose --profile apps up -d --pull always --remove-orphans
 
 The first run downloads all images (may take a few minutes). Subsequent runs start in about 10 seconds.
 
+> ⚠️ **This does NOT re-import the Keycloak realm.** `--pull always` updates the application images, but Keycloak only imports `clinic-realm.json` when the realm does **not yet exist** in Postgres. Because Postgres data persists in a Docker volume, any realm changes in a new release (new clients, roles, flags like `verifyEmail`, SMTP settings, etc.) are **not** applied by a plain update.
+>
+> If release notes mention Keycloak/realm changes — or you hit authentication or registration issues after updating — do a full reset instead:
+>
+> **PowerShell (Windows):**
+>
+> ```powershell
+> Set-Location C:\cerios-clinic
+> docker compose --profile apps down -v
+> docker compose --profile apps up -d --pull always
+> ```
+>
+> **Bash (macOS / Linux):**
+>
+> ```bash
+> cd ~/cerios-clinic
+> docker compose --profile apps down -v
+> docker compose --profile apps up -d --pull always
+> ```
+>
+> `down -v` deletes the Postgres volume, so any users/appointments you created ad-hoc are lost — the seeded test accounts are recreated automatically by `db-init`.
+
 ### What happens automatically
 
 1. PostgreSQL, Keycloak, and Mailpit start first.
@@ -193,16 +215,7 @@ Open http://localhost:8025 to view the inbox.
 
 ### Resetting everything
 
-To wipe all data (database, Keycloak users) and start fresh:
-
-```bash
-docker compose --profile apps down -v
-docker compose --profile apps up -d --pull always
-```
-
-### After updating Keycloak realm configuration
-
-Keycloak only imports `clinic-realm.json` when the realm does **not yet exist** in the database. If a new version of the images includes realm changes, a normal restart will **not** apply them. You need to wipe the data first:
+To wipe all data (database, Keycloak users) and start fresh — also required when a new release changes the Keycloak realm, since Keycloak only imports `clinic-realm.json` when the realm does not yet exist in the database:
 
 ```bash
 docker compose --profile apps down -v
