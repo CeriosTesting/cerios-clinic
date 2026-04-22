@@ -2,6 +2,8 @@ import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards, NotFoundExcept
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 const PRESCRIPTION_INCLUDE = {
@@ -13,7 +15,8 @@ const PRESCRIPTION_INCLUDE = {
 
 @ApiTags("prescriptions")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("assistant")
 @Controller("prescriptions")
 export class PrescriptionsController {
 	constructor(private readonly prisma: PrismaService) {}

@@ -14,7 +14,7 @@ void keycloak
 	})
 	.then(authenticated => {
 		const root = createRoot(document.getElementById("root")!);
-		if (authenticated && !keycloak.hasRealmRole("doctor") && !keycloak.hasRealmRole("admin")) {
+		if (authenticated && !keycloak.hasRealmRole("doctor")) {
 			root.render(
 				<div
 					style={{

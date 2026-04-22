@@ -18,6 +18,8 @@ import { IsString, IsOptional, IsArray, ValidateNested, IsUUID } from "class-val
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { KeycloakTokenPayload } from "../auth/jwt.strategy";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 class PrescriptionItemDto {
@@ -56,7 +58,8 @@ const PRESCRIPTION_INCLUDE = {
 
 @ApiTags("prescriptions")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("doctor")
 @Controller("prescriptions")
 export class PrescriptionsController {
 	constructor(private readonly prisma: PrismaService) {}

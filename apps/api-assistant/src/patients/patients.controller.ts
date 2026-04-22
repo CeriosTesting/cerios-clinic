@@ -38,7 +38,7 @@ class SearchPatientsQuery {
 @ApiTags("patients")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("assistant", "admin")
+@Roles("assistant")
 @Controller("patients")
 export class PatientsController {
 	constructor(private readonly prisma: PrismaService) {}

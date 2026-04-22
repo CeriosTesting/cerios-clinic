@@ -5,13 +5,16 @@ import { Prisma } from "@prisma/client";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { KeycloakTokenPayload } from "../auth/jwt.strategy";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 type UserWithDoctor = Prisma.UserGetPayload<{ include: { doctor: true } }>;
 
 @ApiTags("profile")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("doctor")
 @Controller("profile")
 export class ProfileController {
 	constructor(private readonly prisma: PrismaService) {}

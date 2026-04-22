@@ -1,4 +1,4 @@
-import { EventsModule, MailModule } from "@clinic/api-common";
+import { EventsModule, JwtAuthGuard, MailModule } from "@clinic/api-common";
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
@@ -20,6 +20,9 @@ import { PrismaModule } from "./prisma/prisma.module";
 		FeatureTogglesModule,
 		HealthModule,
 	],
-	providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+	providers: [
+		{ provide: APP_GUARD, useClass: ThrottlerGuard },
+		{ provide: APP_GUARD, useClass: JwtAuthGuard },
+	],
 })
 export class AppModule {}

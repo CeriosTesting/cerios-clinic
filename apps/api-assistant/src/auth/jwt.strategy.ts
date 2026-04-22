@@ -29,8 +29,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 	validate(payload: KeycloakTokenPayload): KeycloakTokenPayload {
 		const roles = payload.realm_access?.roles ?? [];
-		if (!roles.includes("assistant") && !roles.includes("admin")) {
-			throw new UnauthorizedException("Assistant or admin role required");
+		if (!roles.includes("assistant")) {
+			throw new UnauthorizedException("Assistant role required");
 		}
 		return payload;
 	}

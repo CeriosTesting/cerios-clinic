@@ -16,6 +16,8 @@ import { IsDateString, IsOptional, IsString } from "class-validator";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { KeycloakTokenPayload } from "../auth/jwt.strategy";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 class CreateUnavailabilityDto {
@@ -32,7 +34,8 @@ class CreateUnavailabilityDto {
 
 @ApiTags("availability")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("doctor")
 @Controller("availability")
 export class AvailabilityController {
 	constructor(private readonly prisma: PrismaService) {}

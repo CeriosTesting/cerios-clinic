@@ -2,11 +2,14 @@ import { Controller, Get, Param, ParseUUIDPipe, UseGuards, Query } from "@nestjs
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 @ApiTags("reviews")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("assistant")
 @Controller("reviews")
 export class ReviewsController {
 	constructor(private readonly prisma: PrismaService) {}

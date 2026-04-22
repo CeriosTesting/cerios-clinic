@@ -26,6 +26,8 @@ import { IsString, IsOptional, IsEnum, IsDateString, IsUUID } from "class-valida
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { KeycloakTokenPayload } from "../auth/jwt.strategy";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 type ApptWithAll = Prisma.AppointmentGetPayload<{
@@ -65,7 +67,8 @@ class UpdateAppointmentDto {
 
 @ApiTags("appointments")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("assistant")
 @Controller("appointments")
 export class AppointmentsController {
 	constructor(

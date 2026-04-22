@@ -1,3 +1,4 @@
+import { Public } from "@clinic/api-common";
 import { Controller, Post, Body, UseGuards, HttpCode, HttpStatus, BadRequestException, Logger } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { IsEmail, IsString, MinLength, IsOptional, IsDateString, Matches } from "class-validator";
@@ -8,6 +9,8 @@ import { CurrentUser } from "./current-user.decorator";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { KeycloakTokenPayload } from "./jwt.strategy";
 import { KeycloakAdminService } from "./keycloak-admin.service";
+import { Roles } from "./roles.decorator";
+import { RolesGuard } from "./roles.guard";
 
 class RegisterDto {
 	@IsEmail()
@@ -57,6 +60,7 @@ export class AuthController {
 		private readonly keycloakAdmin: KeycloakAdminService
 	) {}
 
+	@Public()
 	@Post("register")
 	@HttpCode(HttpStatus.CREATED)
 	@ApiOperation({ summary: "Register a new patient account" })
@@ -114,6 +118,7 @@ export class AuthController {
 		return { message: "Account created. Please check your email to verify your address before signing in." };
 	}
 
+	@Public()
 	@Post("resend-verification")
 	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiOperation({ summary: "Resend the email verification link for a patient account" })
@@ -142,7 +147,8 @@ export class AuthController {
 	}
 
 	@Post("sync")
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles("patient")
 	@ApiBearerAuth()
 	@HttpCode(HttpStatus.OK)
 	@ApiOperation({ summary: "Sync Keycloak patient user into local DB after first login" })

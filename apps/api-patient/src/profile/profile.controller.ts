@@ -19,6 +19,8 @@ import { IsString, IsOptional, IsDateString } from "class-validator";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { KeycloakTokenPayload } from "../auth/jwt.strategy";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -62,7 +64,8 @@ function validateProfileDto(dto: UpdateProfileDto): string[] {
 
 @ApiTags("profile")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("patient")
 @Controller("profile")
 export class ProfileController {
 	constructor(private readonly prisma: PrismaService) {}

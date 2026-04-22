@@ -12,6 +12,8 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { Roles } from "../auth/roles.decorator";
+import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 /** Slot duration in minutes */
@@ -59,7 +61,8 @@ function todayUTC(): Date {
 
 @ApiTags("doctors")
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles("patient")
 @Controller("doctors")
 export class DoctorsController {
 	constructor(private readonly prisma: PrismaService) {}
