@@ -107,6 +107,7 @@ services:
     environment:
       PORT: "3001"
       NODE_ENV: production
+      ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
       KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
@@ -137,6 +138,7 @@ services:
     environment:
       PORT: "3002"
       NODE_ENV: production
+      ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
       KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
@@ -166,6 +168,7 @@ services:
     environment:
       PORT: "3003"
       NODE_ENV: production
+      ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
       KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
@@ -195,6 +198,7 @@ services:
     environment:
       PORT: "3004"
       NODE_ENV: production
+      ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
       KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
