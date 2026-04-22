@@ -1,10 +1,19 @@
 import { readEnvOrDefault } from "@clinic/api-common";
-import { Injectable, ConflictException, InternalServerErrorException, Logger } from "@nestjs/common";
+import {
+	Injectable,
+	ConflictException,
+	InternalServerErrorException,
+	Logger,
+	OnApplicationBootstrap,
+} from "@nestjs/common";
 
 import { getApiRuntimeEnv } from "../config/env";
 
+/** realm-management client roles required by this service to create/manage patients. */
+const REQUIRED_REALM_MGMT_ROLES = ["manage-users", "view-users", "query-users", "view-clients"] as const;
+
 @Injectable()
-export class KeycloakAdminService {
+export class KeycloakAdminService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(KeycloakAdminService.name);
 	private readonly baseUrl: string;
 	private readonly realm: string;
@@ -21,6 +30,105 @@ export class KeycloakAdminService {
 		this.clientSecret = env.keycloak.adminClientSecret;
 		this.patientClientId = env.keycloak.audience;
 		this.patientPortalUrl = readEnvOrDefault("PATIENT_PORTAL_URL", "http://localhost:5173");
+	}
+
+	/**
+	 * Ensures the service account has the realm-management client roles required
+	 * to create/manage patient users. This self-heals installations where the
+	 * Keycloak realm was imported from an older `clinic-realm.json` that did not
+	 * assign these roles (Keycloak skips re-import when the realm already exists).
+	 *
+	 * Idempotent and best-effort: any failure is logged but does not prevent
+	 * app startup. The create-user flow will surface a clear 500 if roles are
+	 * still missing when a patient tries to register.
+	 */
+	async onApplicationBootstrap(): Promise<void> {
+		try {
+			await this.ensureServiceAccountRoles();
+		} catch (err) {
+			this.logger.warn(
+				`Could not verify/assign realm-management roles for service account on startup: ${(err as Error).message}`
+			);
+		}
+	}
+
+	private async ensureServiceAccountRoles(): Promise<void> {
+		const token = await this.getAdminToken();
+		const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+
+		// 1. Find the service-account user for this client.
+		const saUsername = `service-account-${this.clientId}`;
+		const usersEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/users?username=${encodeURIComponent(saUsername)}&exact=true`;
+		const usersRes = await fetch(usersEndpoint, { headers });
+		if (!usersRes.ok) {
+			await this.failKeycloak("look up service account user", usersEndpoint, usersRes);
+		}
+		const users = (await usersRes.json()) as Array<{ id: string }>;
+		if (users.length === 0) {
+			this.logger.warn(
+				`Service account user '${saUsername}' not found; skipping role self-heal. ` +
+					`Check that client '${this.clientId}' has service accounts enabled.`
+			);
+			return;
+		}
+		const userId = users[0].id;
+
+		// 2. Find the realm-management client UUID.
+		const clientsEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/clients?clientId=realm-management`;
+		const clientsRes = await fetch(clientsEndpoint, { headers });
+		if (!clientsRes.ok) {
+			await this.failKeycloak("look up realm-management client", clientsEndpoint, clientsRes);
+		}
+		const clients = (await clientsRes.json()) as Array<{ id: string }>;
+		if (clients.length === 0) {
+			this.logger.warn("realm-management client not found; skipping role self-heal.");
+			return;
+		}
+		const rmClientId = clients[0].id;
+
+		// 3. Get the roles currently assigned and available for this SA.
+		const mappingsEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${userId}/role-mappings/clients/${rmClientId}`;
+		const availableEndpoint = `${mappingsEndpoint}/available`;
+
+		const assignedRes = await fetch(mappingsEndpoint, { headers });
+		if (!assignedRes.ok) {
+			await this.failKeycloak("read assigned realm-management roles", mappingsEndpoint, assignedRes);
+		}
+		const assigned = (await assignedRes.json()) as Array<{ name: string }>;
+		const assignedNames = new Set(assigned.map(r => r.name));
+
+		const missing = REQUIRED_REALM_MGMT_ROLES.filter(r => !assignedNames.has(r));
+		if (missing.length === 0) {
+			this.logger.log(`Service account '${saUsername}' already has required realm-management roles.`);
+			return;
+		}
+
+		const availableRes = await fetch(availableEndpoint, { headers });
+		if (!availableRes.ok) {
+			await this.failKeycloak("read available realm-management roles", availableEndpoint, availableRes);
+		}
+		const available = (await availableRes.json()) as Array<{ id: string; name: string }>;
+		const toAssign = available.filter(r => missing.includes(r.name as (typeof REQUIRED_REALM_MGMT_ROLES)[number]));
+
+		if (toAssign.length === 0) {
+			this.logger.warn(
+				`Missing realm-management roles [${missing.join(", ")}] but none are available to assign on realm '${this.realm}'.`
+			);
+			return;
+		}
+
+		const assignRes = await fetch(mappingsEndpoint, {
+			method: "POST",
+			headers: { ...headers, "Content-Type": "application/json" },
+			body: JSON.stringify(toAssign.map(r => ({ id: r.id, name: r.name }))),
+		});
+		if (!assignRes.ok) {
+			await this.failKeycloak("assign realm-management roles to service account", mappingsEndpoint, assignRes);
+		}
+
+		this.logger.log(
+			`Self-healed service account '${saUsername}': assigned realm-management roles [${toAssign.map(r => r.name).join(", ")}].`
+		);
 	}
 
 	/**
@@ -78,6 +186,14 @@ export class KeycloakAdminService {
 
 		if (createRes.status === 409) {
 			throw new ConflictException("Email already registered");
+		}
+		if (createRes.status === 403) {
+			this.logger.error(
+				`[create user in Keycloak] 403 Forbidden — service account '${`service-account-${this.clientId}`}' ` +
+					`is missing realm-management roles on realm '${this.realm}'. ` +
+					`Required: ${REQUIRED_REALM_MGMT_ROLES.join(", ")}. ` +
+					`Normally assigned automatically on startup; if this persists the startup self-heal also lacked permission.`
+			);
 		}
 		if (!createRes.ok) {
 			await this.failKeycloak("create user in Keycloak", createEndpoint, createRes);
