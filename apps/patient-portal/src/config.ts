@@ -1,18 +1,9 @@
-function envOrDefault(name: string, fallback: string): string {
-	const value = import.meta.env[name];
-	if (typeof value === "string" && value.trim().length > 0) {
-		return value.trim();
-	}
-	return fallback;
-}
+import { createAppConfig } from "@clinic/portal-common";
 
-function trimTrailingSlash(value: string): string {
-	return value.endsWith("/") ? value.slice(0, -1) : value;
-}
-
-export const appConfig = {
-	apiBaseUrl: trimTrailingSlash(envOrDefault("VITE_PATIENT_API_BASE_URL", "http://localhost:3001/api")),
-	keycloakUrl: trimTrailingSlash(envOrDefault("VITE_KEYCLOAK_URL", "http://localhost:8180")),
-	keycloakRealm: envOrDefault("VITE_KEYCLOAK_REALM", "clinic"),
-	keycloakClientId: envOrDefault("VITE_PATIENT_KEYCLOAK_CLIENT_ID", "patient-portal-client"),
-} as const;
+export const appConfig = createAppConfig({
+	env: import.meta.env,
+	apiBaseUrlEnvVar: "VITE_PATIENT_API_BASE_URL",
+	apiBaseUrlDefault: "http://localhost:3001/api",
+	keycloakClientIdEnvVar: "VITE_PATIENT_KEYCLOAK_CLIENT_ID",
+	keycloakClientIdDefault: "patient-portal-client",
+});

@@ -1,6 +1,7 @@
 {
 	"name": "@clinic/api-common",
 	"version": "1.0.0",
+	"sideEffects": false,
 	"main": "src/index.ts",
 	"types": "src/index.ts",
 	"publishConfig": {
@@ -13,25 +14,30 @@
 	},
 	"dependencies": {
 		"@clinic/database": "workspace:*",
-		"@prisma/adapter-pg": "^7.7.0",
+		"@prisma/adapter-pg": "catalog:",
 		"compression": "^1.8.1",
 		"helmet": "^8.0.0",
+		"jwks-rsa": "catalog:",
 		"nodemailer": "^8.0.5",
-		"rxjs": "^7.8.2"
+		"passport-jwt": "catalog:",
+		"rxjs": "catalog:"
 	},
 	"devDependencies": {
-		"@nestjs/common": "^11.1.18",
-		"@nestjs/core": "^11.1.18",
-		"@nestjs/passport": "^11.0.5",
-		"@nestjs/swagger": "^11.2.6",
+		"@nestjs/common": "catalog:",
+		"@nestjs/core": "catalog:",
+		"@nestjs/passport": "catalog:",
+		"@nestjs/platform-express": "catalog:",
+		"@nestjs/swagger": "catalog:",
 		"@types/compression": "^1.8.1",
 		"@types/nodemailer": "^8.0.0",
-		"typescript": "^6.0.2"
+		"@types/passport-jwt": "catalog:",
+		"typescript": "catalog:"
 	},
 	"peerDependencies": {
 		"@nestjs/common": "^11.0.0",
 		"@nestjs/core": "^11.0.0",
 		"@nestjs/passport": "^11.0.0",
+		"@nestjs/platform-express": "^11.0.0",
 		"@nestjs/swagger": "^11.0.0"
 	}
 }

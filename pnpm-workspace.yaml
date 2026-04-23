@@ -1,3 +1,61 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Single source of truth for versions shared across apps/packages.
+# Mobile (patient-mobile) is intentionally excluded for deps that diverge
+# due to React Native toolchain constraints (react, typescript, @types/react).
+catalog:
+  # --- Shared ---
+  typescript: ^6.0.2
+  "@types/node": ^25.5.2
+  tsx: ^4.21.0
+
+  # --- Frontend runtime ---
+  react: ^19.2.5
+  react-dom: ^19.2.5
+  react-router-dom: ^7.14.0
+  keycloak-js: ^26.2.3
+  axios: ^1.15.0
+  lucide-react: ^1.7.0
+  clsx: ^2.1.1
+  tailwind-merge: ^3.5.0
+  class-variance-authority: ^0.7.1
+
+  # --- Frontend build / dev ---
+  vite: ^8.0.7
+  "@vitejs/plugin-react": ^6.0.1
+  tailwindcss: ^3.4.17
+  autoprefixer: ^10.4.27
+  postcss: ^8.5.9
+  "@types/react": ^19.2.14
+  "@types/react-dom": ^19.2.3
+
+  # --- Backend runtime ---
+  "@nestjs/common": ^11.1.18
+  "@nestjs/core": ^11.1.18
+  "@nestjs/passport": ^11.0.5
+  "@nestjs/platform-express": ^11.1.18
+  "@nestjs/swagger": ^11.2.6
+  "@nestjs/throttler": ^6.4.0
+  class-validator: ^0.14.2
+  class-transformer: ^0.5.1
+  passport: ^0.7.0
+  passport-jwt: ^4.0.1
+  jwks-rsa: ^4.0.1
+  reflect-metadata: ^0.2.2
+  rxjs: ^7.8.2
+
+  # --- Backend types ---
+  "@types/express": ^5.0.6
+  "@types/passport-jwt": ^4.0.1
+
+  # --- Prisma / DB ---
+  "@prisma/adapter-pg": ^7.7.0
+  "@prisma/client": ^7.7.0
+  prisma: ^7.7.0
+  pg: ^8.20.0
+  "@types/pg": ^8.20.0
+
+  # --- Misc ---
+  dotenv: ^17.4.1

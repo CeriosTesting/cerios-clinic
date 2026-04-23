@@ -1,20 +1,8 @@
-import axios from "axios";
+import { createApi } from "@clinic/portal-common";
 
 import { appConfig } from "./config";
 import keycloak from "./keycloak";
 
-const api = axios.create({
-	baseURL: appConfig.apiBaseUrl,
-});
-
-api.interceptors.request.use(async config => {
-	if (keycloak.isTokenExpired(30)) {
-		await keycloak.updateToken(30).catch(() => keycloak.login());
-	}
-	if (keycloak.token) {
-		config.headers.Authorization = `Bearer ${keycloak.token}`;
-	}
-	return config;
-});
+const api = createApi({ baseUrl: appConfig.apiBaseUrl, keycloak });
 
 export default api;

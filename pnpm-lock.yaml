@@ -4,29 +4,145 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@nestjs/common':
+      specifier: ^11.1.18
+      version: 11.1.18
+    '@nestjs/core':
+      specifier: ^11.1.18
+      version: 11.1.18
+    '@nestjs/passport':
+      specifier: ^11.0.5
+      version: 11.0.5
+    '@nestjs/platform-express':
+      specifier: ^11.1.18
+      version: 11.1.18
+    '@nestjs/swagger':
+      specifier: ^11.2.6
+      version: 11.2.6
+    '@nestjs/throttler':
+      specifier: ^6.4.0
+      version: 6.5.0
+    '@prisma/adapter-pg':
+      specifier: ^7.7.0
+      version: 7.7.0
+    '@prisma/client':
+      specifier: ^7.7.0
+      version: 7.7.0
+    '@types/express':
+      specifier: ^5.0.6
+      version: 5.0.6
+    '@types/node':
+      specifier: ^25.5.2
+      version: 25.5.2
+    '@types/passport-jwt':
+      specifier: ^4.0.1
+      version: 4.0.1
+    '@types/pg':
+      specifier: ^8.20.0
+      version: 8.20.0
+    '@types/react':
+      specifier: ^19.2.14
+      version: 19.2.14
+    '@types/react-dom':
+      specifier: ^19.2.3
+      version: 19.2.3
+    '@vitejs/plugin-react':
+      specifier: ^6.0.1
+      version: 6.0.1
+    autoprefixer:
+      specifier: ^10.4.27
+      version: 10.4.27
+    axios:
+      specifier: ^1.15.0
+      version: 1.15.0
+    class-transformer:
+      specifier: ^0.5.1
+      version: 0.5.1
+    class-validator:
+      specifier: ^0.14.2
+      version: 0.14.4
+    class-variance-authority:
+      specifier: ^0.7.1
+      version: 0.7.1
+    clsx:
+      specifier: ^2.1.1
+      version: 2.1.1
+    dotenv:
+      specifier: ^17.4.1
+      version: 17.4.1
+    jwks-rsa:
+      specifier: ^4.0.1
+      version: 4.0.1
+    keycloak-js:
+      specifier: ^26.2.3
+      version: 26.2.3
+    lucide-react:
+      specifier: ^1.7.0
+      version: 1.7.0
+    passport:
+      specifier: ^0.7.0
+      version: 0.7.0
+    passport-jwt:
+      specifier: ^4.0.1
+      version: 4.0.1
+    pg:
+      specifier: ^8.20.0
+      version: 8.20.0
+    postcss:
+      specifier: ^8.5.9
+      version: 8.5.9
+    prisma:
+      specifier: ^7.7.0
+      version: 7.7.0
+    react:
+      specifier: ^19.2.5
+      version: 19.2.5
+    react-dom:
+      specifier: ^19.2.5
+      version: 19.2.5
+    react-router-dom:
+      specifier: ^7.14.0
+      version: 7.14.0
+    reflect-metadata:
+      specifier: ^0.2.2
+      version: 0.2.2
+    rxjs:
+      specifier: ^7.8.2
+      version: 7.8.2
+    tailwind-merge:
+      specifier: ^3.5.0
+      version: 3.5.0
+    tailwindcss:
+      specifier: ^3.4.17
+      version: 3.4.19
+    tsx:
+      specifier: ^4.21.0
+      version: 4.21.0
+    typescript:
+      specifier: ^6.0.2
+      version: 6.0.2
+    vite:
+      specifier: ^8.0.7
+      version: 8.0.7
+
 importers:
 
   .:
-    dependencies:
-      '@prisma/adapter-pg':
-        specifier: ^7.7.0
-        version: 7.7.0
-      '@types/pg':
-        specifier: ^8.20.0
-        version: 8.20.0
-      dotenv:
-        specifier: ^17.4.1
-        version: 17.4.1
-      pg:
-        specifier: ^8.20.0
-        version: 8.20.0
     devDependencies:
+      '@prisma/adapter-pg':
+        specifier: 'catalog:'
+        version: 7.7.0
       '@types/node':
-        specifier: ^25.5.2
+        specifier: 'catalog:'
         version: 25.5.2
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.4.1
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -45,69 +161,75 @@ importers:
       oxlint-tsgolint:
         specifier: ^0.20.0
         version: 0.20.0
+      pg:
+        specifier: 'catalog:'
+        version: 8.20.0
       ts-node-dev:
         specifier: ^2.0.0
         version: 2.0.0(@types/node@25.5.2)(typescript@6.0.2)
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
   apps/admin-portal:
     dependencies:
+      '@clinic/portal-common':
+        specifier: workspace:*
+        version: link:../../packages/portal-common
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       keycloak-js:
-        specifier: ^26.2.3
+        specifier: 'catalog:'
         version: 26.2.3
       lucide-react:
-        specifier: ^1.7.0
+        specifier: 'catalog:'
         version: 1.7.0(react@19.2.5)
       react:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5
       react-dom:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5(react@19.2.5)
       react-router-dom:
-        specifier: ^7.14.0
+        specifier: 'catalog:'
         version: 7.14.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       tailwind-merge:
-        specifier: ^3.5.0
+        specifier: 'catalog:'
         version: 3.5.0
     devDependencies:
       '@clinic/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1(vite@8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@1.21.7)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.9)
       postcss:
-        specifier: ^8.5.9
+        specifier: 'catalog:'
         version: 8.5.9
       tailwindcss:
-        specifier: ^3.4.17
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
       vite:
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@1.21.7)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/api-admin:
@@ -122,62 +244,62 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@nestjs/common':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/passport':
-        specifier: ^11.0.5
+        specifier: 'catalog:'
         version: 11.0.5(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
       '@nestjs/platform-express':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)
       '@nestjs/swagger':
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@nestjs/throttler':
-        specifier: ^6.4.0
+        specifier: 'catalog:'
         version: 6.5.0(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(reflect-metadata@0.2.2)
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       class-transformer:
-        specifier: ^0.5.1
+        specifier: 'catalog:'
         version: 0.5.1
       class-validator:
-        specifier: ^0.14.2
+        specifier: 'catalog:'
         version: 0.14.4
       jwks-rsa:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       passport:
-        specifier: ^0.7.0
+        specifier: 'catalog:'
         version: 0.7.0
       passport-jwt:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       reflect-metadata:
-        specifier: ^0.2.2
+        specifier: 'catalog:'
         version: 0.2.2
       rxjs:
-        specifier: ^7.8.2
+        specifier: 'catalog:'
         version: 7.8.2
     devDependencies:
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 'catalog:'
         version: 5.0.6
       '@types/node':
-        specifier: ^25.5.2
+        specifier: 'catalog:'
         version: 25.5.2
       '@types/passport-jwt':
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       tsx:
-        specifier: ^4.21.0
+        specifier: 'catalog:'
         version: 4.21.0
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
   apps/api-assistant:
@@ -192,65 +314,65 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@nestjs/common':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/passport':
-        specifier: ^11.0.5
+        specifier: 'catalog:'
         version: 11.0.5(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
       '@nestjs/platform-express':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)
       '@nestjs/swagger':
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@nestjs/throttler':
-        specifier: ^6.4.0
+        specifier: 'catalog:'
         version: 6.5.0(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(reflect-metadata@0.2.2)
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       class-transformer:
-        specifier: ^0.5.1
+        specifier: 'catalog:'
         version: 0.5.1
       class-validator:
-        specifier: ^0.14.2
+        specifier: 'catalog:'
         version: 0.14.4
       jwks-rsa:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       passport:
-        specifier: ^0.7.0
+        specifier: 'catalog:'
         version: 0.7.0
       passport-jwt:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       reflect-metadata:
-        specifier: ^0.2.2
+        specifier: 'catalog:'
         version: 0.2.2
       rxjs:
-        specifier: ^7.8.2
+        specifier: 'catalog:'
         version: 7.8.2
     devDependencies:
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 'catalog:'
         version: 5.0.6
       '@types/multer':
         specifier: ^2.1.0
         version: 2.1.0
       '@types/node':
-        specifier: ^25.5.2
+        specifier: 'catalog:'
         version: 25.5.2
       '@types/passport-jwt':
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       tsx:
-        specifier: ^4.21.0
+        specifier: 'catalog:'
         version: 4.21.0
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
   apps/api-doctor:
@@ -265,62 +387,62 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@nestjs/common':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/passport':
-        specifier: ^11.0.5
+        specifier: 'catalog:'
         version: 11.0.5(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
       '@nestjs/platform-express':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)
       '@nestjs/swagger':
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@nestjs/throttler':
-        specifier: ^6.4.0
+        specifier: 'catalog:'
         version: 6.5.0(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(reflect-metadata@0.2.2)
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       class-transformer:
-        specifier: ^0.5.1
+        specifier: 'catalog:'
         version: 0.5.1
       class-validator:
-        specifier: ^0.14.2
+        specifier: 'catalog:'
         version: 0.14.4
       jwks-rsa:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       passport:
-        specifier: ^0.7.0
+        specifier: 'catalog:'
         version: 0.7.0
       passport-jwt:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       reflect-metadata:
-        specifier: ^0.2.2
+        specifier: 'catalog:'
         version: 0.2.2
       rxjs:
-        specifier: ^7.8.2
+        specifier: 'catalog:'
         version: 7.8.2
     devDependencies:
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 'catalog:'
         version: 5.0.6
       '@types/node':
-        specifier: ^25.5.2
+        specifier: 'catalog:'
         version: 25.5.2
       '@types/passport-jwt':
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       tsx:
-        specifier: ^4.21.0
+        specifier: 'catalog:'
         version: 4.21.0
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
   apps/api-patient:
@@ -335,89 +457,92 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@nestjs/common':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/passport':
-        specifier: ^11.0.5
+        specifier: 'catalog:'
         version: 11.0.5(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
       '@nestjs/platform-express':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)
       '@nestjs/swagger':
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@nestjs/throttler':
-        specifier: ^6.4.0
+        specifier: 'catalog:'
         version: 6.5.0(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(reflect-metadata@0.2.2)
       class-transformer:
-        specifier: ^0.5.1
+        specifier: 'catalog:'
         version: 0.5.1
       class-validator:
-        specifier: ^0.14.2
+        specifier: 'catalog:'
         version: 0.14.4
       jwks-rsa:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       passport:
-        specifier: ^0.7.0
+        specifier: 'catalog:'
         version: 0.7.0
       passport-jwt:
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       reflect-metadata:
-        specifier: ^0.2.2
+        specifier: 'catalog:'
         version: 0.2.2
       rxjs:
-        specifier: ^7.8.2
+        specifier: 'catalog:'
         version: 7.8.2
     devDependencies:
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 'catalog:'
         version: 5.0.6
       '@types/node':
-        specifier: ^25.5.2
+        specifier: 'catalog:'
         version: 25.5.2
       '@types/passport-jwt':
-        specifier: ^4.0.1
+        specifier: 'catalog:'
         version: 4.0.1
       tsx:
-        specifier: ^4.21.0
+        specifier: 'catalog:'
         version: 4.21.0
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
   apps/assistant-portal:
     dependencies:
+      '@clinic/portal-common':
+        specifier: workspace:*
+        version: link:../../packages/portal-common
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       keycloak-js:
-        specifier: ^26.2.3
+        specifier: 'catalog:'
         version: 26.2.3
       lucide-react:
-        specifier: ^1.7.0
+        specifier: 'catalog:'
         version: 1.7.0(react@19.2.5)
       react:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5
       react-datepicker:
         specifier: ^9.1.0
         version: 9.1.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react-dom:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5(react@19.2.5)
       react-hook-form:
         specifier: ^7.72.1
@@ -426,51 +551,54 @@ importers:
         specifier: ^2.6.0
         version: 2.6.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react-router-dom:
-        specifier: ^7.14.0
+        specifier: 'catalog:'
         version: 7.14.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react-select:
         specifier: ^5.10.2
         version: 5.10.2(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       tailwind-merge:
-        specifier: ^3.5.0
+        specifier: 'catalog:'
         version: 3.5.0
     devDependencies:
       '@clinic/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-datepicker':
         specifier: ^7.0.0
         version: 7.0.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@types/react-select':
         specifier: ^5.0.1
         version: 5.0.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@vitejs/plugin-react':
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1(vite@8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.9)
       postcss:
-        specifier: ^8.5.9
+        specifier: 'catalog:'
         version: 8.5.9
       tailwindcss:
-        specifier: ^3.4.17
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
       vite:
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/doctor-portal:
     dependencies:
+      '@clinic/portal-common':
+        specifier: workspace:*
+        version: link:../../packages/portal-common
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -496,59 +624,59 @@ importers:
         specifier: ^1.2.15
         version: 1.2.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       keycloak-js:
-        specifier: ^26.2.3
+        specifier: 'catalog:'
         version: 26.2.3
       lucide-react:
-        specifier: ^1.7.0
+        specifier: 'catalog:'
         version: 1.7.0(react@19.2.5)
       react:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5
       react-dom:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5(react@19.2.5)
       react-router-dom:
-        specifier: ^7.14.0
+        specifier: 'catalog:'
         version: 7.14.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       tailwind-merge:
-        specifier: ^3.5.0
+        specifier: 'catalog:'
         version: 3.5.0
     devDependencies:
       '@clinic/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1(vite@8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.9)
       postcss:
-        specifier: ^8.5.9
+        specifier: 'catalog:'
         version: 8.5.9
       tailwindcss:
-        specifier: ^3.4.17
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
       vite:
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
   apps/patient-mobile:
@@ -638,51 +766,54 @@ importers:
 
   apps/patient-portal:
     dependencies:
+      '@clinic/portal-common':
+        specifier: workspace:*
+        version: link:../../packages/portal-common
       axios:
-        specifier: ^1.15.0
+        specifier: 'catalog:'
         version: 1.15.0
       keycloak-js:
-        specifier: ^26.2.3
+        specifier: 'catalog:'
         version: 26.2.3
       lucide-react:
-        specifier: ^1.7.0
+        specifier: 'catalog:'
         version: 1.7.0(react@19.2.5)
       react:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5
       react-dom:
-        specifier: ^19.2.5
+        specifier: 'catalog:'
         version: 19.2.5(react@19.2.5)
       react-router-dom:
-        specifier: ^7.14.0
+        specifier: 'catalog:'
         version: 7.14.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
       '@clinic/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 'catalog:'
         version: 19.2.14
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
       '@vitejs/plugin-react':
-        specifier: ^6.0.1
+        specifier: 'catalog:'
         version: 6.0.1(vite@8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.9)
       postcss:
-        specifier: ^8.5.9
+        specifier: 'catalog:'
         version: 8.5.9
       tailwindcss:
-        specifier: ^3.4.17
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.3)
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
       vite:
-        specifier: ^8.0.7
+        specifier: 'catalog:'
         version: 8.0.7(@types/node@25.5.2)(esbuild@0.27.4)(jiti@2.6.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
 
   packages/api-common:
@@ -691,7 +822,7 @@ importers:
         specifier: workspace:*
         version: link:../database
       '@prisma/adapter-pg':
-        specifier: ^7.7.0
+        specifier: 'catalog:'
         version: 7.7.0
       compression:
         specifier: ^1.8.1
@@ -699,24 +830,33 @@ importers:
       helmet:
         specifier: ^8.0.0
         version: 8.1.0
+      jwks-rsa:
+        specifier: 'catalog:'
+        version: 4.0.1
       nodemailer:
         specifier: ^8.0.5
         version: 8.0.5
+      passport-jwt:
+        specifier: 'catalog:'
+        version: 4.0.1
       rxjs:
-        specifier: ^7.8.2
+        specifier: 'catalog:'
         version: 7.8.2
     devDependencies:
       '@nestjs/common':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core':
-        specifier: ^11.1.18
+        specifier: 'catalog:'
         version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.18)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/passport':
-        specifier: ^11.0.5
+        specifier: 'catalog:'
         version: 11.0.5(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0)
+      '@nestjs/platform-express':
+        specifier: 'catalog:'
+        version: 11.1.18(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)
       '@nestjs/swagger':
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6(@nestjs/common@11.1.18(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.18)(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)
       '@types/compression':
         specifier: ^1.8.1
@@ -724,42 +864,64 @@ importers:
       '@types/nodemailer':
         specifier: ^8.0.0
         version: 8.0.0
+      '@types/passport-jwt':
+        specifier: 'catalog:'
+        version: 4.0.1
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
   packages/database:
     dependencies:
       '@prisma/adapter-pg':
-        specifier: ^7.7.0
+        specifier: 'catalog:'
         version: 7.7.0
       '@prisma/client':
-        specifier: ^7.7.0
+        specifier: 'catalog:'
         version: 7.7.0(prisma@7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.2))(typescript@6.0.2)
-      '@types/pg':
-        specifier: ^8.20.0
-        version: 8.20.0
       pg:
-        specifier: ^8.20.0
+        specifier: 'catalog:'
         version: 8.20.0
     devDependencies:
       '@types/node':
-        specifier: ^25.5.2
+        specifier: 'catalog:'
         version: 25.5.2
+      '@types/pg':
+        specifier: 'catalog:'
+        version: 8.20.0
       prisma:
-        specifier: ^7.7.0
+        specifier: 'catalog:'
         version: 7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.2)
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.5.2)(typescript@6.0.2)
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
+        version: 6.0.2
+
+  packages/portal-common:
+    dependencies:
+      axios:
+        specifier: 'catalog:'
+        version: 1.15.0
+      keycloak-js:
+        specifier: 'catalog:'
+        version: 26.2.3
+    devDependencies:
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      react:
+        specifier: 'catalog:'
+        version: 19.2.5
+      typescript:
+        specifier: 'catalog:'
         version: 6.0.2
 
   packages/shared-types:
     devDependencies:
       typescript:
-        specifier: ^6.0.2
+        specifier: 'catalog:'
         version: 6.0.2
 
 packages:

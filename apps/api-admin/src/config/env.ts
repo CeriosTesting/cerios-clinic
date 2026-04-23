@@ -1,31 +1,10 @@
-import {
-	KeycloakRuntimeConfig,
-	loadKeycloakConfig,
-	parseOriginsEnv,
-	parsePortEnv,
-	readEnvOrDefault,
-} from "@clinic/api-common";
+import { createApiRuntimeEnv } from "@clinic/api-common";
 
-export interface ApiRuntimeEnv {
-	nodeEnv: string;
-	port: number;
-	corsOrigins: string[];
-	keycloak: KeycloakRuntimeConfig;
-}
+export const getApiRuntimeEnv = createApiRuntimeEnv({
+	defaultPort: 3004,
+	corsEnvVar: "API_ADMIN_CORS_ORIGINS",
+	corsDefault: "http://localhost:5176",
+	clientIdEnvVar: "KEYCLOAK_ADMIN_PORTAL_CLIENT_ID",
+});
 
-let cachedEnv: ApiRuntimeEnv | undefined;
-
-export function getApiRuntimeEnv(): ApiRuntimeEnv {
-	if (cachedEnv) {
-		return cachedEnv;
-	}
-
-	cachedEnv = {
-		nodeEnv: readEnvOrDefault("NODE_ENV", "development"),
-		port: parsePortEnv("PORT", 3004),
-		corsOrigins: parseOriginsEnv("API_ADMIN_CORS_ORIGINS", "http://localhost:5176"),
-		keycloak: loadKeycloakConfig("KEYCLOAK_ADMIN_PORTAL_CLIENT_ID"),
-	};
-
-	return cachedEnv;
-}
+export type { ApiRuntimeEnv } from "@clinic/api-common";

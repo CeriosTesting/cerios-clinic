@@ -1,11 +1,7 @@
-import Keycloak from "keycloak-js";
+import { createKeycloak } from "@clinic/portal-common";
 
 import { appConfig } from "./config";
 
-const keycloak = new Keycloak({
-	url: appConfig.keycloakUrl,
-	realm: appConfig.keycloakRealm,
-	clientId: appConfig.keycloakClientId,
-});
+const keycloak = createKeycloak(appConfig);
 
 export default keycloak;

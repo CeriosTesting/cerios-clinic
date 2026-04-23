@@ -10,25 +10,26 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"axios": "^1.15.0",
-		"class-variance-authority": "^0.7.1",
-		"clsx": "^2.1.1",
-		"keycloak-js": "^26.2.3",
-		"lucide-react": "^1.7.0",
-		"react": "^19.2.5",
-		"react-dom": "^19.2.5",
-		"react-router-dom": "^7.14.0",
-		"tailwind-merge": "^3.5.0"
+		"@clinic/portal-common": "workspace:*",
+		"axios": "catalog:",
+		"class-variance-authority": "catalog:",
+		"clsx": "catalog:",
+		"keycloak-js": "catalog:",
+		"lucide-react": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:",
+		"react-router-dom": "catalog:",
+		"tailwind-merge": "catalog:"
 	},
 	"devDependencies": {
 		"@clinic/shared-types": "workspace:*",
-		"@types/react": "^19.2.14",
-		"@types/react-dom": "^19.2.3",
-		"@vitejs/plugin-react": "^6.0.1",
-		"autoprefixer": "^10.4.27",
-		"postcss": "^8.5.9",
-		"tailwindcss": "^3.4.17",
-		"typescript": "^6.0.2",
-		"vite": "^8.0.7"
+		"@types/react": "catalog:",
+		"@types/react-dom": "catalog:",
+		"@vitejs/plugin-react": "catalog:",
+		"autoprefixer": "catalog:",
+		"postcss": "catalog:",
+		"tailwindcss": "catalog:",
+		"typescript": "catalog:",
+		"vite": "catalog:"
 	}
 }

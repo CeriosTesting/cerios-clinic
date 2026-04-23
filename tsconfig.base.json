@@ -16,6 +16,7 @@
 		"paths": {
 			"@clinic/api-common": ["./packages/api-common/src/index.ts"],
 			"@clinic/database": ["./packages/database/src/index.ts"],
+			"@clinic/portal-common": ["./packages/portal-common/src/index.ts"],
 			"@clinic/shared-types": ["./packages/shared-types/src/index.ts"]
 		}
 	}

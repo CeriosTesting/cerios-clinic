@@ -1,4 +1,6 @@
 export * from "./auth";
+export * from "./auth-module";
+export * from "./api-runtime-env";
 export * from "./bootstrap";
 export * from "./env";
 export * from "./events.module";

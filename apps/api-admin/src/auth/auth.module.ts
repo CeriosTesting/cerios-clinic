@@ -1,11 +1,8 @@
-import { Module } from "@nestjs/common";
-import { PassportModule } from "@nestjs/passport";
+import { ClinicAuthModule } from "@clinic/api-common";
 
-import { JwtStrategy } from "./jwt.strategy";
+import { getApiRuntimeEnv } from "../config/env";
 
-@Module({
-	imports: [PassportModule.register({ defaultStrategy: "jwt" })],
-	providers: [JwtStrategy],
-	exports: [PassportModule],
-})
-export class AuthModule {}
+export const AuthModule = ClinicAuthModule.forRoot({
+	requiredRole: "admin",
+	keycloak: getApiRuntimeEnv().keycloak,
+});

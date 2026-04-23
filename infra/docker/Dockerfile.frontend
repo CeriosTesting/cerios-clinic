@@ -1,7 +1,10 @@
+# syntax=docker/dockerfile:1.7
 # ── Stage 1: base ──────────────────────────────────────────
 FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
+ENV PNPM_HOME=/pnpm
+RUN pnpm config set store-dir /pnpm/store
 
 # ── Stage 2: install dependencies ─────────────────────────
 FROM base AS deps
@@ -10,6 +13,7 @@ COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/shared-types/package.json packages/shared-types/
 COPY packages/database/package.json     packages/database/
 COPY packages/api-common/package.json   packages/api-common/
+COPY packages/portal-common/package.json packages/portal-common/
 COPY apps/api-patient/package.json      apps/api-patient/
 COPY apps/api-doctor/package.json       apps/api-doctor/
 COPY apps/api-assistant/package.json    apps/api-assistant/
@@ -24,13 +28,14 @@ COPY apps/patient-mobile/package.json   apps/patient-mobile/
 COPY packages/database/prisma.config.ts          packages/database/
 COPY packages/database/prisma/schema.prisma      packages/database/prisma/
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile
 
 # ── Stage 3: build ────────────────────────────────────────
 FROM deps AS build
 
 COPY tsconfig.base.json ./
 COPY packages/shared-types/ packages/shared-types/
+COPY packages/portal-common/ packages/portal-common/
 
 ARG APP_NAME
 COPY apps/${APP_NAME}/ apps/${APP_NAME}/
@@ -64,6 +69,7 @@ ENV VITE_ADMIN_API_BASE_URL=${VITE_ADMIN_API_BASE_URL}
 # Create empty .env so dotenv-cli in build scripts doesn't fail.
 RUN touch .env \
  && pnpm --filter @clinic/shared-types build \
+ && pnpm --filter @clinic/portal-common build \
  && pnpm --filter ${APP_NAME} build
 
 # ── Stage 4: serve with nginx ─────────────────────────────

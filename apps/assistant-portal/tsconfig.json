@@ -9,6 +9,7 @@
 		"types": ["vite/client"],
 		"noEmit": true,
 		"paths": {
+			"@clinic/portal-common": ["../../packages/portal-common/dist/index.d.ts"],
 			"@clinic/shared-types": ["../../packages/shared-types/dist/index.d.ts"]
 		}
 	},

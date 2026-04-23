@@ -1,5 +1,6 @@
 import { Logger, Type, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import compression from "compression";
 import helmet from "helmet";
@@ -18,14 +19,17 @@ export interface BootstrapApiOptions {
 }
 
 export async function bootstrapApi(options: BootstrapApiOptions): Promise<void> {
-	const app = await NestFactory.create(options.appModule);
+	// Disable Nest's default body parser so we can register ours with a 1MB limit
+	// without double-parsing. Multipart file uploads continue to use their own
+	// middleware (e.g. multer) and are not affected.
+	const app = await NestFactory.create<NestExpressApplication>(options.appModule, { bodyParser: false });
 	app.enableShutdownHooks();
 
 	app.use(helmet());
 	app.use(compression({ threshold: 1024 }));
 	// Limit request body to 1 MB to prevent payload-based DoS
-	app.use(require("express").json({ limit: "1mb" }));
-	app.use(require("express").urlencoded({ limit: "1mb", extended: true }));
+	app.useBodyParser("json", { limit: "1mb" });
+	app.useBodyParser("urlencoded", { limit: "1mb", extended: true });
 	app.enableCors({ origin: options.corsOrigins, credentials: true });
 	const prefix = options.globalPrefix ?? "api";
 	app.setGlobalPrefix(prefix);

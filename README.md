@@ -14,7 +14,7 @@ This is a full-stack clinic management application. This guide gets you up and r
 | -------------------- | ------------------------- | ----------------------------------------------------------------------------------- |
 | **Patient Portal**   | http://localhost:5173     | React app — patients view/book appointments                                         |
 | **Doctor Portal**    | http://localhost:5174     | React app — doctors manage their schedule                                           |
-| **Assistant Portal** | http://localhost:5175     | React app — reception/admin staff manage appointments                               |
+| **Assistant Portal** | http://localhost:5175     | React app — reception staff manage appointments                                     |
 | **Admin Portal**     | http://localhost:5176     | React app — system administration                                                   |
 | **Patient API**      | http://localhost:3001/api | NestJS backend for the Patient Portal ([Swagger](http://localhost:3001/api/docs))   |
 | **Doctor API**       | http://localhost:3002/api | NestJS backend for the Doctor Portal ([Swagger](http://localhost:3002/api/docs))    |
