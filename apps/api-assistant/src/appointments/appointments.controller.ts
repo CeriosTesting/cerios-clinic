@@ -13,6 +13,7 @@ import {
 	UseGuards,
 	NotFoundException,
 	BadRequestException,
+	ConflictException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import {
@@ -220,25 +221,19 @@ export class AppointmentsController {
 		if (!patient) throw new NotFoundException("Patient not found");
 		if (!doctor) throw new NotFoundException("Doctor not found");
 
+		await this.ensureNoConflict(new Date(dto.scheduledAt), dto.doctorId, dto.patientId);
+
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { assistant: true },
 		});
 
-		const appointment = await this.prisma.appointment.create({
-			data: {
-				patientId: dto.patientId,
-				doctorId: dto.doctorId,
-				assistantId: dbUser?.assistant?.id ?? null,
-				scheduledAt: new Date(dto.scheduledAt),
-				notes: dto.notes,
-				status: "SCHEDULED",
-			},
-			include: {
-				patient: { include: { user: true } },
-				doctor: { include: { user: true } },
-				assistant: { include: { user: true } },
-			},
+		const appointment = await this.createAppointmentOrConflict({
+			patientId: dto.patientId,
+			doctorId: dto.doctorId,
+			assistantId: dbUser?.assistant?.id ?? null,
+			scheduledAt: new Date(dto.scheduledAt),
+			notes: dto.notes,
 		});
 
 		await this.prisma.appointmentStatusChange.create({
@@ -283,18 +278,17 @@ export class AppointmentsController {
 
 		this.validateStatusTransition(dto, appointment);
 
-		const updated = await this.prisma.appointment.update({
-			where: { id },
-			data: {
-				...(dto.status && { status: dto.status }),
-				...(dto.scheduledAt && { scheduledAt: new Date(dto.scheduledAt) }),
-				...(dto.notes !== undefined && { notes: dto.notes }),
-			},
-			include: {
-				patient: { include: { user: true } },
-				doctor: { include: { user: true } },
-				assistant: { include: { user: true } },
-			},
+		if (dto.scheduledAt) {
+			const newScheduledAt = new Date(dto.scheduledAt);
+			if (newScheduledAt.getTime() !== appointment.scheduledAt.getTime()) {
+				await this.ensureNoConflict(newScheduledAt, appointment.doctorId, appointment.patientId, id);
+			}
+		}
+
+		const updated = await this.updateAppointmentOrConflict(id, {
+			...(dto.status && { status: dto.status }),
+			...(dto.scheduledAt && { scheduledAt: new Date(dto.scheduledAt) }),
+			...(dto.notes !== undefined && { notes: dto.notes }),
 		});
 
 		if (dto.status && dto.status !== appointment.status) {
@@ -302,6 +296,83 @@ export class AppointmentsController {
 		}
 
 		return { data: updated };
+	}
+
+	private async createAppointmentOrConflict(
+		data: Omit<Prisma.AppointmentUncheckedCreateInput, "status">
+	): Promise<ApptWithAll> {
+		try {
+			return await this.prisma.appointment.create({
+				data: { ...data, status: "SCHEDULED" },
+				include: {
+					patient: { include: { user: true } },
+					doctor: { include: { user: true } },
+					assistant: { include: { user: true } },
+				},
+			});
+		} catch (err) {
+			throw this.mapUniqueConstraintError(err);
+		}
+	}
+
+	private async updateAppointmentOrConflict(
+		id: string,
+		data: Prisma.AppointmentUncheckedUpdateInput
+	): Promise<ApptWithAll> {
+		try {
+			return await this.prisma.appointment.update({
+				where: { id },
+				data,
+				include: {
+					patient: { include: { user: true } },
+					doctor: { include: { user: true } },
+					assistant: { include: { user: true } },
+				},
+			});
+		} catch (err) {
+			throw this.mapUniqueConstraintError(err);
+		}
+	}
+
+	private mapUniqueConstraintError(err: unknown): unknown {
+		if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+			const target = (err.meta?.["target"] as string | string[] | undefined) ?? "";
+			const targetStr = Array.isArray(target) ? target.join(",") : target;
+			if (targetStr.includes("doctor")) {
+				return new ConflictException("This doctor already has an appointment at this time");
+			}
+			if (targetStr.includes("patient")) {
+				return new ConflictException("This patient already has an appointment at this time");
+			}
+			return new ConflictException("Appointment conflict detected");
+		}
+		return err;
+	}
+
+	private async ensureNoConflict(
+		scheduledAt: Date,
+		doctorId: string,
+		patientId: string,
+		excludeAppointmentId?: string
+	): Promise<void> {
+		const conflict = await this.prisma.appointment.findFirst({
+			where: {
+				scheduledAt,
+				status: { notIn: ["CANCELLED", "COMPLETED"] },
+				OR: [{ doctorId }, { patientId }],
+				...(excludeAppointmentId && { NOT: { id: excludeAppointmentId } }),
+			},
+			select: { id: true, doctorId: true, patientId: true },
+		});
+		if (conflict) {
+			const reason =
+				conflict.doctorId === doctorId && conflict.patientId === patientId
+					? "This patient already has an appointment with this doctor at this time"
+					: conflict.doctorId === doctorId
+						? "This doctor already has an appointment at this time"
+						: "This patient already has an appointment at this time";
+			throw new ConflictException(reason);
+		}
 	}
 
 	private validateStatusTransition(dto: UpdateAppointmentDto, appointment: { status: string }): void {
