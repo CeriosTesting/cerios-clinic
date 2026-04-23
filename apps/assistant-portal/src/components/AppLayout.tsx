@@ -126,7 +126,7 @@ export default function AppLayout(): React.ReactElement {
 
 			<div className="flex flex-1">
 				{/* Desktop sidebar */}
-				<aside className="hidden lg:flex w-60 bg-brand-navy text-white flex-col shrink-0 sticky top-0 h-screen">
+				<aside className="hidden lg:flex w-60 bg-brand-navy text-white flex-col shrink-0">
 					<SidebarContent isAdmin={isAdmin} displayName={displayName} />
 				</aside>
 

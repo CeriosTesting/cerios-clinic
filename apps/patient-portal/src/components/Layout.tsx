@@ -69,7 +69,7 @@ export default function Layout(): React.ReactElement {
 	}, [location.pathname]);
 
 	return (
-		<div className="min-h-screen bg-brand-bg-soft">
+		<div className="min-h-screen flex flex-col bg-brand-bg-soft">
 			{/* Nav */}
 			<nav className="bg-white border-b border-gray-200 shadow-sm relative z-30">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -147,7 +147,7 @@ export default function Layout(): React.ReactElement {
 			{mobileOpen && <div className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setMobileOpen(false)} />}
 
 			{/* Main content */}
-			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+			<main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				<Outlet />
 			</main>
 

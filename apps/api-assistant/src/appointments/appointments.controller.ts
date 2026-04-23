@@ -84,6 +84,9 @@ export class AppointmentsController {
 	@ApiQuery({ name: "doctorId", required: false })
 	@ApiQuery({ name: "from", required: false })
 	@ApiQuery({ name: "to", required: false })
+	@ApiQuery({ name: "search", required: false, description: "Search by patient or doctor name" })
+	@ApiQuery({ name: "sortBy", required: false, description: "Sort field: date or patient" })
+	@ApiQuery({ name: "sortOrder", required: false, description: "Sort direction: asc or desc" })
 	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)" })
 	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)" })
 	async findAll(
@@ -91,22 +94,15 @@ export class AppointmentsController {
 		@Query("doctorId") doctorId?: string,
 		@Query("from") from?: string,
 		@Query("to") to?: string,
+		@Query("search") search?: string,
+		@Query("sortBy") sortByRaw?: string,
+		@Query("sortOrder") sortOrderRaw?: string,
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
 	): Promise<{ data: ApptWithAll[]; total: number }> {
-		const take = Math.min(Number(limitRaw) || 50, 200);
-		const skip = Math.max(Number(offsetRaw) || 0, 0);
-		const where: Record<string, unknown> = {};
-		if (status) where["status"] = status;
-		if (doctorId) where["doctorId"] = doctorId;
-		if (from || to) {
-			if (from && isNaN(new Date(from).getTime())) throw new BadRequestException("Invalid 'from' date");
-			if (to && isNaN(new Date(to).getTime())) throw new BadRequestException("Invalid 'to' date");
-			where["scheduledAt"] = {
-				...(from && { gte: new Date(from) }),
-				...(to && { lte: new Date(to) }),
-			};
-		}
+		const { take, skip } = this.getPagination(limitRaw, offsetRaw);
+		const orderBy = this.getAppointmentsOrderBy(sortByRaw, sortOrderRaw);
+		const where = this.getAppointmentsWhere({ status, doctorId, from, to, search });
 
 		const [appointments, total] = await Promise.all([
 			this.prisma.appointment.findMany({
@@ -116,13 +112,73 @@ export class AppointmentsController {
 					doctor: { include: { user: true } },
 					assistant: { include: { user: true } },
 				},
-				orderBy: { scheduledAt: "asc" },
+				orderBy,
 				take,
 				skip,
 			}),
 			this.prisma.appointment.count({ where }),
 		]);
 		return { data: appointments, total };
+	}
+
+	private getPagination(limitRaw?: string, offsetRaw?: string): { take: number; skip: number } {
+		return {
+			take: Math.min(Number(limitRaw) || 50, 200),
+			skip: Math.max(Number(offsetRaw) || 0, 0),
+		};
+	}
+
+	private getAppointmentsOrderBy(
+		sortByRaw?: string,
+		sortOrderRaw?: string
+	): Prisma.AppointmentOrderByWithRelationInput[] {
+		const sortBy = sortByRaw === "patient" ? "patient" : "date";
+		const sortOrder: Prisma.SortOrder = sortOrderRaw === "desc" ? "desc" : "asc";
+		if (sortBy === "patient") {
+			return [
+				{ patient: { user: { lastName: sortOrder } } },
+				{ patient: { user: { firstName: sortOrder } } },
+				{ scheduledAt: sortOrder },
+				{ id: sortOrder },
+			];
+		}
+		return [{ scheduledAt: sortOrder }, { id: sortOrder }];
+	}
+
+	private getAppointmentsWhere(filters: {
+		status?: string;
+		doctorId?: string;
+		from?: string;
+		to?: string;
+		search?: string;
+	}): Prisma.AppointmentWhereInput {
+		const { status, doctorId, from, to, search } = filters;
+		const where: Prisma.AppointmentWhereInput = {};
+		if (status) where.status = status as AppointmentStatusEnum;
+		if (doctorId) where.doctorId = doctorId;
+		if (from || to) {
+			if (from && isNaN(new Date(from).getTime())) throw new BadRequestException("Invalid 'from' date");
+			if (to && isNaN(new Date(to).getTime())) throw new BadRequestException("Invalid 'to' date");
+			where.scheduledAt = {
+				...(from && { gte: new Date(from) }),
+				...(to && { lte: new Date(to) }),
+			};
+		}
+		const trimmedSearch = search?.trim();
+		if (trimmedSearch) {
+			const tokens = trimmedSearch.split(/\s+/).filter(Boolean);
+			const mode: Prisma.QueryMode = "insensitive";
+			const tokenClause = (token: string): Prisma.AppointmentWhereInput => ({
+				OR: [
+					{ patient: { user: { firstName: { contains: token, mode } } } },
+					{ patient: { user: { lastName: { contains: token, mode } } } },
+					{ doctor: { user: { firstName: { contains: token, mode } } } },
+					{ doctor: { user: { lastName: { contains: token, mode } } } },
+				],
+			});
+			where.AND = tokens.map(tokenClause);
+		}
+		return where;
 	}
 
 	@Get("stats")
@@ -221,8 +277,9 @@ export class AppointmentsController {
 		if (!patient) throw new NotFoundException("Patient not found");
 		if (!doctor) throw new NotFoundException("Doctor not found");
 
-		await this.ensureNoConflict(new Date(dto.scheduledAt), dto.doctorId, dto.patientId);
-		await this.ensureDoctorAvailable(new Date(dto.scheduledAt), dto.doctorId);
+		const scheduledAt = this.normalizeScheduledAt(new Date(dto.scheduledAt));
+		await this.ensureNoConflict(scheduledAt, dto.doctorId, dto.patientId);
+		await this.ensureDoctorAvailable(scheduledAt, dto.doctorId);
 
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -233,7 +290,7 @@ export class AppointmentsController {
 			patientId: dto.patientId,
 			doctorId: dto.doctorId,
 			assistantId: dbUser?.assistant?.id ?? null,
-			scheduledAt: new Date(dto.scheduledAt),
+			scheduledAt,
 			notes: dto.notes,
 		});
 
@@ -279,17 +336,17 @@ export class AppointmentsController {
 
 		this.validateStatusTransition(dto, appointment);
 
-		if (dto.scheduledAt) {
-			const newScheduledAt = new Date(dto.scheduledAt);
-			if (newScheduledAt.getTime() !== appointment.scheduledAt.getTime()) {
-				await this.ensureNoConflict(newScheduledAt, appointment.doctorId, appointment.patientId, id);
-				await this.ensureDoctorAvailable(newScheduledAt, appointment.doctorId);
+		const rescheduled = dto.scheduledAt ? this.normalizeScheduledAt(new Date(dto.scheduledAt)) : null;
+		if (rescheduled) {
+			if (rescheduled.getTime() !== appointment.scheduledAt.getTime()) {
+				await this.ensureNoConflict(rescheduled, appointment.doctorId, appointment.patientId, id);
+				await this.ensureDoctorAvailable(rescheduled, appointment.doctorId);
 			}
 		}
 
 		const updated = await this.updateAppointmentOrConflict(id, {
 			...(dto.status && { status: dto.status }),
-			...(dto.scheduledAt && { scheduledAt: new Date(dto.scheduledAt) }),
+			...(rescheduled && { scheduledAt: rescheduled }),
 			...(dto.notes !== undefined && { notes: dto.notes }),
 		});
 
@@ -349,6 +406,12 @@ export class AppointmentsController {
 			return new ConflictException("Appointment conflict detected");
 		}
 		return err;
+	}
+
+	private normalizeScheduledAt(date: Date): Date {
+		const d = new Date(date);
+		d.setSeconds(0, 0);
+		return d;
 	}
 
 	private async ensureNoConflict(
