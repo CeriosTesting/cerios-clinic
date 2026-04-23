@@ -60,8 +60,8 @@ function SidebarContent({
 			<div className="px-3 py-4 border-t border-white/10">
 				<div className="px-3 py-2">
 					<p className="text-sm font-medium text-white truncate">{displayName}</p>
-					{specialization && <p className="text-xs text-brand-orange truncate mt-0.5">{specialization}</p>}
-					<p className="text-xs text-white/50 truncate mt-0.5">
+					{specialization && <p className="text-xs text-blue-300 truncate mt-0.5">{specialization}</p>}
+					<p className="text-xs text-white/70 truncate mt-0.5">
 						{(keycloak.tokenParsed as KeycloakTokenParsed)?.email as string}
 					</p>
 				</div>

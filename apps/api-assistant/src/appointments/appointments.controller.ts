@@ -222,6 +222,7 @@ export class AppointmentsController {
 		if (!doctor) throw new NotFoundException("Doctor not found");
 
 		await this.ensureNoConflict(new Date(dto.scheduledAt), dto.doctorId, dto.patientId);
+		await this.ensureDoctorAvailable(new Date(dto.scheduledAt), dto.doctorId);
 
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -282,6 +283,7 @@ export class AppointmentsController {
 			const newScheduledAt = new Date(dto.scheduledAt);
 			if (newScheduledAt.getTime() !== appointment.scheduledAt.getTime()) {
 				await this.ensureNoConflict(newScheduledAt, appointment.doctorId, appointment.patientId, id);
+				await this.ensureDoctorAvailable(newScheduledAt, appointment.doctorId);
 			}
 		}
 
@@ -372,6 +374,20 @@ export class AppointmentsController {
 						? "This doctor already has an appointment at this time"
 						: "This patient already has an appointment at this time";
 			throw new ConflictException(reason);
+		}
+	}
+
+	private async ensureDoctorAvailable(scheduledAt: Date, doctorId: string): Promise<void> {
+		const block = await this.prisma.doctorUnavailability.findFirst({
+			where: {
+				doctorId,
+				startDate: { lte: scheduledAt },
+				endDate: { gt: scheduledAt },
+			},
+			select: { id: true },
+		});
+		if (block) {
+			throw new ConflictException("The doctor is unavailable at the selected time");
 		}
 	}
 

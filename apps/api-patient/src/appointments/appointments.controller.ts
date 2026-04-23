@@ -342,6 +342,21 @@ export class AppointmentsController {
 					);
 				}
 
+				// Reject rescheduling into a doctor time-off block.
+				const unavailable = await tx.doctorUnavailability.findFirst({
+					where: {
+						doctorId: appointment.doctorId,
+						startDate: { lte: newScheduledAt },
+						endDate: { gt: newScheduledAt },
+					},
+					select: { id: true },
+				});
+				if (unavailable) {
+					throw new ConflictException(
+						"The doctor is unavailable at the selected time. Please choose a different slot."
+					);
+				}
+
 				const result = await tx.appointment.update({
 					where: { id },
 					data: { scheduledAt: newScheduledAt },

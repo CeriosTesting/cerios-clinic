@@ -1,6 +1,6 @@
 import { Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, NavLink, useLocation } from "react-router-dom";
 
 import api from "../api";
 import keycloak from "../keycloak";
@@ -83,9 +83,15 @@ export default function Layout(): React.ReactElement {
 						{/* Desktop nav */}
 						<div className="hidden md:flex items-center gap-6">
 							{NAV_LINKS.map(link => (
-								<Link key={link.to} to={link.to} className="nav-link">
+								<NavLink
+									key={link.to}
+									to={link.to}
+									className={({ isActive }) =>
+										`nav-link ${isActive ? "text-brand-orange border-b-2 border-brand-orange pb-0.5" : ""}`
+									}
+								>
 									{link.label}
-								</Link>
+								</NavLink>
 							))}
 							<div className="flex items-center gap-3 pl-3 border-l border-gray-200">
 								<span className="text-sm font-medium text-brand-navy">{displayName}</span>
@@ -105,13 +111,19 @@ export default function Layout(): React.ReactElement {
 						</button>
 					</div>
 				</div>
-
-				{/* Mobile dropdown */}
-				{mobileOpen && (
-					<div className="md:hidden border-t border-gray-200 bg-white">
-						<div className="px-4 py-3 space-y-1">
-							{NAV_LINKS.map(link => (
-								<Link
+NavLink
+									key={link.to}
+									to={link.to}
+									className={({ isActive }) =>
+										`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+											isActive
+												? "bg-brand-bg-soft text-brand-orange"
+												: "text-brand-navy hover:bg-brand-bg-soft hover:text-brand-orange"
+										}`
+									}
+								>
+									{link.label}
+								</Navink
 									key={link.to}
 									to={link.to}
 									className="block px-3 py-2 rounded-lg text-sm font-medium text-brand-navy hover:bg-brand-bg-soft hover:text-brand-orange transition-colors"

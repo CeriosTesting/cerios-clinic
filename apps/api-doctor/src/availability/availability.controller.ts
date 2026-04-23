@@ -80,11 +80,9 @@ export class AvailabilityController {
 			throw new BadRequestException("End date must be after start date");
 		}
 
-		// Cannot block past dates
-		const today = new Date();
-		today.setUTCHours(0, 0, 0, 0);
-		if (startDate < today) {
-			throw new BadRequestException("Cannot block dates in the past");
+		// Cannot block time that has already passed
+		if (startDate <= new Date()) {
+			throw new BadRequestException("Cannot block time in the past");
 		}
 
 		// Check for overlapping blocks
