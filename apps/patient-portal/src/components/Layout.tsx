@@ -1,3 +1,4 @@
+import { PortalFooter } from "@clinic/portal-common";
 import { Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Outlet, Link, NavLink, useLocation } from "react-router-dom";
@@ -111,7 +112,13 @@ export default function Layout(): React.ReactElement {
 						</button>
 					</div>
 				</div>
-NavLink
+
+				{/* Mobile nav */}
+				{mobileOpen && (
+					<div className="md:hidden border-t border-gray-200 bg-white">
+						<div className="px-4 py-3 space-y-1">
+							{NAV_LINKS.map(link => (
+								<NavLink
 									key={link.to}
 									to={link.to}
 									className={({ isActive }) =>
@@ -123,13 +130,7 @@ NavLink
 									}
 								>
 									{link.label}
-								</Navink
-									key={link.to}
-									to={link.to}
-									className="block px-3 py-2 rounded-lg text-sm font-medium text-brand-navy hover:bg-brand-bg-soft hover:text-brand-orange transition-colors"
-								>
-									{link.label}
-								</Link>
+								</NavLink>
 							))}
 						</div>
 						<div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -146,14 +147,11 @@ NavLink
 			{mobileOpen && <div className="fixed inset-0 z-20 bg-black/20 md:hidden" onClick={() => setMobileOpen(false)} />}
 
 			{/* Main content */}
-			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-14">
+			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				<Outlet />
 			</main>
 
-			{/* Footer */}
-			<footer className="fixed bottom-0 left-0 right-0 z-10 bg-brand-navy text-white text-center text-sm py-4">
-				<p>Clinic Patient Portal &copy; {new Date().getFullYear()}</p>
-			</footer>
+			<PortalFooter portalName="Patient Portal" />
 		</div>
 	);
 }

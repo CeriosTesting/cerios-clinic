@@ -1,3 +1,4 @@
+import { PortalFooter } from "@clinic/portal-common";
 import { Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
@@ -115,6 +116,8 @@ export default function Layout(): React.ReactElement {
 					</div>
 				</main>
 			</div>
+
+			<PortalFooter portalName="Admin Portal" />
 		</div>
 	);
 }

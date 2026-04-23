@@ -1,3 +1,4 @@
+import { PortalFooter } from "@clinic/portal-common";
 import { LayoutDashboard, Calendar, Users, User, LogOut, Pill, Star, Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
@@ -136,6 +137,8 @@ export default function AppLayout(): React.ReactElement {
 					</div>
 				</main>
 			</div>
+
+			<PortalFooter portalName="Assistant Portal" />
 		</div>
 	);
 }

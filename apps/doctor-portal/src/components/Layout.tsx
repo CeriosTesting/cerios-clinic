@@ -2,6 +2,8 @@ import { Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 
+import { PortalFooter } from "@clinic/portal-common";
+
 import api from "../api";
 import keycloak from "../keycloak";
 
@@ -150,6 +152,8 @@ export default function Layout(): React.ReactElement {
 					</div>
 				</main>
 			</div>
+
+			<PortalFooter portalName="Doctor Portal" />
 		</div>
 	);
 }
