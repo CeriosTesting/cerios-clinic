@@ -1,6 +1,6 @@
 {
-	"name": "api-admin",
-	"version": "1.0.0",
+	"name": "@clinic/api-admin",
+	"version": "0.0.0",
 	"scripts": {
 		"build": "tsc",
 		"dev": "dotenv -e ../../.env -- ts-node-dev --respawn --transpile-only src/main.ts",

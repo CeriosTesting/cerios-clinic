@@ -48,7 +48,7 @@ RUN touch .env && pnpm --filter @clinic/database generate
 RUN pnpm --filter @clinic/shared-types build \
  && pnpm --filter @clinic/database build \
  && pnpm --filter @clinic/api-common build \
- && pnpm --filter ${APP_NAME} build
+ && pnpm --filter @clinic/${APP_NAME} build
 
 # Rewrite "main" from src/index.ts → dist/index.js so Node.js can
 # resolve @clinic/* packages at runtime (publishConfig only applies

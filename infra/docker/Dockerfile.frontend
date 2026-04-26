@@ -70,7 +70,7 @@ ENV VITE_ADMIN_API_BASE_URL=${VITE_ADMIN_API_BASE_URL}
 RUN touch .env \
  && pnpm --filter @clinic/shared-types build \
  && pnpm --filter @clinic/portal-common build \
- && pnpm --filter ${APP_NAME} build
+ && pnpm --filter @clinic/${APP_NAME} build
 
 # ── Stage 4: serve with nginx ─────────────────────────────
 FROM nginx:alpine AS runtime

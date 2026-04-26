@@ -20,7 +20,7 @@ export function PortalFooter({ portalName, showLogo = false }: PortalFooterProps
 		<footer className="w-full bg-brand-navy text-white text-sm py-4 px-4 flex items-center justify-center gap-3">
 			{showLogo && <img src={ceriosLogo} alt="Cerios logo" className="h-5 w-auto" />}
 			<span>
-				Cerios {portalName} &copy; {year}
+				{portalName} &copy; {year}
 			</span>
 		</footer>
 	);
