@@ -106,8 +106,8 @@ export default function AppointmentsPage(): React.ReactElement {
 							}}
 							className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
 								status === s
-									? "bg-brand-orange text-white"
-									: "bg-white border border-gray-200 text-gray-500 hover:border-brand-orange hover:text-brand-orange"
+									? "bg-brand-accent text-white"
+									: "bg-white border border-gray-200 text-gray-500 hover:border-brand-accent hover:text-brand-accent"
 							}`}
 						>
 							{s}
@@ -135,13 +135,13 @@ export default function AppointmentsPage(): React.ReactElement {
 							<thead className="border-b border-gray-100">
 								<tr>
 									<th
-										className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase cursor-pointer select-none hover:text-brand-orange"
+										className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase cursor-pointer select-none hover:text-brand-accent"
 										onClick={() => handleSort("date")}
 									>
 										Date & Time{sortIndicator("date")}
 									</th>
 									<th
-										className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase cursor-pointer select-none hover:text-brand-orange"
+										className="text-left px-3 py-2 text-xs font-semibold text-gray-400 uppercase cursor-pointer select-none hover:text-brand-accent"
 										onClick={() => handleSort("patient")}
 									>
 										Patient{sortIndicator("patient")}

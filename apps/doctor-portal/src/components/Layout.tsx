@@ -79,6 +79,7 @@ function SidebarContent({
 
 export default function Layout(): React.ReactElement {
 	const [specialization, setSpecialization] = useState<string | null>(null);
+	const [showFooterLogo, setShowFooterLogo] = useState(false);
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const location = useLocation();
 
@@ -98,6 +99,13 @@ export default function Layout(): React.ReactElement {
 		void api
 			.get<{ data: { doctor: { specialization: string | null } } }>("/profile/me")
 			.then(res => setSpecialization(res.data.data.doctor?.specialization ?? null))
+			.catch(() => {});
+	}, []);
+
+	useEffect(() => {
+		void api
+			.get<{ data: { showFooterLogo: boolean } }>("/ui-toggles")
+			.then(r => setShowFooterLogo(r.data.data.showFooterLogo))
 			.catch(() => {});
 	}, []);
 
@@ -152,7 +160,7 @@ export default function Layout(): React.ReactElement {
 				</main>
 			</div>
 
-			<PortalFooter portalName="Doctor Portal" />
+			<PortalFooter portalName="Doctor Portal" showLogo={showFooterLogo} />
 		</div>
 	);
 }

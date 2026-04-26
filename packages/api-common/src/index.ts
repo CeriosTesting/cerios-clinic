@@ -12,3 +12,4 @@ export * from "./prisma-exception.filter";
 export * from "./prisma.module";
 export * from "./prisma.service";
 export * from "./slowdown.middleware";
+export * from "./ui-toggles.module";

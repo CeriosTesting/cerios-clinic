@@ -72,6 +72,11 @@ export class FeatureTogglesService implements OnModuleInit {
 				description: "When enabled, disables server-side profile update validation (bug simulation)",
 				config: {},
 			},
+			{
+				key: FEATURE_TOGGLE_KEYS.SHOW_FOOTER_LOGO,
+				description: "When enabled, shows the Cerios logo in portal footers",
+				config: {},
+			},
 		];
 
 		for (const d of defaults) {

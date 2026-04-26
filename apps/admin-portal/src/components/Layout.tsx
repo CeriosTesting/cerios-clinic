@@ -3,6 +3,7 @@ import { Menu, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 
+import api from "../api";
 import keycloak from "../keycloak";
 
 interface KeycloakTokenParsed {
@@ -61,6 +62,7 @@ function SidebarContent({ displayName, logout }: { displayName: string; logout: 
 
 export default function Layout(): React.ReactElement {
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const [showFooterLogo, setShowFooterLogo] = useState(false);
 	const location = useLocation();
 
 	const logout = (): void => {
@@ -71,6 +73,13 @@ export default function Layout(): React.ReactElement {
 		(keycloak.tokenParsed as KeycloakTokenParsed)?.name ??
 		(keycloak.tokenParsed as KeycloakTokenParsed)?.preferred_username ??
 		"Unknown";
+
+	useEffect(() => {
+		void api
+			.get<{ data: { showFooterLogo: boolean } }>("/ui-toggles")
+			.then(r => setShowFooterLogo(r.data.data.showFooterLogo))
+			.catch(() => {});
+	}, []);
 
 	// Close mobile drawer on navigation
 	useEffect(() => {
@@ -117,7 +126,7 @@ export default function Layout(): React.ReactElement {
 				</main>
 			</div>
 
-			<PortalFooter portalName="Admin Portal" />
+			<PortalFooter portalName="Admin Portal" showLogo={showFooterLogo} />
 		</div>
 	);
 }

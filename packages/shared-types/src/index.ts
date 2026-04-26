@@ -292,6 +292,7 @@ export const FEATURE_TOGGLE_KEYS = {
 	SAME_DAY_RESTRICTION: "bug:same-day-restriction",
 	PROFILE_VALIDATION_FRONTEND: "bug:profile-validation-frontend",
 	PROFILE_VALIDATION_BACKEND: "bug:profile-validation-backend",
+	SHOW_FOOTER_LOGO: "bug:show-footer-logo",
 } as const;
 
 export interface ApiSlowdownConfig {

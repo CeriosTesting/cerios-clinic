@@ -29,6 +29,7 @@ const NAV_LINKS = [
 export default function Layout(): React.ReactElement {
 	const [mobileOpen, setMobileOpen] = useState(false);
 	const [profileName, setProfileName] = useState<ProfileNameData | null>(null);
+	const [showFooterLogo, setShowFooterLogo] = useState(false);
 	const location = useLocation();
 
 	const handleLogout = (): void => {
@@ -56,6 +57,13 @@ export default function Layout(): React.ReactElement {
 			cancelled = true;
 			window.removeEventListener(PROFILE_UPDATED_EVENT, loadProfile);
 		};
+	}, []);
+
+	useEffect(() => {
+		void api
+			.get<{ data: { showFooterLogo: boolean } }>("/ui-toggles")
+			.then(r => setShowFooterLogo(r.data.data.showFooterLogo))
+			.catch(() => {});
 	}, []);
 
 	const tokenParsed = keycloak.tokenParsed as KeycloakTokenParsed | undefined;
@@ -151,7 +159,7 @@ export default function Layout(): React.ReactElement {
 				<Outlet />
 			</main>
 
-			<PortalFooter portalName="Patient Portal" />
+			<PortalFooter portalName="Patient Portal" showLogo={showFooterLogo} />
 		</div>
 	);
 }

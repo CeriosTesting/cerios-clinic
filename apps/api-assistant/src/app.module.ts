@@ -1,4 +1,4 @@
-import { EventsModule, JwtAuthGuard, MailModule, SlowdownMiddleware } from "@clinic/api-common";
+import { EventsModule, JwtAuthGuard, MailModule, SlowdownMiddleware, UiTogglesModule } from "@clinic/api-common";
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
@@ -24,6 +24,7 @@ import { ReviewsModule } from "./reviews/reviews.module";
 		PrescriptionsModule,
 		ReviewsModule,
 		AppEventsModule,
+		UiTogglesModule,
 		HealthModule,
 	],
 	providers: [

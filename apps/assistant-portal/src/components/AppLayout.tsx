@@ -3,6 +3,7 @@ import { LayoutDashboard, Calendar, Users, User, LogOut, Pill, Star, Menu, X } f
 import React, { useEffect, useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 
+import api from "../api";
 import keycloak from "../keycloak";
 
 interface KeycloakTokenParsed {
@@ -82,6 +83,7 @@ function SidebarContent({
 
 export default function AppLayout(): React.ReactElement {
 	const [mobileOpen, setMobileOpen] = useState(false);
+	const [showFooterLogo, setShowFooterLogo] = useState(false);
 	const location = useLocation();
 
 	const roles: string[] = (keycloak.tokenParsed as KeycloakTokenParsed)?.realm_access?.roles ?? [];
@@ -96,6 +98,13 @@ export default function AppLayout(): React.ReactElement {
 	useEffect(() => {
 		setMobileOpen(false);
 	}, [location.pathname]);
+
+	useEffect(() => {
+		void api
+			.get<{ data: { showFooterLogo: boolean } }>("/ui-toggles")
+			.then(r => setShowFooterLogo(r.data.data.showFooterLogo))
+			.catch(() => {});
+	}, []);
 
 	return (
 		<div className="min-h-screen flex flex-col">
@@ -138,7 +147,7 @@ export default function AppLayout(): React.ReactElement {
 				</main>
 			</div>
 
-			<PortalFooter portalName="Assistant Portal" />
+			<PortalFooter portalName="Assistant Portal" showLogo={showFooterLogo} />
 		</div>
 	);
 }
