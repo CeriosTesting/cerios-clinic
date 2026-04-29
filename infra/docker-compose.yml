@@ -31,10 +31,9 @@ services:
       KC_DB_SCHEMA: keycloak
       KC_HEALTH_ENABLED: "true"
       KC_HTTP_PORT: "8080"
-      # Public URL the browser uses to reach Keycloak. Required so that
-      # verification/reset emails contain host-reachable links (otherwise
-      # Keycloak falls back to the internal Docker hostname `http://keycloak:8080`).
-      KC_HOSTNAME_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}
+      # Keep hostname dynamic in local dev so auth flows work from host browsers
+      # (localhost) and Android emulators/devices (10.0.2.2 or LAN IP) without
+      # forcing redirects back to localhost.
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
     ports:
@@ -106,7 +105,7 @@ services:
       ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
-      KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
+      KEYCLOAK_PUBLIC_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
       KEYCLOAK_PATIENT_CLIENT_ID: ${KEYCLOAK_PATIENT_CLIENT_ID:-patient-portal-client}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
@@ -141,7 +140,7 @@ services:
       ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
-      KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
+      KEYCLOAK_PUBLIC_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
       KEYCLOAK_DOCTOR_CLIENT_ID: ${KEYCLOAK_DOCTOR_CLIENT_ID:-doctor-portal-client}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
@@ -175,7 +174,7 @@ services:
       ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
-      KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
+      KEYCLOAK_PUBLIC_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
       KEYCLOAK_ASSISTANT_CLIENT_ID: ${KEYCLOAK_ASSISTANT_CLIENT_ID:-assistant-portal-client}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
@@ -202,7 +201,7 @@ services:
       args:
         APP_NAME: patient-portal
         VITE_PATIENT_API_BASE_URL: "http://localhost:3001/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
+        VITE_KEYCLOAK_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
         VITE_PATIENT_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_PATIENT_CLIENT_ID:-patient-portal-client}
     ports:
@@ -220,7 +219,7 @@ services:
       args:
         APP_NAME: doctor-portal
         VITE_DOCTOR_API_BASE_URL: "http://localhost:3002/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
+        VITE_KEYCLOAK_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
         VITE_DOCTOR_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_DOCTOR_CLIENT_ID:-doctor-portal-client}
     ports:
@@ -238,7 +237,7 @@ services:
       args:
         APP_NAME: assistant-portal
         VITE_ASSISTANT_API_BASE_URL: "http://localhost:3003/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
+        VITE_KEYCLOAK_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
         VITE_ASSISTANT_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_ASSISTANT_CLIENT_ID:-assistant-portal-client}
     ports:
@@ -263,7 +262,7 @@ services:
       ENABLE_SWAGGER: "true"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-clinic}:${POSTGRES_PASSWORD:-clinic_secret}@postgres:5432/${POSTGRES_DB:-clinic_db}"
       KEYCLOAK_URL: "http://keycloak:8080"
-      KEYCLOAK_PUBLIC_URL: "http://localhost:8180"
+      KEYCLOAK_PUBLIC_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
       KEYCLOAK_ADMIN_PORTAL_CLIENT_ID: ${KEYCLOAK_ADMIN_PORTAL_CLIENT_ID:-admin-portal-client}
       KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-api-service-client}
@@ -290,7 +289,7 @@ services:
       args:
         APP_NAME: admin-portal
         VITE_ADMIN_API_BASE_URL: "http://localhost:3004/api"
-        VITE_KEYCLOAK_URL: "http://localhost:8180"
+        VITE_KEYCLOAK_URL: "${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}"
         VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-clinic}
         VITE_ADMIN_KEYCLOAK_CLIENT_ID: ${KEYCLOAK_ADMIN_PORTAL_CLIENT_ID:-admin-portal-client}
     ports:
