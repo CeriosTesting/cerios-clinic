@@ -4,6 +4,9 @@ import EncryptedStorage from "react-native-encrypted-storage";
 
 const STORAGE_KEY = "cerios_auth_tokens";
 
+const realmBaseUrl = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`;
+const oidcBaseUrl = `${realmBaseUrl}/protocol/openid-connect`;
+
 export interface StoredTokens {
 	accessToken: string;
 	refreshToken: string;
@@ -12,7 +15,15 @@ export interface StoredTokens {
 }
 
 const config = {
-	issuer: `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`,
+	issuer: realmBaseUrl,
+	// Avoid relying on discovery metadata hostnames (often localhost in local
+	// Docker setups), which are unreachable from Android emulators/devices.
+	serviceConfiguration: {
+		authorizationEndpoint: `${oidcBaseUrl}/auth`,
+		tokenEndpoint: `${oidcBaseUrl}/token`,
+		revocationEndpoint: `${oidcBaseUrl}/revoke`,
+		endSessionEndpoint: `${oidcBaseUrl}/logout`,
+	},
 	clientId: KEYCLOAK_CLIENT_ID,
 	redirectUrl: "com.cerios.patient://oauth2redirect",
 	scopes: ["openid", "profile", "email", "roles"],
