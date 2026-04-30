@@ -22,7 +22,6 @@ COPY apps/patient-portal/package.json   apps/patient-portal/
 COPY apps/doctor-portal/package.json    apps/doctor-portal/
 COPY apps/assistant-portal/package.json apps/assistant-portal/
 COPY apps/admin-portal/package.json     apps/admin-portal/
-COPY apps/patient-mobile/package.json   apps/patient-mobile/
 
 # Prisma schema is needed by the postinstall hook (prisma generate)
 COPY packages/database/prisma.config.ts          packages/database/
