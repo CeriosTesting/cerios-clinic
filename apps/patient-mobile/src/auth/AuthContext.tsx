@@ -3,7 +3,14 @@ import { AppState, type AppStateStatus } from "react-native";
 
 import api, { updateCachedToken } from "../api/client";
 
-import { signIn, signOut, getStoredTokens, refreshTokens, isTokenExpiringSoon, parseAccessToken } from "./keycloak";
+import {
+	signInWithPassword,
+	signOut,
+	getStoredTokens,
+	refreshTokens,
+	isTokenExpiringSoon,
+	parseAccessToken,
+} from "./keycloak";
 
 interface AuthUser {
 	sub: string;
@@ -15,7 +22,7 @@ interface AuthUser {
 interface AuthContextValue {
 	user: AuthUser | null;
 	isLoading: boolean;
-	login: () => Promise<void>;
+	login: (username: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 }
 
@@ -92,20 +99,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 		return (): void => subscription.remove();
 	}, [applyTokens]);
 
-	const login = useCallback(async () => {
-		const result = await signIn();
-		applyTokens(result.accessToken);
-		// Sync Keycloak identity to the patient DB — fire-and-forget, idempotent on the server
-		const claims = parseAccessToken(result.accessToken) as Record<string, string>;
-		api
-			.post("/auth/sync", {
-				keycloakId: claims.sub,
-				email: claims.email,
-				firstName: claims.given_name,
-				lastName: claims.family_name,
-			})
-			.catch(() => undefined);
-	}, [applyTokens]);
+	const login = useCallback(
+		async (username: string, password: string) => {
+			const result = await signInWithPassword(username, password);
+			applyTokens(result.accessToken);
+			// Sync Keycloak identity to the patient DB — fire-and-forget, idempotent on the server
+			const claims = parseAccessToken(result.accessToken) as Record<string, string>;
+			api
+				.post("/auth/sync", {
+					keycloakId: claims.sub,
+					email: claims.email,
+					firstName: claims.given_name,
+					lastName: claims.family_name,
+				})
+				.catch(() => undefined);
+		},
+		[applyTokens]
+	);
 
 	const logout = useCallback(async () => {
 		await signOut();

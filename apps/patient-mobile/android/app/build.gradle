@@ -84,8 +84,6 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        // Required by react-native-app-auth: must match the scheme in your redirect URI
-        manifestPlaceholders = [appAuthRedirectScheme: "com.cerios.patient"]
     }
     signingConfigs {
         debug {
