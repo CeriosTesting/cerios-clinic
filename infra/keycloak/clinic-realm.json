@@ -154,7 +154,7 @@
 			"enabled": true,
 			"publicClient": true,
 			"standardFlowEnabled": true,
-			"directAccessGrantsEnabled": false,
+			"directAccessGrantsEnabled": true,
 			"redirectUris": ["com.cerios.patient://oauth2redirect"],
 			"webOrigins": [],
 			"attributes": {
