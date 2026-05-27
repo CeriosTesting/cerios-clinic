@@ -10,35 +10,35 @@ This guide walks you through setting up the Clinic application for **local devel
 
 Install the following tools **in order**. Each link goes to the official download page.
 
-### Node.js (v20 LTS)
+### Node.js (v24 LTS)
 
-1. Go to https://nodejs.org and download the **LTS** version (20.x).
+1. Go to https://nodejs.org and download the **LTS** version (24.x).
 2. Run the installer. Accept all defaults.
 3. Open a new terminal (PowerShell or Command Prompt) and verify:
 
 ```bash
 node --version
-# Should show v20.x.x
+# Should show v24.x.x
 
 npm --version
-# Should show 10.x.x
+# Should show 11.x.x
 ```
+
+> The repo pins the Node major version in `.nvmrc` / `.node-version` and in `package.json` `engines`. Any Node 24 patch release is fine for local development.
 
 ### pnpm (Package Manager)
 
-This project uses `pnpm` instead of `npm` because it is faster and shares packages across workspaces.
-
-Open a terminal and run:
+This project uses `pnpm` instead of `npm` because it is faster and shares packages across workspaces. The exact pnpm version is pinned in `package.json` via `packageManager`, so the easiest setup is **Corepack** (ships with Node 24):
 
 ```bash
-npm install -g pnpm
+corepack enable
 ```
 
-Verify:
+The first time you run `pnpm` in this repo, Corepack will install the pinned version automatically. Verify:
 
 ```bash
 pnpm --version
-# Should show 9.x.x or higher
+# Should match the version in package.json "packageManager"
 ```
 
 ### Docker Desktop

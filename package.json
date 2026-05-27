@@ -50,5 +50,10 @@
 		"pg": "catalog:",
 		"ts-node-dev": "^2.0.0",
 		"typescript": "catalog:"
-	}
+	},
+	"engines": {
+		"node": "^24",
+		"pnpm": "^9"
+	},
+	"packageManager": "pnpm@9.15.9"
 }
