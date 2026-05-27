@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # ── Stage 1: base ──────────────────────────────────────────
-FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM node:24-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 ENV PNPM_HOME=/pnpm
 RUN pnpm config set store-dir /pnpm/store
@@ -57,7 +57,7 @@ RUN for pkg in packages/shared-types packages/database packages/api-common; do \
     done
 
 # ── Stage 4: production runtime ───────────────────────────
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 WORKDIR /app
 
 # Copy the full monorepo layout so workspace: links resolve correctly

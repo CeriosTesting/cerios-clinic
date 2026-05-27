@@ -23,12 +23,8 @@ Follow the steps below if you need a custom build (e.g. for a physical device on
 
 ### Prerequisites
 
-1. **Node.js 22+** and **pnpm** — See [DEVELOPMENT.md](DEVELOPMENT.md) for installation.
-   **pnpm** is not bundled with Node.js. If `pnpm` is not recognised, install it with:
-   ```bash
-   npm install -g pnpm
-   ```
-   Or, on Node.js 16.13+, enable it via Corepack (ships with Node):
+1. **Node.js 24** and **pnpm** — See [DEVELOPMENT.md](DEVELOPMENT.md) for installation.
+   The exact pnpm version is pinned via `package.json` `packageManager`, so the easiest setup is **Corepack** (ships with Node 24):
    ```bash
    corepack enable
    ```
