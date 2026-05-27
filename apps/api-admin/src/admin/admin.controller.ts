@@ -1,4 +1,10 @@
 import {
+	AssistantCoreResponseDto,
+	DoctorCoreResponseDto,
+	MessageResponseDto,
+	UserCoreResponseDto,
+} from "@clinic/api-common";
+import {
 	Controller,
 	Get,
 	Post,
@@ -11,7 +17,15 @@ import {
 	NotFoundException,
 	ConflictException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiCreatedResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiTags,
+} from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 import { IsString, IsEmail, IsNotEmpty, IsOptional, MinLength } from "class-validator";
 
@@ -23,33 +37,87 @@ import { PrismaService } from "../prisma/prisma.service";
 import { KeycloakAdminService } from "./keycloak-admin.service";
 
 class CreateDoctorDto {
-	@IsEmail() email: string;
-	@IsString() @IsNotEmpty() firstName: string;
-	@IsString() @IsNotEmpty() lastName: string;
-	@IsOptional() @IsString() specialization?: string;
-	@IsOptional() @IsString() licenseNumber?: string;
-	@IsString() @IsNotEmpty() @MinLength(8) password: string;
+	@ApiProperty({ format: "email", example: "doctor@example.com" })
+	@IsEmail()
+	email: string;
+	@ApiProperty({ example: "Alice" })
+	@IsString()
+	@IsNotEmpty()
+	firstName: string;
+	@ApiProperty({ example: "Morgan" })
+	@IsString()
+	@IsNotEmpty()
+	lastName: string;
+	@ApiPropertyOptional({ example: "Cardiology" })
+	@IsOptional()
+	@IsString()
+	specialization?: string;
+	@ApiPropertyOptional({ example: "MED-12345" })
+	@IsOptional()
+	@IsString()
+	licenseNumber?: string;
+	@ApiProperty({ minLength: 8, example: "StrongPass123", writeOnly: true })
+	@IsString()
+	@IsNotEmpty()
+	@MinLength(8)
+	password: string;
 }
 
 class UpdateDoctorDto {
-	@IsOptional() @IsString() firstName?: string;
-	@IsOptional() @IsString() lastName?: string;
-	@IsOptional() @IsString() specialization?: string;
-	@IsOptional() @IsString() licenseNumber?: string;
+	@ApiPropertyOptional({ example: "Alice" })
+	@IsOptional()
+	@IsString()
+	firstName?: string;
+	@ApiPropertyOptional({ example: "Morgan" })
+	@IsOptional()
+	@IsString()
+	lastName?: string;
+	@ApiPropertyOptional({ example: "Cardiology" })
+	@IsOptional()
+	@IsString()
+	specialization?: string;
+	@ApiPropertyOptional({ example: "MED-12345" })
+	@IsOptional()
+	@IsString()
+	licenseNumber?: string;
 }
 
 class CreateAssistantDto {
-	@IsEmail() email: string;
-	@IsString() @IsNotEmpty() firstName: string;
-	@IsString() @IsNotEmpty() lastName: string;
-	@IsOptional() @IsString() department?: string;
-	@IsString() @IsNotEmpty() @MinLength(8) password: string;
+	@ApiProperty({ format: "email", example: "assistant@example.com" })
+	@IsEmail()
+	email: string;
+	@ApiProperty({ example: "Jamie" })
+	@IsString()
+	@IsNotEmpty()
+	firstName: string;
+	@ApiProperty({ example: "Lee" })
+	@IsString()
+	@IsNotEmpty()
+	lastName: string;
+	@ApiPropertyOptional({ example: "Front Desk" })
+	@IsOptional()
+	@IsString()
+	department?: string;
+	@ApiProperty({ minLength: 8, example: "StrongPass123", writeOnly: true })
+	@IsString()
+	@IsNotEmpty()
+	@MinLength(8)
+	password: string;
 }
 
 class UpdateAssistantDto {
-	@IsOptional() @IsString() firstName?: string;
-	@IsOptional() @IsString() lastName?: string;
-	@IsOptional() @IsString() department?: string;
+	@ApiPropertyOptional({ example: "Jamie" })
+	@IsOptional()
+	@IsString()
+	firstName?: string;
+	@ApiPropertyOptional({ example: "Lee" })
+	@IsOptional()
+	@IsString()
+	lastName?: string;
+	@ApiPropertyOptional({ example: "Front Desk" })
+	@IsOptional()
+	@IsString()
+	department?: string;
 }
 
 type UserWithRelations = Prisma.UserGetPayload<{ include: { doctor: true; assistant: true } }>;
@@ -57,6 +125,65 @@ type UserWithDoctor = Prisma.UserGetPayload<{ include: { doctor: true } }>;
 type DoctorWithUser = Prisma.DoctorGetPayload<{ include: { user: true } }>;
 type UserWithAssistant = Prisma.UserGetPayload<{ include: { assistant: true } }>;
 type AssistantWithUser = Prisma.AssistantGetPayload<{ include: { user: true } }>;
+
+class AdminUserWithRelationsResponseDto extends UserCoreResponseDto {
+	@ApiPropertyOptional({ type: () => DoctorCoreResponseDto, nullable: true })
+	doctor?: DoctorCoreResponseDto | null;
+
+	@ApiPropertyOptional({ type: () => AssistantCoreResponseDto, nullable: true })
+	assistant?: AssistantCoreResponseDto | null;
+}
+
+class AdminUserWithDoctorResponseDto extends UserCoreResponseDto {
+	@ApiProperty({ type: () => DoctorCoreResponseDto })
+	doctor!: DoctorCoreResponseDto;
+}
+
+class AdminDoctorWithUserResponseDto extends DoctorCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class AdminUserWithAssistantResponseDto extends UserCoreResponseDto {
+	@ApiProperty({ type: () => AssistantCoreResponseDto })
+	assistant!: AssistantCoreResponseDto;
+}
+
+class AdminAssistantWithUserResponseDto extends AssistantCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class AdminUsersListResponseDto {
+	@ApiProperty({ type: () => AdminUserWithRelationsResponseDto, isArray: true })
+	data!: AdminUserWithRelationsResponseDto[];
+}
+
+class AdminDoctorCreateResponseDto {
+	@ApiProperty({ type: () => AdminUserWithDoctorResponseDto })
+	data!: AdminUserWithDoctorResponseDto;
+
+	@ApiProperty({ example: "Doctor created successfully" })
+	message!: string;
+}
+
+class AdminDoctorUpdateResponseDto {
+	@ApiProperty({ type: () => AdminDoctorWithUserResponseDto })
+	data!: AdminDoctorWithUserResponseDto;
+}
+
+class AdminAssistantCreateResponseDto {
+	@ApiProperty({ type: () => AdminUserWithAssistantResponseDto })
+	data!: AdminUserWithAssistantResponseDto;
+
+	@ApiProperty({ example: "Assistant created successfully" })
+	message!: string;
+}
+
+class AdminAssistantUpdateResponseDto {
+	@ApiProperty({ type: () => AdminAssistantWithUserResponseDto })
+	data!: AdminAssistantWithUserResponseDto;
+}
 
 @ApiTags("admin")
 @ApiBearerAuth()
@@ -71,6 +198,7 @@ export class AdminController {
 
 	@Get("users")
 	@ApiOperation({ summary: "[Admin] List all doctors and assistants" })
+	@ApiOkResponse({ type: AdminUsersListResponseDto })
 	async listUsers(): Promise<{ data: UserWithRelations[] }> {
 		const users = await this.prisma.user.findMany({
 			where: { role: { in: ["doctor", "assistant"] }, deletedAt: null },
@@ -82,6 +210,7 @@ export class AdminController {
 
 	@Post("doctors")
 	@ApiOperation({ summary: "[Admin] Create a new doctor account" })
+	@ApiCreatedResponse({ type: AdminDoctorCreateResponseDto })
 	async createDoctor(@Body() dto: CreateDoctorDto): Promise<{ data: UserWithDoctor; message: string }> {
 		const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
 		if (existing) throw new ConflictException("Email already in use");
@@ -120,6 +249,7 @@ export class AdminController {
 
 	@Put("doctors/:id")
 	@ApiOperation({ summary: "[Admin] Update a doctor" })
+	@ApiOkResponse({ type: AdminDoctorUpdateResponseDto })
 	async updateDoctor(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateDoctorDto
@@ -156,6 +286,7 @@ export class AdminController {
 
 	@Delete("doctors/:id")
 	@ApiOperation({ summary: "[Admin] Soft-delete a doctor (disables Keycloak account)" })
+	@ApiOkResponse({ type: MessageResponseDto })
 	async deleteDoctor(@Param("id", ParseUUIDPipe) id: string): Promise<{ message: string }> {
 		const doctor = await this.prisma.doctor.findUnique({
 			where: { id },
@@ -173,6 +304,7 @@ export class AdminController {
 
 	@Post("assistants")
 	@ApiOperation({ summary: "[Admin] Create a new assistant account" })
+	@ApiCreatedResponse({ type: AdminAssistantCreateResponseDto })
 	async createAssistant(@Body() dto: CreateAssistantDto): Promise<{ data: UserWithAssistant; message: string }> {
 		const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
 		if (existing) throw new ConflictException("Email already in use");
@@ -208,6 +340,7 @@ export class AdminController {
 
 	@Put("assistants/:id")
 	@ApiOperation({ summary: "[Admin] Update an assistant" })
+	@ApiOkResponse({ type: AdminAssistantUpdateResponseDto })
 	async updateAssistant(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAssistantDto
@@ -243,6 +376,7 @@ export class AdminController {
 
 	@Delete("assistants/:id")
 	@ApiOperation({ summary: "[Admin] Soft-delete an assistant (disables Keycloak account)" })
+	@ApiOkResponse({ type: MessageResponseDto })
 	async deleteAssistant(@Param("id", ParseUUIDPipe) id: string): Promise<{ message: string }> {
 		const assistant = await this.prisma.assistant.findUnique({
 			where: { id },

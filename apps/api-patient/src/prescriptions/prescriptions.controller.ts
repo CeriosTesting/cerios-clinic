@@ -1,4 +1,11 @@
 import {
+	AppointmentSummaryResponseDto,
+	DoctorCoreResponseDto,
+	PrescriptionItemResponseDto,
+	PrescriptionRecordResponseDto,
+	UserNameResponseDto,
+} from "@clinic/api-common";
+import {
 	Controller,
 	Get,
 	Param,
@@ -8,7 +15,8 @@ import {
 	NotFoundException,
 	ForbiddenException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProperty, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { Prisma } from "@prisma/client";
 
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -23,6 +31,39 @@ const PRESCRIPTION_INCLUDE = {
 	appointment: { select: { scheduledAt: true, status: true } },
 } as const;
 
+type PrescriptionWithRelations = Prisma.PrescriptionGetPayload<{
+	include: typeof PRESCRIPTION_INCLUDE;
+}>;
+
+class PatientPrescriptionDoctorResponseDto extends DoctorCoreResponseDto {
+	@ApiProperty({ type: () => UserNameResponseDto })
+	user!: UserNameResponseDto;
+}
+
+class PatientPrescriptionResponseDto extends PrescriptionRecordResponseDto {
+	@ApiProperty({ type: () => PrescriptionItemResponseDto, isArray: true })
+	items!: PrescriptionItemResponseDto[];
+
+	@ApiProperty({ type: () => PatientPrescriptionDoctorResponseDto })
+	doctor!: PatientPrescriptionDoctorResponseDto;
+
+	@ApiProperty({ type: () => AppointmentSummaryResponseDto })
+	appointment!: AppointmentSummaryResponseDto;
+}
+
+class PatientPrescriptionListResponseDto {
+	@ApiProperty({ type: () => PatientPrescriptionResponseDto, isArray: true })
+	data!: PatientPrescriptionResponseDto[];
+
+	@ApiProperty({ example: 42 })
+	total!: number;
+}
+
+class PatientPrescriptionDetailResponseDto {
+	@ApiProperty({ type: () => PatientPrescriptionResponseDto })
+	data!: PatientPrescriptionResponseDto;
+}
+
 @ApiTags("prescriptions")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -33,13 +74,14 @@ export class PrescriptionsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get current patient's prescriptions" })
+	@ApiOkResponse({ type: PatientPrescriptionListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
-	): Promise<{ data: unknown[]; total: number }> {
+	): Promise<{ data: PrescriptionWithRelations[]; total: number }> {
 		const take = Math.min(Number(limitRaw) || 50, 200);
 		const skip = Math.max(Number(offsetRaw) || 0, 0);
 
@@ -66,10 +108,11 @@ export class PrescriptionsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get a specific prescription" })
+	@ApiOkResponse({ type: PatientPrescriptionDetailResponseDto })
 	async findOne(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
-	): Promise<{ data: unknown }> {
+	): Promise<{ data: PrescriptionWithRelations }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { patient: true },

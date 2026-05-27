@@ -15,7 +15,16 @@ import {
 	BadRequestException,
 	ConflictException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiCreatedResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
 import {
 	Prisma,
 	Appointment,
@@ -52,18 +61,274 @@ type EnrichedStatusChange = AppointmentStatusChange & {
 };
 
 class CreateAppointmentDto {
-	@IsUUID() patientId: string;
-	@IsUUID() doctorId: string;
-	@IsDateString() scheduledAt: string;
-	@IsOptional() @IsString() notes?: string;
+	@ApiProperty({ format: "uuid", example: "3f2504e0-4f89-11d3-9a0c-0305e82c3301" })
+	@IsUUID()
+	patientId: string;
+	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
+	@IsUUID()
+	doctorId: string;
+	@ApiProperty({ format: "date-time", example: "2026-06-15T09:30:00.000Z" })
+	@IsDateString()
+	scheduledAt: string;
+	@ApiPropertyOptional({ example: "Follow-up consultation" })
+	@IsOptional()
+	@IsString()
+	notes?: string;
 }
 
 class UpdateAppointmentDto {
+	@ApiPropertyOptional({ enum: AppointmentStatusEnum })
 	@IsOptional()
 	@IsEnum(AppointmentStatusEnum)
 	status?: AppointmentStatus;
-	@IsOptional() @IsDateString() scheduledAt?: string;
-	@IsOptional() @IsString() notes?: string;
+	@ApiPropertyOptional({ format: "date-time", example: "2026-06-15T10:00:00.000Z" })
+	@IsOptional()
+	@IsDateString()
+	scheduledAt?: string;
+	@ApiPropertyOptional({ example: "Patient requested a later slot" })
+	@IsOptional()
+	@IsString()
+	notes?: string;
+}
+
+class AppointmentUserResponseDto {
+	@ApiProperty({ format: "uuid", example: "3f2504e0-4f89-11d3-9a0c-0305e82c3301" })
+	id!: string;
+
+	@ApiProperty({ example: "90bb0a13-a7be-4f8b-b071-e07d1f7b8bc2" })
+	keycloakId!: string;
+
+	@ApiProperty({ format: "email", example: "patient@example.com" })
+	email!: string;
+
+	@ApiProperty({ example: "Taylor" })
+	firstName!: string;
+
+	@ApiProperty({ example: "Brooks" })
+	lastName!: string;
+
+	@ApiProperty({ enum: ["patient", "doctor", "assistant", "admin"], example: "patient" })
+	role!: string;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:00:00.000Z" })
+	createdAt!: string;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
+	updatedAt!: string;
+
+	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	deletedAt?: string | null;
+}
+
+class AppointmentPatientResponseDto {
+	@ApiProperty({ format: "uuid", example: "c56a4180-65aa-42ec-a945-5fd21dec0538" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "3f2504e0-4f89-11d3-9a0c-0305e82c3301" })
+	userId!: string;
+
+	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	dateOfBirth?: string | null;
+
+	@ApiPropertyOptional({ nullable: true, example: "+31 6 1234 5678" })
+	phone?: string | null;
+
+	@ApiPropertyOptional({ nullable: true, example: "INS-2026-001" })
+	insuranceNumber?: string | null;
+
+	@ApiPropertyOptional({ nullable: true, example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..." })
+	photo?: string | null;
+
+	@ApiProperty({ example: true })
+	emailNotificationsEnabled!: boolean;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
+	updatedAt!: string;
+
+	@ApiProperty({ type: () => AppointmentUserResponseDto })
+	user!: AppointmentUserResponseDto;
+}
+
+class AppointmentDoctorResponseDto {
+	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" })
+	userId!: string;
+
+	@ApiPropertyOptional({ nullable: true, example: "Cardiology" })
+	specialization?: string | null;
+
+	@ApiPropertyOptional({ nullable: true, example: "MED-12345" })
+	licenseNumber?: string | null;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
+	updatedAt!: string;
+
+	@ApiProperty({ type: () => AppointmentUserResponseDto })
+	user!: AppointmentUserResponseDto;
+}
+
+class AppointmentAssistantResponseDto {
+	@ApiProperty({ format: "uuid", example: "de305d54-75b4-431b-adb2-eb6b9e546014" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "f47ac10b-58cc-4372-a567-0e02b2c3d479" })
+	userId!: string;
+
+	@ApiPropertyOptional({ nullable: true, example: "Front Desk" })
+	department?: string | null;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
+	updatedAt!: string;
+
+	@ApiProperty({ type: () => AppointmentUserResponseDto })
+	user!: AppointmentUserResponseDto;
+}
+
+class AppointmentRecordResponseDto {
+	@ApiProperty({ format: "uuid", example: "7c9e6679-7425-40de-944b-e07fc1f90ae7" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "c56a4180-65aa-42ec-a945-5fd21dec0538" })
+	patientId!: string;
+
+	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
+	doctorId!: string;
+
+	@ApiPropertyOptional({ format: "uuid", nullable: true, example: "de305d54-75b4-431b-adb2-eb6b9e546014" })
+	assistantId?: string | null;
+
+	@ApiProperty({ format: "date-time", example: "2026-06-15T09:30:00.000Z" })
+	scheduledAt!: string;
+
+	@ApiProperty({ enum: AppointmentStatusEnum, example: AppointmentStatusEnum.SCHEDULED })
+	status!: AppointmentStatus;
+
+	@ApiPropertyOptional({ nullable: true, example: "Follow-up consultation" })
+	notes?: string | null;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:00:00.000Z" })
+	createdAt!: string;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
+	updatedAt!: string;
+}
+
+class AppointmentResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => AppointmentPatientResponseDto })
+	patient!: AppointmentPatientResponseDto;
+
+	@ApiProperty({ type: () => AppointmentDoctorResponseDto })
+	doctor!: AppointmentDoctorResponseDto;
+
+	@ApiPropertyOptional({ type: () => AppointmentAssistantResponseDto, nullable: true })
+	assistant?: AppointmentAssistantResponseDto | null;
+}
+
+class AppointmentStatusCountsResponseDto {
+	@ApiProperty({ example: 12 })
+	SCHEDULED!: number;
+
+	@ApiProperty({ example: 8 })
+	CONFIRMED!: number;
+
+	@ApiProperty({ example: 31 })
+	COMPLETED!: number;
+
+	@ApiProperty({ example: 4 })
+	CANCELLED!: number;
+}
+
+class AppointmentStatsDataResponseDto {
+	@ApiProperty({ example: 5 })
+	todayCount!: number;
+
+	@ApiProperty({ example: 18 })
+	upcomingCount!: number;
+
+	@ApiProperty({ example: 31 })
+	completedCount!: number;
+
+	@ApiProperty({ example: 4 })
+	cancelledCount!: number;
+
+	@ApiProperty({ example: 55 })
+	totalCount!: number;
+
+	@ApiProperty({ type: () => AppointmentStatusCountsResponseDto })
+	byStatus!: AppointmentStatusCountsResponseDto;
+}
+
+class AppointmentStatusHistoryItemResponseDto {
+	@ApiProperty({ format: "uuid", example: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "7c9e6679-7425-40de-944b-e07fc1f90ae7" })
+	appointmentId!: string;
+
+	@ApiPropertyOptional({ enum: AppointmentStatusEnum, nullable: true })
+	previousStatus?: AppointmentStatus | null;
+
+	@ApiProperty({ enum: AppointmentStatusEnum, example: AppointmentStatusEnum.CONFIRMED })
+	newStatus!: AppointmentStatus;
+
+	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	previousScheduledAt?: string | null;
+
+	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	newScheduledAt?: string | null;
+
+	@ApiProperty({ example: "90bb0a13-a7be-4f8b-b071-e07d1f7b8bc2" })
+	changedByKeycloakId!: string;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:45:00.000Z" })
+	changedAt!: string;
+
+	@ApiPropertyOptional({ nullable: true, example: "Jamie Lee" })
+	changedByName?: string | null;
+
+	@ApiPropertyOptional({ enum: ["patient", "doctor", "assistant", "admin"], nullable: true, example: "assistant" })
+	changedByRole?: string | null;
+}
+
+class AppointmentListResponseDto {
+	@ApiProperty({ type: () => AppointmentResponseDto, isArray: true })
+	data!: AppointmentResponseDto[];
+
+	@ApiProperty({ example: 42 })
+	total!: number;
+}
+
+class AppointmentStatsResponseDto {
+	@ApiProperty({ type: () => AppointmentStatsDataResponseDto })
+	data!: AppointmentStatsDataResponseDto;
+}
+
+class SingleAppointmentResponseDto {
+	@ApiProperty({ type: () => AppointmentResponseDto })
+	data!: AppointmentResponseDto;
+}
+
+class AppointmentHistoryResponseDto {
+	@ApiProperty({ type: () => AppointmentStatusHistoryItemResponseDto, isArray: true })
+	data!: AppointmentStatusHistoryItemResponseDto[];
+}
+
+class AppointmentCreatedResponseDto {
+	@ApiProperty({ type: () => AppointmentResponseDto })
+	data!: AppointmentResponseDto;
+
+	@ApiProperty({ example: "Appointment created" })
+	message!: string;
+}
+
+class AppointmentCancelledResponseDto {
+	@ApiProperty({ type: () => AppointmentRecordResponseDto })
+	data!: AppointmentRecordResponseDto;
+
+	@ApiProperty({ example: "Appointment cancelled" })
+	message!: string;
 }
 
 @ApiTags("appointments")
@@ -80,6 +345,7 @@ export class AppointmentsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get all appointments (filterable)" })
+	@ApiOkResponse({ type: AppointmentListResponseDto })
 	@ApiQuery({ name: "status", required: false, enum: AppointmentStatusEnum })
 	@ApiQuery({ name: "doctorId", required: false, type: String })
 	@ApiQuery({ name: "from", required: false, type: String })
@@ -183,6 +449,7 @@ export class AppointmentsController {
 
 	@Get("stats")
 	@ApiOperation({ summary: "Get aggregate appointment stats across all appointments" })
+	@ApiOkResponse({ type: AppointmentStatsResponseDto })
 	async getStats(): Promise<{ data: AppointmentStats }> {
 		const now = new Date();
 		const todayStart = new Date(now);
@@ -220,6 +487,7 @@ export class AppointmentsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get appointment detail" })
+	@ApiOkResponse({ type: SingleAppointmentResponseDto })
 	async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: ApptWithAll }> {
 		const appointment = await this.prisma.appointment.findUnique({
 			where: { id },
@@ -235,6 +503,7 @@ export class AppointmentsController {
 
 	@Get(":id/history")
 	@ApiOperation({ summary: "Get status change history for an appointment" })
+	@ApiOkResponse({ type: AppointmentHistoryResponseDto })
 	async getHistory(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: EnrichedStatusChange[] }> {
 		const appointment = await this.prisma.appointment.findUnique({ where: { id } });
 		if (!appointment) throw new NotFoundException("Appointment not found");
@@ -265,6 +534,7 @@ export class AppointmentsController {
 
 	@Post()
 	@ApiOperation({ summary: "Create a new appointment" })
+	@ApiCreatedResponse({ type: AppointmentCreatedResponseDto })
 	async create(
 		@Body() dto: CreateAppointmentDto,
 		@CurrentUser() user: KeycloakTokenPayload
@@ -326,6 +596,7 @@ export class AppointmentsController {
 
 	@Put(":id")
 	@ApiOperation({ summary: "Update an appointment (reschedule or change status)" })
+	@ApiOkResponse({ type: SingleAppointmentResponseDto })
 	async update(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAppointmentDto,
@@ -506,6 +777,7 @@ export class AppointmentsController {
 
 	@Delete(":id")
 	@ApiOperation({ summary: "Cancel an appointment" })
+	@ApiOkResponse({ type: AppointmentCancelledResponseDto })
 	async cancel(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload

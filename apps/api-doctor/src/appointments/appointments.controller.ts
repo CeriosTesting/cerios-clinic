@@ -1,4 +1,14 @@
-import { EventsService, MailService } from "@clinic/api-common";
+import {
+	AppointmentRecordResponseDto,
+	AppointmentStatsDataResponseDto,
+	AppointmentStatusHistoryItemResponseDto,
+	AssistantCoreResponseDto,
+	DoctorCoreResponseDto,
+	EventsService,
+	MailService,
+	PatientCoreResponseDto,
+	UserCoreResponseDto,
+} from "@clinic/api-common";
 import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
 import {
 	Controller,
@@ -13,7 +23,15 @@ import {
 	ForbiddenException,
 	BadRequestException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
 import { Prisma, AppointmentStatus as AppointmentStatusEnum, AppointmentStatusChange } from "@prisma/client";
 import { IsString, IsOptional, IsEnum, IsDateString } from "class-validator";
 
@@ -48,12 +66,76 @@ type EnrichedStatusChange = AppointmentStatusChange & {
 };
 
 class UpdateAppointmentDto {
+	@ApiPropertyOptional({ enum: AppointmentStatusEnum })
 	@IsOptional()
 	@IsEnum(AppointmentStatusEnum)
 	status?: AppointmentStatus;
 
-	@IsOptional() @IsString() notes?: string;
-	@IsOptional() @IsDateString() scheduledAt?: string;
+	@ApiPropertyOptional({ example: "Administrative note" })
+	@IsOptional()
+	@IsString()
+	notes?: string;
+	@ApiPropertyOptional({ format: "date-time", example: "2026-06-15T10:00:00.000Z" })
+	@IsOptional()
+	@IsDateString()
+	scheduledAt?: string;
+}
+
+class DoctorAppointmentPatientResponseDto extends PatientCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class DoctorAppointmentAssistantResponseDto extends AssistantCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class DoctorAppointmentDoctorResponseDto extends DoctorCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class DoctorAppointmentListItemResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => DoctorAppointmentPatientResponseDto })
+	patient!: DoctorAppointmentPatientResponseDto;
+
+	@ApiPropertyOptional({ type: () => DoctorAppointmentAssistantResponseDto, nullable: true })
+	assistant?: DoctorAppointmentAssistantResponseDto | null;
+}
+
+class DoctorAppointmentDetailResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => DoctorAppointmentPatientResponseDto })
+	patient!: DoctorAppointmentPatientResponseDto;
+
+	@ApiProperty({ type: () => DoctorAppointmentDoctorResponseDto })
+	doctor!: DoctorAppointmentDoctorResponseDto;
+
+	@ApiPropertyOptional({ type: () => DoctorAppointmentAssistantResponseDto, nullable: true })
+	assistant?: DoctorAppointmentAssistantResponseDto | null;
+}
+
+class DoctorAppointmentListResponseDto {
+	@ApiProperty({ type: () => DoctorAppointmentListItemResponseDto, isArray: true })
+	data!: DoctorAppointmentListItemResponseDto[];
+
+	@ApiProperty({ example: 42 })
+	total!: number;
+}
+
+class DoctorAppointmentStatsResponseDto {
+	@ApiProperty({ type: () => AppointmentStatsDataResponseDto })
+	data!: AppointmentStatsDataResponseDto;
+}
+
+class DoctorAppointmentDetailWrapperDto {
+	@ApiProperty({ type: () => DoctorAppointmentDetailResponseDto })
+	data!: DoctorAppointmentDetailResponseDto;
+}
+
+class DoctorAppointmentHistoryResponseDto {
+	@ApiProperty({ type: () => AppointmentStatusHistoryItemResponseDto, isArray: true })
+	data!: AppointmentStatusHistoryItemResponseDto[];
 }
 
 @ApiTags("appointments")
@@ -70,6 +152,7 @@ export class AppointmentsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get doctor's appointments (filterable)" })
+	@ApiOkResponse({ type: DoctorAppointmentListResponseDto })
 	@ApiQuery({ name: "status", required: false, enum: AppointmentStatusEnum })
 	@ApiQuery({ name: "from", required: false, type: String })
 	@ApiQuery({ name: "to", required: false, type: String })
@@ -120,6 +203,7 @@ export class AppointmentsController {
 
 	@Get("stats")
 	@ApiOperation({ summary: "Get aggregate appointment stats for the current doctor" })
+	@ApiOkResponse({ type: DoctorAppointmentStatsResponseDto })
 	async getStats(@CurrentUser() user: KeycloakTokenPayload): Promise<{ data: AppointmentStats }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -165,6 +249,7 @@ export class AppointmentsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get appointment detail" })
+	@ApiOkResponse({ type: DoctorAppointmentDetailWrapperDto })
 	async findOne(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
@@ -190,6 +275,7 @@ export class AppointmentsController {
 
 	@Get(":id/history")
 	@ApiOperation({ summary: "Get status change history for an appointment" })
+	@ApiOkResponse({ type: DoctorAppointmentHistoryResponseDto })
 	async getHistory(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
@@ -230,6 +316,7 @@ export class AppointmentsController {
 
 	@Put(":id")
 	@ApiOperation({ summary: "Update appointment status and/or notes" })
+	@ApiOkResponse({ type: DoctorAppointmentDetailWrapperDto })
 	async update(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAppointmentDto,

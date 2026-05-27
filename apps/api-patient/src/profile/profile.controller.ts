@@ -1,3 +1,4 @@
+import { PatientCoreResponseDto, UserCoreResponseDto } from "@clinic/api-common";
 import { FEATURE_TOGGLE_KEYS } from "@clinic/shared-types";
 import {
 	BadRequestException,
@@ -12,7 +13,16 @@ import {
 	UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiBody, ApiConsumes, ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiBody,
+	ApiConsumes,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiTags,
+} from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 import { IsString, IsOptional, IsDateString } from "class-validator";
 
@@ -28,14 +38,61 @@ const MAX_FILE_BYTES = 1 * 1024 * 1024; // 1 MB
 const PHONE_REGEX = /^[+\d\s\-().]{7,20}$/;
 
 class UpdateProfileDto {
-	@IsOptional() @IsString() firstName?: string;
-	@IsOptional() @IsString() lastName?: string;
-	@IsOptional() @IsDateString() dateOfBirth?: string;
-	@IsOptional() @IsString() phone?: string;
-	@IsOptional() @IsString() insuranceNumber?: string;
+	@ApiPropertyOptional({ example: "Taylor" })
+	@IsOptional()
+	@IsString()
+	firstName?: string;
+	@ApiPropertyOptional({ example: "Brooks" })
+	@IsOptional()
+	@IsString()
+	lastName?: string;
+	@ApiPropertyOptional({ format: "date", example: "1990-01-15" })
+	@IsOptional()
+	@IsDateString()
+	dateOfBirth?: string;
+	@ApiPropertyOptional({ example: "+31 6 1234 5678" })
+	@IsOptional()
+	@IsString()
+	phone?: string;
+	@ApiPropertyOptional({ example: "INS-2026-001" })
+	@IsOptional()
+	@IsString()
+	insuranceNumber?: string;
 }
 
 type UserWithPatient = Prisma.UserGetPayload<{ include: { patient: true } }>;
+
+class ProfileFeatureToggleMapResponseDto {
+	@ApiProperty({
+		type: Object,
+		additionalProperties: { type: "boolean" },
+		example: {
+			[FEATURE_TOGGLE_KEYS.PROFILE_VALIDATION_FRONTEND]: false,
+			[FEATURE_TOGGLE_KEYS.PROFILE_VALIDATION_BACKEND]: true,
+		},
+	})
+	data!: Record<string, boolean>;
+}
+
+class PatientProfileResponseDto extends UserCoreResponseDto {
+	@ApiProperty({ type: () => PatientCoreResponseDto })
+	patient!: PatientCoreResponseDto;
+}
+
+class PatientProfileWrapperDto {
+	@ApiProperty({ type: () => PatientProfileResponseDto })
+	data!: PatientProfileResponseDto;
+}
+
+class PatientProfilePhotoDataDto {
+	@ApiProperty({ example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..." })
+	photo!: string;
+}
+
+class PatientProfilePhotoResponseDto {
+	@ApiProperty({ type: () => PatientProfilePhotoDataDto })
+	data!: PatientProfilePhotoDataDto;
+}
 
 function isInvalidDateOfBirth(dateOfBirth: string): boolean {
 	const dob = new Date(dateOfBirth);
@@ -72,6 +129,7 @@ export class ProfileController {
 
 	@Get("feature-toggles")
 	@ApiOperation({ summary: "Get profile-related feature toggle states" })
+	@ApiOkResponse({ type: ProfileFeatureToggleMapResponseDto })
 	async getFeatureToggles(): Promise<{ data: Record<string, boolean> }> {
 		const keys = [FEATURE_TOGGLE_KEYS.PROFILE_VALIDATION_FRONTEND, FEATURE_TOGGLE_KEYS.PROFILE_VALIDATION_BACKEND];
 		const toggles = await this.prisma.featureToggle.findMany({ where: { key: { in: keys } } }).catch(() => []);
@@ -84,6 +142,7 @@ export class ProfileController {
 
 	@Get()
 	@ApiOperation({ summary: "Get current patient profile" })
+	@ApiOkResponse({ type: PatientProfileWrapperDto })
 	async getProfile(@CurrentUser() user: KeycloakTokenPayload): Promise<{ data: UserWithPatient }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -95,6 +154,7 @@ export class ProfileController {
 
 	@Put()
 	@ApiOperation({ summary: "Update current patient profile" })
+	@ApiOkResponse({ type: PatientProfileWrapperDto })
 	async updateProfile(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Body() dto: UpdateProfileDto
@@ -140,6 +200,7 @@ export class ProfileController {
 	@Patch("photo")
 	@ApiOperation({ summary: "Upload profile photo (1 MB max, JPEG/PNG/WebP)" })
 	@ApiConsumes("multipart/form-data")
+	@ApiOkResponse({ type: PatientProfilePhotoResponseDto })
 	@ApiBody({
 		schema: {
 			type: "object",

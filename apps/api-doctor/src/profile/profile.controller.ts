@@ -1,5 +1,6 @@
+import { DoctorCoreResponseDto, UserCoreResponseDto } from "@clinic/api-common";
 import { Controller, Get, UseGuards, NotFoundException } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProperty, ApiTags } from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -11,6 +12,16 @@ import { PrismaService } from "../prisma/prisma.service";
 
 type UserWithDoctor = Prisma.UserGetPayload<{ include: { doctor: true } }>;
 
+class DoctorProfileResponseDto extends UserCoreResponseDto {
+	@ApiProperty({ type: () => DoctorCoreResponseDto })
+	doctor!: DoctorCoreResponseDto;
+}
+
+class DoctorProfileWrapperDto {
+	@ApiProperty({ type: () => DoctorProfileResponseDto })
+	data!: DoctorProfileResponseDto;
+}
+
 @ApiTags("profile")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,6 +32,7 @@ export class ProfileController {
 
 	@Get("me")
 	@ApiOperation({ summary: "Get current doctor profile" })
+	@ApiOkResponse({ type: DoctorProfileWrapperDto })
 	async getMe(@CurrentUser() user: KeycloakTokenPayload): Promise<{ data: UserWithDoctor }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },

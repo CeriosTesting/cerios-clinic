@@ -9,7 +9,15 @@ import {
 	Query,
 	UseGuards,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -34,6 +42,57 @@ function buildDaySlots(): Array<{ hour: number; minute: number }> {
 }
 
 const DAY_SLOTS = buildDaySlots();
+
+type DoctorDirectoryItem = {
+	id: string;
+	userId: string;
+	specialization: string | null;
+	firstName: string;
+	lastName: string;
+	averageRating: number | null;
+	reviewCount: number;
+};
+
+class DoctorDirectoryItemResponseDto {
+	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" })
+	userId!: string;
+
+	@ApiPropertyOptional({ nullable: true, example: "Cardiology" })
+	specialization?: string | null;
+
+	@ApiProperty({ example: "Alex" })
+	firstName!: string;
+
+	@ApiProperty({ example: "Morgan" })
+	lastName!: string;
+
+	@ApiPropertyOptional({ nullable: true, example: 4.7 })
+	averageRating?: number | null;
+
+	@ApiProperty({ example: 18 })
+	reviewCount!: number;
+}
+
+class DoctorDirectoryListResponseDto {
+	@ApiProperty({ type: () => DoctorDirectoryItemResponseDto, isArray: true })
+	data!: DoctorDirectoryItemResponseDto[];
+}
+
+class DoctorSlotAvailabilityResponseDto {
+	@ApiProperty({ example: "2026-06-20" })
+	date!: string;
+
+	@ApiProperty({ isArray: true, type: String, example: ["2026-06-20T09:00:00.000Z", "2026-06-20T09:30:00.000Z"] })
+	slots!: string[];
+}
+
+class DoctorSlotAvailabilityListResponseDto {
+	@ApiProperty({ type: () => DoctorSlotAvailabilityResponseDto, isArray: true })
+	data!: DoctorSlotAvailabilityResponseDto[];
+}
 
 /** Returns true for Mon–Fri (UTC day-of-week) */
 function isWeekday(date: Date): boolean {
@@ -69,7 +128,8 @@ export class DoctorsController {
 
 	@Get()
 	@ApiOperation({ summary: "List all active doctors (for patient reference)" })
-	async findAll(): Promise<{ data: unknown }> {
+	@ApiOkResponse({ type: DoctorDirectoryListResponseDto })
+	async findAll(): Promise<{ data: DoctorDirectoryItem[] }> {
 		const doctors = await this.prisma.doctor.findMany({
 			where: { user: { deletedAt: null } },
 			include: {
@@ -98,6 +158,7 @@ export class DoctorsController {
 
 	@Get(":doctorId/slots")
 	@ApiOperation({ summary: "Get available appointment slots for a doctor (future weekdays only)" })
+	@ApiOkResponse({ type: DoctorSlotAvailabilityListResponseDto })
 	@ApiQuery({
 		name: "from",
 		required: true,

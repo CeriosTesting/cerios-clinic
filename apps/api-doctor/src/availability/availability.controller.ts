@@ -10,7 +10,16 @@ import {
 	NotFoundException,
 	BadRequestException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiCreatedResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiTags,
+} from "@nestjs/swagger";
+import { DoctorUnavailability } from "@prisma/client";
 import { IsDateString, IsOptional, IsString } from "class-validator";
 
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -21,15 +30,56 @@ import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 class CreateUnavailabilityDto {
+	@ApiProperty({ format: "date-time", example: "2026-06-20T09:00:00.000Z" })
 	@IsDateString()
 	startDate!: string;
 
+	@ApiProperty({ format: "date-time", example: "2026-06-20T12:00:00.000Z" })
 	@IsDateString()
 	endDate!: string;
 
+	@ApiPropertyOptional({ example: "Medical conference" })
 	@IsOptional()
 	@IsString()
 	reason?: string;
+}
+
+class DoctorUnavailabilityResponseDto {
+	@ApiProperty({ format: "uuid", example: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" })
+	id!: string;
+
+	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
+	doctorId!: string;
+
+	@ApiProperty({ format: "date-time", example: "2026-06-20T09:00:00.000Z" })
+	startDate!: string;
+
+	@ApiProperty({ format: "date-time", example: "2026-06-20T12:00:00.000Z" })
+	endDate!: string;
+
+	@ApiPropertyOptional({ nullable: true, example: "Medical conference" })
+	reason?: string | null;
+
+	@ApiProperty({ format: "date-time", example: "2026-05-28T09:00:00.000Z" })
+	createdAt!: string;
+}
+
+class DoctorUnavailabilityListResponseDto {
+	@ApiProperty({ type: () => DoctorUnavailabilityResponseDto, isArray: true })
+	data!: DoctorUnavailabilityResponseDto[];
+}
+
+class DoctorUnavailabilityMutationResponseDto {
+	@ApiProperty({ type: () => DoctorUnavailabilityResponseDto })
+	data!: DoctorUnavailabilityResponseDto;
+
+	@ApiProperty({ example: "Unavailability block created" })
+	message!: string;
+}
+
+class DoctorAvailabilityMessageResponseDto {
+	@ApiProperty({ example: "Unavailability block deleted" })
+	message!: string;
 }
 
 @ApiTags("availability")
@@ -42,7 +92,8 @@ export class AvailabilityController {
 
 	@Get()
 	@ApiOperation({ summary: "Get all unavailability blocks for the current doctor" })
-	async findAll(@CurrentUser() user: KeycloakTokenPayload): Promise<{ data: unknown[] }> {
+	@ApiOkResponse({ type: DoctorUnavailabilityListResponseDto })
+	async findAll(@CurrentUser() user: KeycloakTokenPayload): Promise<{ data: DoctorUnavailability[] }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
@@ -59,10 +110,11 @@ export class AvailabilityController {
 
 	@Post()
 	@ApiOperation({ summary: "Add a new unavailability block" })
+	@ApiCreatedResponse({ type: DoctorUnavailabilityMutationResponseDto })
 	async create(
 		@Body() dto: CreateUnavailabilityDto,
 		@CurrentUser() user: KeycloakTokenPayload
-	): Promise<{ data: unknown; message: string }> {
+	): Promise<{ data: DoctorUnavailability; message: string }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
@@ -111,6 +163,7 @@ export class AvailabilityController {
 
 	@Delete(":id")
 	@ApiOperation({ summary: "Delete an unavailability block" })
+	@ApiOkResponse({ type: DoctorAvailabilityMessageResponseDto })
 	async remove(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload

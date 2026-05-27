@@ -1,5 +1,44 @@
+import {
+	AppointmentDateResponseDto,
+	PatientCoreResponseDto,
+	ReviewRecordResponseDto,
+	ReviewStatsResponseDto,
+	UserNameResponseDto,
+} from "@clinic/api-common";
 import { Controller, Get, UseGuards, NotFoundException, Query } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProperty, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { Prisma } from "@prisma/client";
+
+const REVIEW_INCLUDE = {
+	patient: { include: { user: { select: { firstName: true, lastName: true } } } },
+	appointment: { select: { scheduledAt: true } },
+} as const;
+
+type DoctorReviewWithRelations = Prisma.ReviewGetPayload<{ include: typeof REVIEW_INCLUDE }>;
+
+class DoctorReviewPatientResponseDto extends PatientCoreResponseDto {
+	@ApiProperty({ type: () => UserNameResponseDto })
+	user!: UserNameResponseDto;
+}
+
+class DoctorReviewResponseDto extends ReviewRecordResponseDto {
+	@ApiProperty({ type: () => DoctorReviewPatientResponseDto })
+	patient!: DoctorReviewPatientResponseDto;
+
+	@ApiProperty({ type: () => AppointmentDateResponseDto })
+	appointment!: AppointmentDateResponseDto;
+}
+
+class DoctorReviewListResponseDto {
+	@ApiProperty({ type: () => DoctorReviewResponseDto, isArray: true })
+	data!: DoctorReviewResponseDto[];
+
+	@ApiProperty({ type: () => ReviewStatsResponseDto })
+	stats!: ReviewStatsResponseDto;
+
+	@ApiProperty({ example: 18 })
+	total!: number;
+}
 
 import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -18,13 +57,18 @@ export class ReviewsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get reviews for the current doctor" })
+	@ApiOkResponse({ type: DoctorReviewListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async getMyReviews(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
-	): Promise<{ data: unknown[]; stats: { averageRating: number; totalReviews: number }; total: number }> {
+	): Promise<{
+		data: DoctorReviewWithRelations[];
+		stats: { averageRating: number; totalReviews: number };
+		total: number;
+	}> {
 		const take = Math.min(Number(limitRaw) || 50, 200);
 		const skip = Math.max(Number(offsetRaw) || 0, 0);
 
@@ -39,10 +83,7 @@ export class ReviewsController {
 		const [reviews, total, stats] = await Promise.all([
 			this.prisma.review.findMany({
 				where: { doctorId },
-				include: {
-					patient: { include: { user: { select: { firstName: true, lastName: true } } } },
-					appointment: { select: { scheduledAt: true } },
-				},
+				include: REVIEW_INCLUDE,
 				orderBy: { createdAt: "desc" },
 				take,
 				skip,
