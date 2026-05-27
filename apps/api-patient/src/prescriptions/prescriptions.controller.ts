@@ -33,8 +33,8 @@ export class PrescriptionsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get current patient's prescriptions" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,

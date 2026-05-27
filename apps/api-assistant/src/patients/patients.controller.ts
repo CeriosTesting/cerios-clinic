@@ -45,7 +45,12 @@ export class PatientsController {
 
 	@Get()
 	@ApiOperation({ summary: "Search patients by name or email" })
-	@ApiQuery({ name: "q", required: false, description: "Search by name or email" })
+	@ApiQuery({
+		name: "q",
+		required: false,
+		description: "Search by name or email",
+		type: String,
+	})
 	async search(@Query() query: SearchPatientsQuery): Promise<{ data: PatientWithUser[] }> {
 		const q = query.q;
 		let whereClause: object;

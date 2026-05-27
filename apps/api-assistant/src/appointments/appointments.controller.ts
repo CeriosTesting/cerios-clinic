@@ -80,15 +80,15 @@ export class AppointmentsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get all appointments (filterable)" })
-	@ApiQuery({ name: "status", required: false })
-	@ApiQuery({ name: "doctorId", required: false })
-	@ApiQuery({ name: "from", required: false })
-	@ApiQuery({ name: "to", required: false })
-	@ApiQuery({ name: "search", required: false, description: "Search by patient or doctor name" })
-	@ApiQuery({ name: "sortBy", required: false, description: "Sort field: date or patient" })
-	@ApiQuery({ name: "sortOrder", required: false, description: "Sort direction: asc or desc" })
-	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)" })
-	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)" })
+	@ApiQuery({ name: "status", required: false, enum: AppointmentStatusEnum })
+	@ApiQuery({ name: "doctorId", required: false, type: String })
+	@ApiQuery({ name: "from", required: false, type: String })
+	@ApiQuery({ name: "to", required: false, type: String })
+	@ApiQuery({ name: "search", required: false, description: "Search by patient or doctor name", type: String })
+	@ApiQuery({ name: "sortBy", required: false, description: "Sort field: date or patient", enum: ["date", "patient"] })
+	@ApiQuery({ name: "sortOrder", required: false, description: "Sort direction: asc or desc", enum: ["asc", "desc"] })
+	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)", type: Number })
+	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)", type: Number })
 	async findAll(
 		@Query("status") status?: string,
 		@Query("doctorId") doctorId?: string,

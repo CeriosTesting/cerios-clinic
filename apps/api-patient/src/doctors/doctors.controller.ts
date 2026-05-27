@@ -98,8 +98,13 @@ export class DoctorsController {
 
 	@Get(":doctorId/slots")
 	@ApiOperation({ summary: "Get available appointment slots for a doctor (future weekdays only)" })
-	@ApiQuery({ name: "from", required: true, description: "Start date YYYY-MM-DD (must be tomorrow or later)" })
-	@ApiQuery({ name: "to", required: true, description: "End date YYYY-MM-DD (max 7 days from from)" })
+	@ApiQuery({
+		name: "from",
+		required: true,
+		description: "Start date YYYY-MM-DD (must be tomorrow or later)",
+		type: String,
+	})
+	@ApiQuery({ name: "to", required: true, description: "End date YYYY-MM-DD (max 7 days from from)", type: String })
 	async getSlots(
 		@Param("doctorId", ParseUUIDPipe) doctorId: string,
 		@Query("from") fromRaw: string,

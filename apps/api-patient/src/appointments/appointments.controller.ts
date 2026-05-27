@@ -14,7 +14,7 @@ import {
 	ForbiddenException,
 	BadRequestException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 import { IsDateString } from "class-validator";
 
@@ -107,6 +107,8 @@ export class AppointmentsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get current patient's appointments" })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,
@@ -139,6 +141,8 @@ export class AppointmentsController {
 
 	@Get("history")
 	@ApiOperation({ summary: "Get current patient's completed appointment history" })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async getHistory(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,

@@ -16,8 +16,8 @@ export class ReviewsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get all recent reviews" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
@@ -55,8 +55,8 @@ export class ReviewsController {
 
 	@Get("doctor/:doctorId")
 	@ApiOperation({ summary: "Get reviews for a specific doctor" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async getDoctorReviews(
 		@Param("doctorId", ParseUUIDPipe) doctorId: string,
 		@Query("limit") limitRaw?: string,
