@@ -1,5 +1,15 @@
+import {
+	AppointmentSummaryResponseDto,
+	DoctorCoreResponseDto,
+	PatientCoreResponseDto,
+	PrescriptionItemResponseDto,
+	PrescriptionRecordResponseDto,
+	UserNameEmailResponseDto,
+	UserNameResponseDto,
+} from "@clinic/api-common";
 import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards, NotFoundException } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProperty, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { Prisma } from "@prisma/client";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { Roles } from "../auth/roles.decorator";
@@ -13,6 +23,47 @@ const PRESCRIPTION_INCLUDE = {
 	appointment: { select: { scheduledAt: true, status: true } },
 } as const;
 
+type PrescriptionWithRelations = Prisma.PrescriptionGetPayload<{
+	include: typeof PRESCRIPTION_INCLUDE;
+}>;
+
+class AssistantPrescriptionPatientResponseDto extends PatientCoreResponseDto {
+	@ApiProperty({ type: () => UserNameEmailResponseDto })
+	user!: UserNameEmailResponseDto;
+}
+
+class AssistantPrescriptionDoctorResponseDto extends DoctorCoreResponseDto {
+	@ApiProperty({ type: () => UserNameResponseDto })
+	user!: UserNameResponseDto;
+}
+
+class AssistantPrescriptionResponseDto extends PrescriptionRecordResponseDto {
+	@ApiProperty({ type: () => PrescriptionItemResponseDto, isArray: true })
+	items!: PrescriptionItemResponseDto[];
+
+	@ApiProperty({ type: () => AssistantPrescriptionPatientResponseDto })
+	patient!: AssistantPrescriptionPatientResponseDto;
+
+	@ApiProperty({ type: () => AssistantPrescriptionDoctorResponseDto })
+	doctor!: AssistantPrescriptionDoctorResponseDto;
+
+	@ApiProperty({ type: () => AppointmentSummaryResponseDto })
+	appointment!: AppointmentSummaryResponseDto;
+}
+
+class AssistantPrescriptionListResponseDto {
+	@ApiProperty({ type: () => AssistantPrescriptionResponseDto, isArray: true })
+	data!: AssistantPrescriptionResponseDto[];
+
+	@ApiProperty({ example: 42 })
+	total!: number;
+}
+
+class AssistantPrescriptionDetailResponseDto {
+	@ApiProperty({ type: () => AssistantPrescriptionResponseDto })
+	data!: AssistantPrescriptionResponseDto;
+}
+
 @ApiTags("prescriptions")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,12 +74,13 @@ export class PrescriptionsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get all recent prescriptions" })
+	@ApiOkResponse({ type: AssistantPrescriptionListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
-	): Promise<{ data: unknown[]; total: number }> {
+	): Promise<{ data: PrescriptionWithRelations[]; total: number }> {
 		const take = Math.min(Number(limitRaw) || 50, 200);
 		const skip = Math.max(Number(offsetRaw) || 0, 0);
 
@@ -47,13 +99,14 @@ export class PrescriptionsController {
 
 	@Get("patient/:patientId")
 	@ApiOperation({ summary: "Get prescriptions for a specific patient" })
+	@ApiOkResponse({ type: AssistantPrescriptionListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findByPatient(
 		@Param("patientId", ParseUUIDPipe) patientId: string,
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
-	): Promise<{ data: unknown[]; total: number }> {
+	): Promise<{ data: PrescriptionWithRelations[]; total: number }> {
 		const take = Math.min(Number(limitRaw) || 50, 200);
 		const skip = Math.max(Number(offsetRaw) || 0, 0);
 
@@ -77,13 +130,14 @@ export class PrescriptionsController {
 
 	@Get("doctor/:doctorId")
 	@ApiOperation({ summary: "Get prescriptions by a specific doctor" })
+	@ApiOkResponse({ type: AssistantPrescriptionListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findByDoctor(
 		@Param("doctorId", ParseUUIDPipe) doctorId: string,
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
-	): Promise<{ data: unknown[]; total: number }> {
+	): Promise<{ data: PrescriptionWithRelations[]; total: number }> {
 		const take = Math.min(Number(limitRaw) || 50, 200);
 		const skip = Math.max(Number(offsetRaw) || 0, 0);
 
@@ -107,7 +161,8 @@ export class PrescriptionsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get a specific prescription" })
-	async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: unknown }> {
+	@ApiOkResponse({ type: AssistantPrescriptionDetailResponseDto })
+	async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: PrescriptionWithRelations }> {
 		const prescription = await this.prisma.prescription.findUnique({
 			where: { id },
 			include: PRESCRIPTION_INCLUDE,

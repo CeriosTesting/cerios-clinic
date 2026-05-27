@@ -1,3 +1,4 @@
+import { DoctorCoreResponseDto, PatientCoreResponseDto, UserCoreResponseDto } from "@clinic/api-common";
 import {
 	BadRequestException,
 	Controller,
@@ -12,7 +13,16 @@ import {
 	UseInterceptors,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiTags, ApiBearerAuth } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiBody,
+	ApiConsumes,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
@@ -35,6 +45,46 @@ class SearchPatientsQuery {
 	q?: string;
 }
 
+class AssistantPatientSearchResultResponseDto extends PatientCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class AssistantDoctorListItemResponseDto extends DoctorCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class AssistantPatientDetailResponseDto extends UserCoreResponseDto {
+	@ApiProperty({ type: () => PatientCoreResponseDto })
+	patient!: PatientCoreResponseDto;
+}
+
+class AssistantPatientsListResponseDto {
+	@ApiProperty({ type: () => AssistantPatientSearchResultResponseDto, isArray: true })
+	data!: AssistantPatientSearchResultResponseDto[];
+}
+
+class AssistantDoctorsListResponseDto {
+	@ApiProperty({ type: () => AssistantDoctorListItemResponseDto, isArray: true })
+	data!: AssistantDoctorListItemResponseDto[];
+}
+
+class AssistantPatientDetailWrapperDto {
+	@ApiProperty({ type: () => AssistantPatientDetailResponseDto })
+	data!: AssistantPatientDetailResponseDto;
+}
+
+class AssistantPatientPhotoDataDto {
+	@ApiProperty({ example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..." })
+	photo!: string;
+}
+
+class AssistantPatientPhotoResponseDto {
+	@ApiProperty({ type: () => AssistantPatientPhotoDataDto })
+	data!: AssistantPatientPhotoDataDto;
+}
+
 @ApiTags("patients")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,6 +95,7 @@ export class PatientsController {
 
 	@Get()
 	@ApiOperation({ summary: "Search patients by name or email" })
+	@ApiOkResponse({ type: AssistantPatientsListResponseDto })
 	@ApiQuery({
 		name: "q",
 		required: false,
@@ -92,6 +143,7 @@ export class PatientsController {
 
 	@Get("doctors")
 	@ApiOperation({ summary: "List all active doctors (for appointment creation dropdown)" })
+	@ApiOkResponse({ type: AssistantDoctorsListResponseDto })
 	async listDoctors(): Promise<{ data: DoctorWithUser[] }> {
 		const doctors = await this.prisma.doctor.findMany({
 			where: { user: { deletedAt: null } },
@@ -103,6 +155,7 @@ export class PatientsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get patient detail by user ID" })
+	@ApiOkResponse({ type: AssistantPatientDetailWrapperDto })
 	async getById(@Param("id", ParseUUIDPipe) id: string): Promise<{ data: UserWithPatient }> {
 		const user = await this.prisma.user.findFirst({
 			where: { id, role: "patient", deletedAt: null },
@@ -115,6 +168,7 @@ export class PatientsController {
 	@Patch(":id/photo")
 	@ApiOperation({ summary: "Upload patient photo (1 MB max, portrait JPEG)" })
 	@ApiConsumes("multipart/form-data")
+	@ApiOkResponse({ type: AssistantPatientPhotoResponseDto })
 	@ApiBody({
 		schema: {
 			type: "object",

@@ -1,4 +1,12 @@
-import { EventsService, MailService } from "@clinic/api-common";
+import {
+	AppointmentRecordResponseDto,
+	AssistantCoreResponseDto,
+	DoctorCoreResponseDto,
+	EventsService,
+	MailService,
+	PatientCoreResponseDto,
+	UserCoreResponseDto,
+} from "@clinic/api-common";
 import { AppointmentStatus } from "@clinic/shared-types";
 import {
 	Body,
@@ -14,7 +22,15 @@ import {
 	ForbiddenException,
 	BadRequestException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
 import { Prisma } from "@prisma/client";
 import { IsDateString } from "class-validator";
 
@@ -40,8 +56,82 @@ type ApptWithAll = Prisma.AppointmentGetPayload<{
 }>;
 
 class RescheduleAppointmentDto {
+	@ApiProperty({ format: "date-time", example: "2026-06-15T10:30:00.000Z" })
 	@IsDateString()
 	scheduledAt!: string;
+}
+
+class PatientAppointmentDoctorResponseDto extends DoctorCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class PatientAppointmentAssistantResponseDto extends AssistantCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class PatientAppointmentPatientResponseDto extends PatientCoreResponseDto {
+	@ApiProperty({ type: () => UserCoreResponseDto })
+	user!: UserCoreResponseDto;
+}
+
+class PatientAppointmentListItemResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentDoctorResponseDto })
+	doctor!: PatientAppointmentDoctorResponseDto;
+
+	@ApiPropertyOptional({ type: () => PatientAppointmentAssistantResponseDto, nullable: true })
+	assistant?: PatientAppointmentAssistantResponseDto | null;
+}
+
+class PatientAppointmentHistoryItemResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentDoctorResponseDto })
+	doctor!: PatientAppointmentDoctorResponseDto;
+}
+
+class PatientAppointmentDetailResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentDoctorResponseDto })
+	doctor!: PatientAppointmentDoctorResponseDto;
+
+	@ApiPropertyOptional({ type: () => PatientAppointmentAssistantResponseDto, nullable: true })
+	assistant?: PatientAppointmentAssistantResponseDto | null;
+
+	@ApiProperty({ type: () => PatientAppointmentPatientResponseDto })
+	patient!: PatientAppointmentPatientResponseDto;
+}
+
+class PatientAppointmentMutationItemResponseDto extends AppointmentRecordResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentDoctorResponseDto })
+	doctor!: PatientAppointmentDoctorResponseDto;
+}
+
+class PatientAppointmentListResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentListItemResponseDto, isArray: true })
+	data!: PatientAppointmentListItemResponseDto[];
+
+	@ApiProperty({ example: 42 })
+	total!: number;
+}
+
+class PatientAppointmentHistoryResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentHistoryItemResponseDto, isArray: true })
+	data!: PatientAppointmentHistoryItemResponseDto[];
+
+	@ApiProperty({ example: 18 })
+	total!: number;
+}
+
+class PatientAppointmentDetailWrapperDto {
+	@ApiProperty({ type: () => PatientAppointmentDetailResponseDto })
+	data!: PatientAppointmentDetailResponseDto;
+}
+
+class PatientAppointmentMutationResponseDto {
+	@ApiProperty({ type: () => PatientAppointmentMutationItemResponseDto })
+	data!: PatientAppointmentMutationItemResponseDto;
+
+	@ApiProperty({ example: "Appointment cancelled" })
+	message!: string;
 }
 
 /** Slot configuration (UTC working hours, 30-min increments) */
@@ -107,6 +197,7 @@ export class AppointmentsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get current patient's appointments" })
+	@ApiOkResponse({ type: PatientAppointmentListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
@@ -141,6 +232,7 @@ export class AppointmentsController {
 
 	@Get("history")
 	@ApiOperation({ summary: "Get current patient's completed appointment history" })
+	@ApiOkResponse({ type: PatientAppointmentHistoryResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async getHistory(
@@ -174,6 +266,7 @@ export class AppointmentsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get a specific appointment (must belong to current patient)" })
+	@ApiOkResponse({ type: PatientAppointmentDetailWrapperDto })
 	async findOne(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
@@ -201,6 +294,7 @@ export class AppointmentsController {
 
 	@Patch(":id/cancel")
 	@ApiOperation({ summary: "Cancel an appointment as the current patient" })
+	@ApiOkResponse({ type: PatientAppointmentMutationResponseDto })
 	async cancel(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
@@ -286,6 +380,7 @@ export class AppointmentsController {
 
 	@Patch(":id/reschedule")
 	@ApiOperation({ summary: "Reschedule an appointment to a new free slot" })
+	@ApiOkResponse({ type: PatientAppointmentMutationResponseDto })
 	async reschedule(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: RescheduleAppointmentDto,

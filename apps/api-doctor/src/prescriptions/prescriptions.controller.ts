@@ -1,4 +1,11 @@
 import {
+	AppointmentSummaryResponseDto,
+	PatientCoreResponseDto,
+	PrescriptionItemResponseDto,
+	PrescriptionRecordResponseDto,
+	UserNameEmailResponseDto,
+} from "@clinic/api-common";
+import {
 	Controller,
 	Get,
 	Post,
@@ -11,7 +18,17 @@ import {
 	NotFoundException,
 	BadRequestException,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from "@nestjs/swagger";
+import {
+	ApiBearerAuth,
+	ApiCreatedResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiProperty,
+	ApiPropertyOptional,
+	ApiQuery,
+	ApiTags,
+} from "@nestjs/swagger";
+import { Prisma } from "@prisma/client";
 import { Type } from "class-transformer";
 import { IsString, IsOptional, IsArray, ValidateNested, IsUUID } from "class-validator";
 
@@ -23,17 +40,34 @@ import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
 class PrescriptionItemDto {
-	@IsString() medicationName!: string;
-	@IsString() dosage!: string;
-	@IsString() frequency!: string;
-	@IsString() duration!: string;
-	@IsOptional() @IsString() instructions?: string;
+	@ApiProperty({ example: "Amoxicillin" })
+	@IsString()
+	medicationName!: string;
+	@ApiProperty({ example: "500 mg" })
+	@IsString()
+	dosage!: string;
+	@ApiProperty({ example: "Twice daily" })
+	@IsString()
+	frequency!: string;
+	@ApiProperty({ example: "7 days" })
+	@IsString()
+	duration!: string;
+	@ApiPropertyOptional({ example: "Take after meals" })
+	@IsOptional()
+	@IsString()
+	instructions?: string;
 }
 
 class CreatePrescriptionDto {
-	@IsUUID() appointmentId!: string;
-	@IsOptional() @IsString() notes?: string;
+	@ApiProperty({ format: "uuid", example: "0f8fad5b-d9cb-469f-a165-70867728950e" })
+	@IsUUID()
+	appointmentId!: string;
+	@ApiPropertyOptional({ example: "Monitor blood pressure during course" })
+	@IsOptional()
+	@IsString()
+	notes?: string;
 
+	@ApiProperty({ type: () => PrescriptionItemDto, isArray: true })
 	@IsArray()
 	@ValidateNested({ each: true })
 	@Type(() => PrescriptionItemDto)
@@ -41,8 +75,12 @@ class CreatePrescriptionDto {
 }
 
 class UpdatePrescriptionDto {
-	@IsOptional() @IsString() notes?: string;
+	@ApiPropertyOptional({ example: "Symptoms improving" })
+	@IsOptional()
+	@IsString()
+	notes?: string;
 
+	@ApiPropertyOptional({ type: () => PrescriptionItemDto, isArray: true })
 	@IsOptional()
 	@IsArray()
 	@ValidateNested({ each: true })
@@ -56,6 +94,47 @@ const PRESCRIPTION_INCLUDE = {
 	appointment: { select: { scheduledAt: true, status: true } },
 } as const;
 
+type PrescriptionWithRelations = Prisma.PrescriptionGetPayload<{
+	include: typeof PRESCRIPTION_INCLUDE;
+}>;
+
+class DoctorPrescriptionPatientResponseDto extends PatientCoreResponseDto {
+	@ApiProperty({ type: () => UserNameEmailResponseDto })
+	user!: UserNameEmailResponseDto;
+}
+
+class DoctorPrescriptionResponseDto extends PrescriptionRecordResponseDto {
+	@ApiProperty({ type: () => PrescriptionItemResponseDto, isArray: true })
+	items!: PrescriptionItemResponseDto[];
+
+	@ApiProperty({ type: () => DoctorPrescriptionPatientResponseDto })
+	patient!: DoctorPrescriptionPatientResponseDto;
+
+	@ApiProperty({ type: () => AppointmentSummaryResponseDto })
+	appointment!: AppointmentSummaryResponseDto;
+}
+
+class DoctorPrescriptionListResponseDto {
+	@ApiProperty({ type: () => DoctorPrescriptionResponseDto, isArray: true })
+	data!: DoctorPrescriptionResponseDto[];
+
+	@ApiProperty({ example: 42 })
+	total!: number;
+}
+
+class DoctorPrescriptionDetailResponseDto {
+	@ApiProperty({ type: () => DoctorPrescriptionResponseDto })
+	data!: DoctorPrescriptionResponseDto;
+}
+
+class DoctorPrescriptionMutationResponseDto {
+	@ApiProperty({ type: () => DoctorPrescriptionResponseDto })
+	data!: DoctorPrescriptionResponseDto;
+
+	@ApiProperty({ example: "Prescription created" })
+	message!: string;
+}
+
 @ApiTags("prescriptions")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -66,13 +145,14 @@ export class PrescriptionsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get prescriptions created by the current doctor" })
+	@ApiOkResponse({ type: DoctorPrescriptionListResponseDto })
 	@ApiQuery({ name: "limit", required: false, type: Number })
 	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
-	): Promise<{ data: unknown[]; total: number }> {
+	): Promise<{ data: PrescriptionWithRelations[]; total: number }> {
 		const take = Math.min(Number(limitRaw) || 50, 200);
 		const skip = Math.max(Number(offsetRaw) || 0, 0);
 
@@ -99,10 +179,11 @@ export class PrescriptionsController {
 
 	@Get(":id")
 	@ApiOperation({ summary: "Get a prescription by ID" })
+	@ApiOkResponse({ type: DoctorPrescriptionDetailResponseDto })
 	async findOne(
 		@Param("id", ParseUUIDPipe) id: string,
 		@CurrentUser() user: KeycloakTokenPayload
-	): Promise<{ data: unknown }> {
+	): Promise<{ data: PrescriptionWithRelations }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
@@ -123,10 +204,11 @@ export class PrescriptionsController {
 
 	@Post()
 	@ApiOperation({ summary: "Create a prescription for a completed appointment" })
+	@ApiCreatedResponse({ type: DoctorPrescriptionMutationResponseDto })
 	async create(
 		@Body() dto: CreatePrescriptionDto,
 		@CurrentUser() user: KeycloakTokenPayload
-	): Promise<{ data: unknown; message: string }> {
+	): Promise<{ data: PrescriptionWithRelations; message: string }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },
@@ -180,11 +262,12 @@ export class PrescriptionsController {
 
 	@Put(":id")
 	@ApiOperation({ summary: "Update a prescription (replaces items if provided)" })
+	@ApiOkResponse({ type: DoctorPrescriptionMutationResponseDto })
 	async update(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdatePrescriptionDto,
 		@CurrentUser() user: KeycloakTokenPayload
-	): Promise<{ data: unknown; message: string }> {
+	): Promise<{ data: PrescriptionWithRelations; message: string }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
 			include: { doctor: true },

@@ -1,6 +1,6 @@
 import { EventsService, AppointmentEvent } from "@clinic/api-common";
 import { Controller, Sse, UseGuards, NotFoundException } from "@nestjs/common";
-import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiProduces, ApiTags } from "@nestjs/swagger";
 import { Observable, filter, map } from "rxjs";
 
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -22,6 +22,16 @@ export class EventsController {
 	) {}
 
 	@Sse("appointments")
+	@ApiOperation({ summary: "Stream appointment events for the current patient" })
+	@ApiProduces("text/event-stream")
+	@ApiOkResponse({
+		description: "Server-sent event stream carrying appointment events for the authenticated patient.",
+		schema: {
+			type: "string",
+			example:
+				'data: {"type":"appointment.updated","appointmentId":"7c9e6679-7425-40de-944b-e07fc1f90ae7","patientId":"c56a4180-65aa-42ec-a945-5fd21dec0538","doctorId":"7d444840-9dc0-11d1-b245-5ffdce74fad2","status":"CONFIRMED","scheduledAt":"2026-06-15T09:30:00.000Z"}\n\n',
+		},
+	})
 	async appointmentEvents(@CurrentUser() user: KeycloakTokenPayload): Promise<Observable<MessageEvent>> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },

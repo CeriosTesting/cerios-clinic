@@ -1,6 +1,14 @@
+import { FeatureToggleDetailResponseDto, FeatureToggleListResponseDto, MessageResponseDto } from "@clinic/api-common";
 import { Controller, Get, Put, Param, Body, UseGuards, Post } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { Prisma } from "@prisma/client";
+import {
+	ApiBearerAuth,
+	ApiCreatedResponse,
+	ApiOkResponse,
+	ApiOperation,
+	ApiPropertyOptional,
+	ApiTags,
+} from "@nestjs/swagger";
+import { type FeatureToggle, Prisma } from "@prisma/client";
 import { IsBoolean, IsOptional, IsObject } from "class-validator";
 
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -10,8 +18,14 @@ import { RolesGuard } from "../auth/roles.guard";
 import { FeatureTogglesService } from "./feature-toggles.service";
 
 class UpdateToggleDto {
-	@IsOptional() @IsBoolean() enabled?: boolean;
-	@IsOptional() @IsObject() config?: Prisma.InputJsonValue;
+	@ApiPropertyOptional({ example: true })
+	@IsOptional()
+	@IsBoolean()
+	enabled?: boolean;
+	@ApiPropertyOptional({ type: Object, additionalProperties: true, example: { rolloutPercentage: 50 } })
+	@IsOptional()
+	@IsObject()
+	config?: Prisma.InputJsonValue;
 }
 
 @ApiTags("feature-toggles")
@@ -24,30 +38,31 @@ export class FeatureTogglesController {
 
 	@Get()
 	@ApiOperation({ summary: "List all feature toggles" })
-	async list(): Promise<{ data: Awaited<ReturnType<FeatureTogglesService["findAll"]>> }> {
+	@ApiOkResponse({ type: FeatureToggleListResponseDto })
+	async list(): Promise<{ data: FeatureToggle[] }> {
 		const toggles = await this.service.findAll();
 		return { data: toggles };
 	}
 
 	@Get(":key")
 	@ApiOperation({ summary: "Get a feature toggle by key" })
-	async get(@Param("key") key: string): Promise<{ data: Awaited<ReturnType<FeatureTogglesService["findByKey"]>> }> {
+	@ApiOkResponse({ type: FeatureToggleDetailResponseDto })
+	async get(@Param("key") key: string): Promise<{ data: FeatureToggle }> {
 		const toggle = await this.service.findByKey(key);
 		return { data: toggle };
 	}
 
 	@Put(":key")
 	@ApiOperation({ summary: "Update a feature toggle" })
-	async update(
-		@Param("key") key: string,
-		@Body() dto: UpdateToggleDto
-	): Promise<{ data: Awaited<ReturnType<FeatureTogglesService["upsert"]>> }> {
+	@ApiOkResponse({ type: FeatureToggleDetailResponseDto })
+	async update(@Param("key") key: string, @Body() dto: UpdateToggleDto): Promise<{ data: FeatureToggle }> {
 		const toggle = await this.service.upsert(key, dto);
 		return { data: toggle };
 	}
 
 	@Post("seed")
 	@ApiOperation({ summary: "Seed default feature toggles" })
+	@ApiCreatedResponse({ type: MessageResponseDto })
 	async seed(): Promise<{ message: string }> {
 		await this.service.seed();
 		return { message: "Feature toggles seeded" };
