@@ -70,11 +70,11 @@ export class AppointmentsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get doctor's appointments (filterable)" })
-	@ApiQuery({ name: "status", required: false })
-	@ApiQuery({ name: "from", required: false })
-	@ApiQuery({ name: "to", required: false })
-	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)" })
-	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)" })
+	@ApiQuery({ name: "status", required: false, enum: AppointmentStatusEnum })
+	@ApiQuery({ name: "from", required: false, type: String })
+	@ApiQuery({ name: "to", required: false, type: String })
+	@ApiQuery({ name: "limit", required: false, description: "Max results (default 50, max 200)", type: Number })
+	@ApiQuery({ name: "offset", required: false, description: "Skip this many results (default 0)", type: Number })
 	async findAll(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("status") status?: string,

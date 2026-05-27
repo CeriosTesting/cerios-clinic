@@ -23,8 +23,8 @@ export class PrescriptionsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get all recent prescriptions" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findAll(
 		@Query("limit") limitRaw?: string,
 		@Query("offset") offsetRaw?: string
@@ -47,8 +47,8 @@ export class PrescriptionsController {
 
 	@Get("patient/:patientId")
 	@ApiOperation({ summary: "Get prescriptions for a specific patient" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findByPatient(
 		@Param("patientId", ParseUUIDPipe) patientId: string,
 		@Query("limit") limitRaw?: string,
@@ -77,8 +77,8 @@ export class PrescriptionsController {
 
 	@Get("doctor/:doctorId")
 	@ApiOperation({ summary: "Get prescriptions by a specific doctor" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async findByDoctor(
 		@Param("doctorId", ParseUUIDPipe) doctorId: string,
 		@Query("limit") limitRaw?: string,

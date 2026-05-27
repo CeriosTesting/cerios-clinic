@@ -14,18 +14,30 @@ type Nav = NativeStackNavigationProp<AppointmentsStackParamList, "AppointmentsLi
 const UPCOMING: AppointmentStatus[] = ["SCHEDULED", "CONFIRMED"];
 const PAST: AppointmentStatus[] = ["COMPLETED", "CANCELLED"];
 
+function normalizeDoctorSearchText(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/\bdoctor\b/g, "dr")
+		.replace(/\./g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
 export default function AppointmentsScreen(): React.JSX.Element {
 	const navigation = useNavigation<Nav>();
 	const { data: appointments, isLoading, refetch } = useAppointments();
 	const [search, setSearch] = useState("");
 
 	const { upcoming, past } = useMemo(() => {
-		const q = search.toLowerCase();
+		const q = normalizeDoctorSearchText(search);
 		const f = appointments
 			? q
 				? appointments.filter(a => {
-						const name = `${a.doctor?.user?.firstName ?? ""} ${a.doctor?.user?.lastName ?? ""}`.toLowerCase();
-						return name.includes(q);
+						const doctorName = normalizeDoctorSearchText(
+							`${a.doctor?.user?.firstName ?? ""} ${a.doctor?.user?.lastName ?? ""}`
+						);
+						const doctorLabel = doctorName ? `dr ${doctorName}` : "";
+						return doctorName.includes(q) || doctorLabel.includes(q);
 					})
 				: appointments
 			: [];

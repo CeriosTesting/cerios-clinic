@@ -18,8 +18,8 @@ export class ReviewsController {
 
 	@Get()
 	@ApiOperation({ summary: "Get reviews for the current doctor" })
-	@ApiQuery({ name: "limit", required: false })
-	@ApiQuery({ name: "offset", required: false })
+	@ApiQuery({ name: "limit", required: false, type: Number })
+	@ApiQuery({ name: "offset", required: false, type: Number })
 	async getMyReviews(
 		@CurrentUser() user: KeycloakTokenPayload,
 		@Query("limit") limitRaw?: string,
