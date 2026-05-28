@@ -4,14 +4,13 @@
  * used automatically — no hardcoded locale strings.
  */
 
-/** Full date, e.g. "Monday, 14 April 2026" */
+/** Short numeric date, zero-padded in the user's locale, e.g. "28/05/2026" or "05/28/2026" */
 export function formatDate(
 	date: Date,
 	options: Intl.DateTimeFormatOptions = {
-		weekday: "long",
 		year: "numeric",
-		month: "long",
-		day: "numeric",
+		month: "2-digit",
+		day: "2-digit",
 	}
 ): string {
 	return date.toLocaleDateString(undefined, options);

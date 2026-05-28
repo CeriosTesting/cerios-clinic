@@ -37,8 +37,10 @@ export default function AppointmentsPage(): React.ReactElement {
 			})
 		: appointments;
 
-	const upcoming = visible.filter(a => ["SCHEDULED", "CONFIRMED"].includes(a.status));
-	const past = visible.filter(a => ["COMPLETED", "CANCELLED"].includes(a.status));
+	const byDateAsc = (a: Appointment, b: Appointment): number =>
+		new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+	const upcoming = visible.filter(a => ["SCHEDULED", "CONFIRMED"].includes(a.status)).sort(byDateAsc);
+	const past = visible.filter(a => ["COMPLETED", "CANCELLED"].includes(a.status)).sort((a, b) => -byDateAsc(a, b));
 
 	return (
 		<div>
