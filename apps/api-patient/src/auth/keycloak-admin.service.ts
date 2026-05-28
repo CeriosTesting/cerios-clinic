@@ -36,7 +36,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 		this.realm = env.keycloak.realm;
 		this.clientId = env.keycloak.adminClientId;
 		this.clientSecret = env.keycloak.adminClientSecret;
-		this.patientClientId = env.keycloak.audience;
+		this.patientClientId = env.keycloak.clientId;
 		this.patientPortalUrl = readEnvOrDefault("PATIENT_PORTAL_URL", "http://localhost:5173");
 	}
 

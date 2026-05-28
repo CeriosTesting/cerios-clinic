@@ -3,7 +3,8 @@ import { parseHttpUrlEnv, readEnvOrDefault, requireEnv } from "./env";
 export interface KeycloakRuntimeConfig {
 	url: string;
 	realm: string;
-	audience: string;
+	clientId: string;
+	audience: string | string[];
 	adminClientId: string;
 	adminClientSecret: string;
 	issuer: string | string[];
@@ -43,10 +44,13 @@ export function loadKeycloakConfig(audienceEnvVar: string): KeycloakRuntimeConfi
 		}
 	}
 
+	const acceptedAudiences = [...new Set([audience, adminClientId])];
+
 	return {
 		url,
 		realm,
-		audience,
+		clientId: audience,
+		audience: acceptedAudiences.length === 1 ? acceptedAudiences[0] : acceptedAudiences,
 		adminClientId,
 		adminClientSecret,
 		issuer: issuers.length === 1 ? issuers[0] : issuers,
