@@ -1,3 +1,4 @@
+import { formatDateOnly } from "@clinic/portal-common";
 import { Upload } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -219,7 +220,7 @@ function PatientInfoCard({
 				<InfoRow label="Phone" value={patient.patient?.phone ?? "—"} testId="patient-info-phone" />
 				<InfoRow
 					label="Date of birth"
-					value={patient.patient?.dateOfBirth ? new Date(patient.patient.dateOfBirth).toLocaleDateString("en-NL") : "—"}
+					value={patient.patient?.dateOfBirth ? formatDateOnly(patient.patient.dateOfBirth, "en-NL") : "—"}
 					testId="patient-info-date-of-birth"
 				/>
 				<InfoRow label="Insurance #" value={patient.patient?.insuranceNumber ?? "—"} testId="patient-info-insurance" />

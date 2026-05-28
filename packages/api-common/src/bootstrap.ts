@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import compression from "compression";
 import helmet from "helmet";
 
+import { DateOnlyResponseInterceptor } from "./date-only-response.interceptor";
 import { PrismaExceptionFilter } from "./prisma-exception.filter";
 
 export interface BootstrapApiOptions {
@@ -41,6 +42,9 @@ export async function bootstrapApi(options: BootstrapApiOptions): Promise<void> 
 			transform: true,
 		})
 	);
+	// Normalizes `dateOfBirth` in JSON responses to `YYYY-MM-DD` so the payload
+	// matches the OpenAPI `format: "date"` contract (Prisma returns it as Date).
+	app.useGlobalInterceptors(new DateOnlyResponseInterceptor());
 
 	if (options.enableSwagger) {
 		const config = new DocumentBuilder()
