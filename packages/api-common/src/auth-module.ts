@@ -24,6 +24,9 @@ export interface JwtStrategyOptions {
  */
 export function createJwtStrategy(options: JwtStrategyOptions): new () => Strategy {
 	const label = options.errorLabel ?? options.requiredRole.charAt(0).toUpperCase() + options.requiredRole.slice(1);
+	const acceptedClients = Array.isArray(options.keycloak.audience)
+		? options.keycloak.audience
+		: [options.keycloak.audience];
 
 	@Injectable()
 	class JwtStrategy extends PassportStrategy(Strategy) {
@@ -37,12 +40,19 @@ export function createJwtStrategy(options: JwtStrategyOptions): new () => Strate
 					jwksUri: options.keycloak.jwksUri,
 				}),
 				issuer: options.keycloak.issuer,
-				audience: options.keycloak.audience,
 				algorithms: ["RS256"],
 			});
 		}
 
 		validate(payload: KeycloakTokenPayload): KeycloakTokenPayload {
+			const tokenAudiences = Array.isArray(payload.aud) ? payload.aud : payload.aud ? [payload.aud] : [];
+			const clientAllowed =
+				tokenAudiences.some(audience => acceptedClients.includes(audience)) ||
+				(payload.azp ? acceptedClients.includes(payload.azp) : false);
+			if (!clientAllowed) {
+				throw new UnauthorizedException("Token client not allowed");
+			}
+
 			const roles: string[] = payload.realm_access?.roles ?? [];
 			if (!roles.includes(options.requiredRole)) {
 				throw new UnauthorizedException(`${label} role required`);

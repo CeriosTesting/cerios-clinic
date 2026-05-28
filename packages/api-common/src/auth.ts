@@ -15,6 +15,8 @@ export interface KeycloakTokenPayload {
 	email: string;
 	given_name: string;
 	family_name: string;
+	aud?: string | string[];
+	azp?: string;
 	realm_access?: { roles: string[] };
 }
 
