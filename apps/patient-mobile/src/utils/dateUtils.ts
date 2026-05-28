@@ -2,20 +2,18 @@
 
 export function formatDate(isoString: string): string {
 	const d = new Date(isoString);
-	return d.toLocaleDateString("en-GB", {
+	return d.toLocaleDateString(undefined, {
 		year: "numeric",
-		month: "long",
-		day: "numeric",
-		timeZone: "UTC",
+		month: "2-digit",
+		day: "2-digit",
 	});
 }
 
 export function formatTime(isoString: string): string {
 	const d = new Date(isoString);
-	return d.toLocaleTimeString("en-GB", {
+	return d.toLocaleTimeString(undefined, {
 		hour: "2-digit",
 		minute: "2-digit",
-		timeZone: "UTC",
 	});
 }
 

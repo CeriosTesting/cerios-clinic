@@ -41,9 +41,11 @@ export default function AppointmentsScreen(): React.JSX.Element {
 					})
 				: appointments
 			: [];
+		const byDateAsc = (a: Appointment, b: Appointment): number =>
+			new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
 		return {
-			upcoming: f.filter(a => UPCOMING.includes(a.status)),
-			past: f.filter(a => PAST.includes(a.status)),
+			upcoming: f.filter(a => UPCOMING.includes(a.status)).sort(byDateAsc),
+			past: f.filter(a => PAST.includes(a.status)).sort((a, b) => -byDateAsc(a, b)),
 		};
 	}, [appointments, search]);
 
