@@ -1,4 +1,4 @@
-import { EventsService, MailService } from "@clinic/api-common";
+import { EventsService, MailService, ASSISTANT_ID_API_PROPERTY } from "@clinic/api-common";
 import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
 import {
 	Controller,
@@ -116,7 +116,7 @@ class AppointmentUserResponseDto {
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
 	updatedAt!: string;
 
-	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	@ApiPropertyOptional({ type: String, format: "date-time", nullable: true })
 	deletedAt?: string | null;
 }
 
@@ -127,16 +127,16 @@ class AppointmentPatientResponseDto {
 	@ApiProperty({ format: "uuid", example: "3f2504e0-4f89-11d3-9a0c-0305e82c3301" })
 	userId!: string;
 
-	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	@ApiPropertyOptional({ type: String, format: "date", nullable: true, example: "1990-01-15" })
 	dateOfBirth?: string | null;
 
-	@ApiPropertyOptional({ nullable: true, example: "+31 6 1234 5678" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "+31 6 1234 5678" })
 	phone?: string | null;
 
-	@ApiPropertyOptional({ nullable: true, example: "INS-2026-001" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "INS-2026-001" })
 	insuranceNumber?: string | null;
 
-	@ApiPropertyOptional({ nullable: true, example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..." })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ..." })
 	photo?: string | null;
 
 	@ApiProperty({ example: true })
@@ -156,10 +156,10 @@ class AppointmentDoctorResponseDto {
 	@ApiProperty({ format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" })
 	userId!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: "Cardiology" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Cardiology" })
 	specialization?: string | null;
 
-	@ApiPropertyOptional({ nullable: true, example: "MED-12345" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "MED-12345" })
 	licenseNumber?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
@@ -176,7 +176,7 @@ class AppointmentAssistantResponseDto {
 	@ApiProperty({ format: "uuid", example: "f47ac10b-58cc-4372-a567-0e02b2c3d479" })
 	userId!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: "Front Desk" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Front Desk" })
 	department?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:30:00.000Z" })
@@ -196,7 +196,7 @@ class AppointmentRecordResponseDto {
 	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
 	doctorId!: string;
 
-	@ApiPropertyOptional({ format: "uuid", nullable: true, example: "de305d54-75b4-431b-adb2-eb6b9e546014" })
+	@ApiPropertyOptional(ASSISTANT_ID_API_PROPERTY)
 	assistantId?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-06-15T09:30:00.000Z" })
@@ -205,7 +205,7 @@ class AppointmentRecordResponseDto {
 	@ApiProperty({ enum: AppointmentStatusEnum, example: AppointmentStatusEnum.SCHEDULED })
 	status!: AppointmentStatus;
 
-	@ApiPropertyOptional({ nullable: true, example: "Follow-up consultation" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Follow-up consultation" })
 	notes?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:00:00.000Z" })
@@ -267,16 +267,16 @@ class AppointmentStatusHistoryItemResponseDto {
 	@ApiProperty({ format: "uuid", example: "7c9e6679-7425-40de-944b-e07fc1f90ae7" })
 	appointmentId!: string;
 
-	@ApiPropertyOptional({ enum: AppointmentStatusEnum, nullable: true })
+	@ApiPropertyOptional({ type: String, enum: AppointmentStatusEnum, nullable: true })
 	previousStatus?: AppointmentStatus | null;
 
 	@ApiProperty({ enum: AppointmentStatusEnum, example: AppointmentStatusEnum.CONFIRMED })
 	newStatus!: AppointmentStatus;
 
-	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	@ApiPropertyOptional({ type: String, format: "date-time", nullable: true })
 	previousScheduledAt?: string | null;
 
-	@ApiPropertyOptional({ format: "date-time", nullable: true })
+	@ApiPropertyOptional({ type: String, format: "date-time", nullable: true })
 	newScheduledAt?: string | null;
 
 	@ApiProperty({ example: "90bb0a13-a7be-4f8b-b071-e07d1f7b8bc2" })
@@ -285,10 +285,15 @@ class AppointmentStatusHistoryItemResponseDto {
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:45:00.000Z" })
 	changedAt!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: "Jamie Lee" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Jamie Lee" })
 	changedByName?: string | null;
 
-	@ApiPropertyOptional({ enum: ["patient", "doctor", "assistant", "admin"], nullable: true, example: "assistant" })
+	@ApiPropertyOptional({
+		type: String,
+		enum: ["patient", "doctor", "assistant", "admin"],
+		nullable: true,
+		example: "assistant",
+	})
 	changedByRole?: string | null;
 }
 

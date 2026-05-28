@@ -1,3 +1,4 @@
+import { formatDateOnly } from "@clinic/portal-common";
 import type { Patient, Appointment } from "@clinic/shared-types";
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -69,9 +70,7 @@ export default function PatientDetailPage(): React.ReactElement {
 							<Row label="Phone" value={patient.patient?.phone ?? "—"} />
 							<Row
 								label="Date of birth"
-								value={
-									patient.patient?.dateOfBirth ? new Date(patient.patient.dateOfBirth).toLocaleDateString("en-NL") : "—"
-								}
+								value={patient.patient?.dateOfBirth ? formatDateOnly(patient.patient.dateOfBirth, "en-NL") : "—"}
 							/>
 							<Row label="Insurance #" value={patient.patient?.insuranceNumber ?? "—"} />
 						</dl>

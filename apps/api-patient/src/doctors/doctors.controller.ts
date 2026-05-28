@@ -60,7 +60,7 @@ class DoctorDirectoryItemResponseDto {
 	@ApiProperty({ format: "uuid", example: "550e8400-e29b-41d4-a716-446655440000" })
 	userId!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: "Cardiology" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Cardiology" })
 	specialization?: string | null;
 
 	@ApiProperty({ example: "Alex" })
@@ -69,7 +69,7 @@ class DoctorDirectoryItemResponseDto {
 	@ApiProperty({ example: "Morgan" })
 	lastName!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: 4.7 })
+	@ApiPropertyOptional({ type: Number, nullable: true, example: 4.7 })
 	averageRating?: number | null;
 
 	@ApiProperty({ example: 18 })

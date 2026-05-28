@@ -57,7 +57,7 @@ class DoctorUnavailabilityResponseDto {
 	@ApiProperty({ format: "date-time", example: "2026-06-20T12:00:00.000Z" })
 	endDate!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: "Medical conference" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Medical conference" })
 	reason?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:00:00.000Z" })

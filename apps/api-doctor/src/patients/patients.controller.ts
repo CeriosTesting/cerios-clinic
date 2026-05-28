@@ -1,4 +1,9 @@
-import { DoctorCoreResponseDto, PatientCoreResponseDto, UserCoreResponseDto } from "@clinic/api-common";
+import {
+	DoctorCoreResponseDto,
+	PatientCoreResponseDto,
+	UserCoreResponseDto,
+	ASSISTANT_ID_API_PROPERTY,
+} from "@clinic/api-common";
 import {
 	Controller,
 	Get,
@@ -35,7 +40,7 @@ class DoctorPatientAppointmentResponseDto {
 	@ApiProperty({ format: "uuid", example: "7d444840-9dc0-11d1-b245-5ffdce74fad2" })
 	doctorId!: string;
 
-	@ApiPropertyOptional({ format: "uuid", nullable: true, example: "de305d54-75b4-431b-adb2-eb6b9e546014" })
+	@ApiPropertyOptional(ASSISTANT_ID_API_PROPERTY)
 	assistantId?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-06-15T09:30:00.000Z" })
@@ -44,7 +49,7 @@ class DoctorPatientAppointmentResponseDto {
 	@ApiProperty({ enum: ["SCHEDULED", "CONFIRMED", "CANCELLED", "COMPLETED"], example: "COMPLETED" })
 	status!: string;
 
-	@ApiPropertyOptional({ nullable: true, example: "Follow-up consultation" })
+	@ApiPropertyOptional({ type: String, nullable: true, example: "Follow-up consultation" })
 	notes?: string | null;
 
 	@ApiProperty({ format: "date-time", example: "2026-05-28T09:00:00.000Z" })
