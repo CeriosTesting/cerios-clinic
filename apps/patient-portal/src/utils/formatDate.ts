@@ -25,9 +25,9 @@ export function formatShortDate(date: Date): string {
 	});
 }
 
-/** Time only, e.g. "09:30" */
+/** Time only, 24-hour, e.g. "09:30" */
 export function formatTime(date: Date): string {
-	return date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+	return date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 }
 
 /** Returns a YYYY-MM-DD string in UTC (for API query params) */
