@@ -293,6 +293,7 @@ export const FEATURE_TOGGLE_KEYS = {
 	PROFILE_VALIDATION_FRONTEND: "bug:profile-validation-frontend",
 	PROFILE_VALIDATION_BACKEND: "bug:profile-validation-backend",
 	SHOW_FOOTER_LOGO: "bug:show-footer-logo",
+	APPOINTMENT_TIMEZONE: "bug:appointment-timezone",
 } as const;
 
 export interface ApiSlowdownConfig {

@@ -77,6 +77,12 @@ export class FeatureTogglesService implements OnModuleInit {
 				description: "When enabled, shows the Cerios logo in portal footers",
 				config: {},
 			},
+			{
+				key: FEATURE_TOGGLE_KEYS.APPOINTMENT_TIMEZONE,
+				description:
+					"When enabled, the doctor appointment detail and appointment emails show/save times in UTC instead of local clinic time (bug simulation)",
+				config: {},
+			},
 		];
 
 		for (const d of defaults) {

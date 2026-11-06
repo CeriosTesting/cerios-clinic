@@ -138,6 +138,7 @@ export default function FeatureTogglesPage(): React.ReactElement {
 	const getToggleLabel = (key: string): string => {
 		const labels: Record<string, string> = {
 			"bug:api-slowdown": "API Slowdown",
+			"bug:appointment-timezone": "Appointment Timezone",
 		};
 		return labels[key] ?? key;
 	};
