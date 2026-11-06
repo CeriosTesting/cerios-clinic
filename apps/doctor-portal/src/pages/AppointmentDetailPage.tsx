@@ -1,3 +1,4 @@
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from "@clinic/portal-common";
 import type { Appointment, AppointmentStatusChange, Prescription } from "@clinic/shared-types";
 import { ALLOWED_TRANSITIONS as TRANSITIONS } from "@clinic/shared-types";
 import React, { useEffect, useState } from "react";
@@ -15,6 +16,14 @@ function badgeClass(status: string): string {
 	return map[status] ?? "badge-scheduled";
 }
 
+/**
+ * Value for the "Scheduled at" input. With the `bug:appointment-timezone`
+ * toggle on, it shows the UTC time as if it were local (deliberate bug).
+ */
+function scheduledAtInputValue(scheduledAt: string, timezoneBug: boolean): string {
+	return timezoneBug ? new Date(scheduledAt).toISOString().slice(0, 16) : toDateTimeLocalValue(scheduledAt);
+}
+
 export default function AppointmentDetailPage(): React.ReactElement {
 	const { id } = useParams<{ id: string }>();
 	const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -27,19 +36,25 @@ export default function AppointmentDetailPage(): React.ReactElement {
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState("");
 	const [prescription, setPrescription] = useState<Prescription | null>(null);
+	const [timezoneBug, setTimezoneBug] = useState(false);
 
 	useEffect(() => {
 		void Promise.all([
 			api.get<{ data: Appointment }>(`/appointments/${id}`),
 			api.get<{ data: typeof history }>(`/appointments/${id}/history`),
+			api
+				.get<{ data: { appointmentTimezoneBug?: boolean } }>("/ui-toggles")
+				.then(r => r.data.data.appointmentTimezoneBug ?? false)
+				.catch(() => false),
 		])
-			.then(([apptRes, histRes]) => {
+			.then(([apptRes, histRes, tzBug]) => {
 				const a = apptRes.data.data;
 				setAppointment(a);
+				setTimezoneBug(tzBug);
 				setForm({
 					status: a.status,
 					notes: a.notes ?? "",
-					scheduledAt: new Date(a.scheduledAt).toISOString().slice(0, 16),
+					scheduledAt: scheduledAtInputValue(a.scheduledAt, tzBug),
 				});
 				setHistory(histRes.data.data);
 				// Fetch existing prescription if appointment is COMPLETED
@@ -63,9 +78,13 @@ export default function AppointmentDetailPage(): React.ReactElement {
 		setSuccess(false);
 		setError("");
 		try {
-			const updated = await api.put<{ data: Appointment }>(`/appointments/${id}`, form);
+			// Bug toggle on: send the raw local value without timezone, so the server interprets it in its own timezone.
+			let scheduledAt: string | undefined = form.scheduledAt;
+			if (!timezoneBug) scheduledAt = form.scheduledAt ? fromDateTimeLocalValue(form.scheduledAt) : undefined;
+			const updated = await api.put<{ data: Appointment }>(`/appointments/${id}`, { ...form, scheduledAt });
 			const histRes = await api.get<{ data: typeof history }>(`/appointments/${id}/history`);
 			setAppointment(updated.data.data);
+			setForm(f => ({ ...f, scheduledAt: scheduledAtInputValue(updated.data.data.scheduledAt, timezoneBug) }));
 			setHistory(histRes.data.data);
 			setSuccess(true);
 		} catch (err: unknown) {

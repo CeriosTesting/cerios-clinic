@@ -1,3 +1,4 @@
+import { CLIENT_TIMEZONE_HEADER } from "@clinic/shared-types";
 import axios, { type AxiosInstance } from "axios";
 import Keycloak from "keycloak-js";
 
@@ -14,6 +15,7 @@ export interface CreateApiOptions {
  * 2. Before each request, if a token exists, proactively refreshes it when
  *    within `minValiditySeconds` of expiry (falling back to `login()` on failure).
  * 3. Attaches the current bearer token to `Authorization`.
+ * 4. Sends the browser's timezone in `X-Client-Timezone` (used for email times).
  *
  * Matches the behavior of the previous per-portal api.ts files (patient-portal's
  * unconditional updateToken and doctor/assistant's isTokenExpired gate collapse
@@ -24,6 +26,7 @@ export function createApi(options: CreateApiOptions): AxiosInstance {
 	const instance = axios.create({ baseURL: options.baseUrl });
 
 	instance.interceptors.request.use(async config => {
+		config.headers[CLIENT_TIMEZONE_HEADER] = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		const kc = options.keycloak;
 		if (kc.token) {
 			if (kc.isTokenExpired(minValidity)) {

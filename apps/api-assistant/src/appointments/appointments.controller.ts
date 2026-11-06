@@ -1,4 +1,4 @@
-import { EventsService, MailService, ASSISTANT_ID_API_PROPERTY } from "@clinic/api-common";
+import { ClientTimeZone, EventsService, MailService, ASSISTANT_ID_API_PROPERTY } from "@clinic/api-common";
 import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
 import {
 	Controller,
@@ -542,7 +542,8 @@ export class AppointmentsController {
 	@ApiCreatedResponse({ type: AppointmentCreatedResponseDto })
 	async create(
 		@Body() dto: CreateAppointmentDto,
-		@CurrentUser() user: KeycloakTokenPayload
+		@CurrentUser() user: KeycloakTokenPayload,
+		@ClientTimeZone() timeZone: string
 	): Promise<{ data: ApptWithAll; message: string }> {
 		// Validate that the referenced patient and doctor exist and are not soft-deleted
 		const [patient, doctor] = await Promise.all([
@@ -584,7 +585,13 @@ export class AppointmentsController {
 		if (patientUser && doctorUser) {
 			const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
 			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
-			void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, appointment.scheduledAt);
+			void this.mail.sendAppointmentConfirmation(
+				patientUser.email,
+				patientName,
+				doctorName,
+				appointment.scheduledAt,
+				timeZone
+			);
 		}
 
 		this.events.emitAppointmentEvent({
@@ -605,7 +612,8 @@ export class AppointmentsController {
 	async update(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAppointmentDto,
-		@CurrentUser() user: KeycloakTokenPayload
+		@CurrentUser() user: KeycloakTokenPayload,
+		@ClientTimeZone() timeZone: string
 	): Promise<{ data: ApptWithAll }> {
 		const appointment = await this.prisma.appointment.findUnique({ where: { id } });
 		if (!appointment) throw new NotFoundException("Appointment not found");
@@ -627,7 +635,7 @@ export class AppointmentsController {
 		});
 
 		if (dto.status && dto.status !== appointment.status) {
-			await this.recordStatusChangeAndNotify(id, appointment.status, dto.status, user.sub, updated);
+			await this.recordStatusChangeAndNotify(id, appointment.status, dto.status, user.sub, updated, timeZone);
 		}
 
 		return { data: updated };
@@ -746,7 +754,8 @@ export class AppointmentsController {
 		previousStatus: AppointmentStatus,
 		newStatus: AppointmentStatus,
 		changedByKeycloakId: string,
-		updated: ApptWithAll
+		updated: ApptWithAll,
+		timeZone: string
 	): Promise<void> {
 		await this.prisma.appointmentStatusChange.create({
 			data: { appointmentId, previousStatus, newStatus, changedByKeycloakId },
@@ -758,14 +767,21 @@ export class AppointmentsController {
 			const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
 			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
 			if (newStatus === "CONFIRMED") {
-				void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, updated.scheduledAt);
+				void this.mail.sendAppointmentConfirmation(
+					patientUser.email,
+					patientName,
+					doctorName,
+					updated.scheduledAt,
+					timeZone
+				);
 			} else if (newStatus === "CANCELLED") {
 				void this.mail.sendAppointmentCancellation(
 					patientUser.email,
 					patientName,
 					doctorName,
 					patientName,
-					updated.scheduledAt
+					updated.scheduledAt,
+					timeZone
 				);
 			}
 		}
@@ -785,7 +801,8 @@ export class AppointmentsController {
 	@ApiOkResponse({ type: AppointmentCancelledResponseDto })
 	async cancel(
 		@Param("id", ParseUUIDPipe) id: string,
-		@CurrentUser() user: KeycloakTokenPayload
+		@CurrentUser() user: KeycloakTokenPayload,
+		@ClientTimeZone() timeZone: string
 	): Promise<{ data: Appointment; message: string }> {
 		const appointment = await this.prisma.appointment.findUnique({
 			where: { id },
@@ -826,14 +843,16 @@ export class AppointmentsController {
 				patientName,
 				doctorName,
 				patientName,
-				appointment.scheduledAt
+				appointment.scheduledAt,
+				timeZone
 			);
 			void this.mail.sendAppointmentCancellation(
 				doctorUser.email,
 				`Dr. ${doctorName}`,
 				doctorName,
 				patientName,
-				appointment.scheduledAt
+				appointment.scheduledAt,
+				timeZone
 			);
 		}
 

@@ -1,3 +1,4 @@
+import { CLIENT_TIMEZONE_HEADER } from "@clinic/shared-types";
 import { Logger, Type, ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
@@ -5,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import compression from "compression";
 import helmet from "helmet";
 
+import { DEFAULT_TIMEZONE } from "./client-timezone";
 import { DateOnlyResponseInterceptor } from "./date-only-response.interceptor";
 import { PrismaExceptionFilter } from "./prisma-exception.filter";
 
@@ -52,6 +54,13 @@ export async function bootstrapApi(options: BootstrapApiOptions): Promise<void> 
 			.setDescription(options.swaggerDescription)
 			.setVersion("1.0")
 			.addBearerAuth()
+			.addGlobalParameters({
+				name: CLIENT_TIMEZONE_HEADER,
+				in: "header",
+				required: false,
+				description: `IANA timezone of the caller, used for times in emails. Defaults to ${DEFAULT_TIMEZONE}.`,
+				schema: { type: "string" },
+			})
 			.build();
 
 		const document = SwaggerModule.createDocument(app, config);

@@ -163,6 +163,9 @@ export class FeatureToggleDetailResponseDto {
 export class UiTogglesDataResponseDto {
 	@ApiProperty({ example: false })
 	showFooterLogo!: boolean;
+
+	@ApiProperty({ example: false })
+	appointmentTimezoneBug!: boolean;
 }
 
 export class UiTogglesResponseDto {

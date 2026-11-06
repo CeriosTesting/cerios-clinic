@@ -6,6 +6,7 @@ import {
 	MailService,
 	PatientCoreResponseDto,
 	UserCoreResponseDto,
+	ClientTimeZone,
 } from "@clinic/api-common";
 import { AppointmentStatus } from "@clinic/shared-types";
 import {
@@ -297,7 +298,8 @@ export class AppointmentsController {
 	@ApiOkResponse({ type: PatientAppointmentMutationResponseDto })
 	async cancel(
 		@Param("id", ParseUUIDPipe) id: string,
-		@CurrentUser() user: KeycloakTokenPayload
+		@CurrentUser() user: KeycloakTokenPayload,
+		@ClientTimeZone() timeZone: string
 	): Promise<{ data: ApptWithDoctorOnly; message: string }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -355,14 +357,16 @@ export class AppointmentsController {
 				patientName,
 				doctorName,
 				patientName,
-				appointment.scheduledAt
+				appointment.scheduledAt,
+				timeZone
 			);
 			void this.mail.sendAppointmentCancellation(
 				doctorUser.email,
 				`Dr. ${doctorName}`,
 				doctorName,
 				patientName,
-				appointment.scheduledAt
+				appointment.scheduledAt,
+				timeZone
 			);
 		}
 

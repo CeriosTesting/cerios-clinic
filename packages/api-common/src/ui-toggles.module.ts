@@ -7,6 +7,7 @@ import { UiTogglesResponseDto } from "./swagger-response.dto";
 
 export interface UiToggles {
 	showFooterLogo: boolean;
+	appointmentTimezoneBug: boolean;
 }
 
 @ApiTags("ui-toggles")
@@ -19,12 +20,16 @@ export class UiTogglesController {
 	@ApiOperation({ summary: "Get UI-related feature toggle states for the current portal" })
 	@ApiOkResponse({ type: UiTogglesResponseDto })
 	async list(): Promise<{ data: UiToggles }> {
-		const toggle = await this.prisma.featureToggle
-			.findUnique({ where: { key: FEATURE_TOGGLE_KEYS.SHOW_FOOTER_LOGO } })
-			.catch(() => null);
+		const toggles = await this.prisma.featureToggle
+			.findMany({
+				where: { key: { in: [FEATURE_TOGGLE_KEYS.SHOW_FOOTER_LOGO, FEATURE_TOGGLE_KEYS.APPOINTMENT_TIMEZONE] } },
+			})
+			.catch(() => []);
+		const isEnabled = (key: string): boolean => toggles.find(t => t.key === key)?.enabled ?? false;
 		return {
 			data: {
-				showFooterLogo: toggle?.enabled ?? false,
+				showFooterLogo: isEnabled(FEATURE_TOGGLE_KEYS.SHOW_FOOTER_LOGO),
+				appointmentTimezoneBug: isEnabled(FEATURE_TOGGLE_KEYS.APPOINTMENT_TIMEZONE),
 			},
 		};
 	}

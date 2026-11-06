@@ -293,7 +293,11 @@ export const FEATURE_TOGGLE_KEYS = {
 	PROFILE_VALIDATION_FRONTEND: "bug:profile-validation-frontend",
 	PROFILE_VALIDATION_BACKEND: "bug:profile-validation-backend",
 	SHOW_FOOTER_LOGO: "bug:show-footer-logo",
+	APPOINTMENT_TIMEZONE: "bug:appointment-timezone",
 } as const;
+
+/** Request header in which clients send their IANA timezone (e.g. "Europe/Amsterdam"). */
+export const CLIENT_TIMEZONE_HEADER = "X-Client-Timezone";
 
 export interface ApiSlowdownConfig {
 	minDelayMs: number;

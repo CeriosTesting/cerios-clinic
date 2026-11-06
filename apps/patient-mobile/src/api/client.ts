@@ -31,6 +31,8 @@ const api: AxiosInstance = axios.create({
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+	// Device timezone, used by the API for times in emails (same header as CLIENT_TIMEZONE_HEADER in shared-types).
+	config.headers["X-Client-Timezone"] = Intl.DateTimeFormat().resolvedOptions().timeZone;
 	if (cachedAccessToken) {
 		config.headers.Authorization = `Bearer ${cachedAccessToken}`;
 	} else {

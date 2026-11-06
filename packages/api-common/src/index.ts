@@ -2,6 +2,7 @@ export * from "./auth";
 export * from "./auth-module";
 export * from "./api-runtime-env";
 export * from "./bootstrap";
+export * from "./client-timezone";
 export * from "./env";
 export * from "./events.module";
 export * from "./events.service";

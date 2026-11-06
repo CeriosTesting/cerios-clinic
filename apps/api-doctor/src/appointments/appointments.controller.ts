@@ -8,6 +8,7 @@ import {
 	MailService,
 	PatientCoreResponseDto,
 	UserCoreResponseDto,
+	ClientTimeZone,
 } from "@clinic/api-common";
 import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
 import {
@@ -320,7 +321,8 @@ export class AppointmentsController {
 	async update(
 		@Param("id", ParseUUIDPipe) id: string,
 		@Body() dto: UpdateAppointmentDto,
-		@CurrentUser() user: KeycloakTokenPayload
+		@CurrentUser() user: KeycloakTokenPayload,
+		@ClientTimeZone() timeZone: string
 	): Promise<{ data: ApptWithAll }> {
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -349,7 +351,7 @@ export class AppointmentsController {
 		});
 
 		if (dto.status && dto.status !== appointment.status) {
-			await this.recordStatusChangeAndNotify(id, appointment.status, dto.status, user.sub, updated);
+			await this.recordStatusChangeAndNotify(id, appointment.status, dto.status, user.sub, updated, timeZone);
 		}
 
 		return { data: updated };
@@ -371,7 +373,8 @@ export class AppointmentsController {
 		previousStatus: AppointmentStatus,
 		newStatus: AppointmentStatus,
 		changedByKeycloakId: string,
-		updated: ApptWithAll
+		updated: ApptWithAll,
+		timeZone: string
 	): Promise<void> {
 		await this.prisma.appointmentStatusChange.create({
 			data: { appointmentId, previousStatus, newStatus, changedByKeycloakId },
@@ -383,14 +386,21 @@ export class AppointmentsController {
 			const patientName = `${patientUser.firstName} ${patientUser.lastName}`;
 			const doctorName = `${doctorUser.firstName} ${doctorUser.lastName}`;
 			if (newStatus === "CONFIRMED") {
-				void this.mail.sendAppointmentConfirmation(patientUser.email, patientName, doctorName, updated.scheduledAt);
+				void this.mail.sendAppointmentConfirmation(
+					patientUser.email,
+					patientName,
+					doctorName,
+					updated.scheduledAt,
+					timeZone
+				);
 			} else if (newStatus === "CANCELLED") {
 				void this.mail.sendAppointmentCancellation(
 					patientUser.email,
 					patientName,
 					doctorName,
 					patientName,
-					updated.scheduledAt
+					updated.scheduledAt,
+					timeZone
 				);
 			}
 		}
