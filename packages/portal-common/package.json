@@ -13,6 +13,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
+		"@clinic/shared-types": "workspace:*",
 		"axios": "catalog:",
 		"keycloak-js": "catalog:"
 	},

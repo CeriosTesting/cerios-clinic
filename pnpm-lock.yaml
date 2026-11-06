@@ -898,6 +898,9 @@ importers:
 
   packages/portal-common:
     dependencies:
+      '@clinic/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
       axios:
         specifier: 'catalog:'
         version: 1.15.0

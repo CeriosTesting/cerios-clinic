@@ -118,7 +118,6 @@ services:
       PATIENT_PORTAL_URL: "http://localhost:5173"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-      CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-Europe/Amsterdam}
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -149,7 +148,6 @@ services:
       API_DOCTOR_CORS_ORIGINS: "http://localhost:5174"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-      CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-Europe/Amsterdam}
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -180,7 +178,6 @@ services:
       API_ASSISTANT_CORS_ORIGINS: "http://localhost:5175"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-      CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-Europe/Amsterdam}
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -211,7 +208,6 @@ services:
       API_ADMIN_CORS_ORIGINS: "http://localhost:5176"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
-      CLINIC_TIMEZONE: ${CLINIC_TIMEZONE:-Europe/Amsterdam}
     depends_on:
       db-init:
         condition: service_completed_successfully

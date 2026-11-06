@@ -296,6 +296,9 @@ export const FEATURE_TOGGLE_KEYS = {
 	APPOINTMENT_TIMEZONE: "bug:appointment-timezone",
 } as const;
 
+/** Request header in which clients send their IANA timezone (e.g. "Europe/Amsterdam"). */
+export const CLIENT_TIMEZONE_HEADER = "X-Client-Timezone";
+
 export interface ApiSlowdownConfig {
 	minDelayMs: number;
 	maxDelayMs: number;

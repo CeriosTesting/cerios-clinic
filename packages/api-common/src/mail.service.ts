@@ -2,6 +2,7 @@ import { FEATURE_TOGGLE_KEYS } from "@clinic/shared-types";
 import { Injectable, Logger } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 
+import { resolveTimeZone } from "./client-timezone";
 import { readEnvOrDefault, parsePortEnv } from "./env";
 import { PrismaService } from "./prisma.service";
 
@@ -16,13 +17,11 @@ export class MailService {
 	private readonly logger = new Logger(MailService.name);
 	private readonly transporter: nodemailer.Transporter;
 	private readonly from: string;
-	private readonly clinicTimeZone: string;
 
 	constructor(private readonly prisma: PrismaService) {
 		const host = readEnvOrDefault("SMTP_HOST", "localhost");
 		const port = parsePortEnv("SMTP_PORT", 1025);
 		this.from = readEnvOrDefault("SMTP_FROM", "noreply@clinic.local");
-		this.clinicTimeZone = readEnvOrDefault("CLINIC_TIMEZONE", "Europe/Amsterdam");
 
 		this.transporter = nodemailer.createTransport({
 			host,
@@ -46,14 +45,17 @@ export class MailService {
 	}
 
 	/**
-	 * Formats an appointment moment for emails in the clinic timezone. With the
-	 * `bug:appointment-timezone` toggle on, it uses UTC instead (deliberate bug).
+	 * Formats an appointment moment for emails in the given (client) timezone. With
+	 * the `bug:appointment-timezone` toggle on, it uses UTC instead (deliberate bug).
 	 */
-	private async formatAppointmentDateTime(scheduledAt: Date): Promise<{ date: string; time: string }> {
+	private async formatAppointmentDateTime(
+		scheduledAt: Date,
+		clientTimeZone: string
+	): Promise<{ date: string; time: string }> {
 		const toggle = await this.prisma.featureToggle
 			.findUnique({ where: { key: FEATURE_TOGGLE_KEYS.APPOINTMENT_TIMEZONE } })
 			.catch(() => null);
-		const timeZone = toggle?.enabled ? "UTC" : this.clinicTimeZone;
+		const timeZone = toggle?.enabled ? "UTC" : resolveTimeZone(clientTimeZone);
 		const date = scheduledAt.toLocaleDateString("en-NL", {
 			weekday: "long",
 			year: "numeric",
@@ -74,9 +76,10 @@ export class MailService {
 		patientEmail: string,
 		patientName: string,
 		doctorName: string,
-		scheduledAt: Date
+		scheduledAt: Date,
+		timeZone: string
 	): Promise<void> {
-		const { date, time } = await this.formatAppointmentDateTime(scheduledAt);
+		const { date, time } = await this.formatAppointmentDateTime(scheduledAt, timeZone);
 
 		await this.send({
 			to: patientEmail,
@@ -103,9 +106,10 @@ export class MailService {
 		recipientName: string,
 		doctorName: string,
 		patientName: string,
-		scheduledAt: Date
+		scheduledAt: Date,
+		timeZone: string
 	): Promise<void> {
-		const { date, time } = await this.formatAppointmentDateTime(scheduledAt);
+		const { date, time } = await this.formatAppointmentDateTime(scheduledAt, timeZone);
 
 		await this.send({
 			to: recipientEmail,
@@ -132,9 +136,10 @@ export class MailService {
 		patientEmail: string,
 		patientName: string,
 		doctorName: string,
-		scheduledAt: Date
+		scheduledAt: Date,
+		timeZone: string
 	): Promise<void> {
-		const { time } = await this.formatAppointmentDateTime(scheduledAt);
+		const { time } = await this.formatAppointmentDateTime(scheduledAt, timeZone);
 
 		await this.send({
 			to: patientEmail,
