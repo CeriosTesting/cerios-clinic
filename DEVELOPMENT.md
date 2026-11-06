@@ -648,6 +648,8 @@ Patient self-registration creates an unverified Keycloak user and sends a verifi
 
 If login fails with "Email not verified", return to Mailpit and click the verification link first. If no email arrives, check `docker logs clinic-api-patient` for a `[send verification email]` error line — this is the only place the real Keycloak response is surfaced.
 
+The verification link should start with `http://localhost:8180/realms/clinic/login-actions/...`. The host comes from `KEYCLOAK_PUBLIC_URL`. If a link points to `http://keycloak:8080` instead, the Keycloak container is missing `KC_PROXY_HEADERS: "xforwarded"`. Recreate it with the current compose file. Links sent before that fix can't be repaired by editing the URL. Request a new email with **Resend verification email**.
+
 ---
 
 ## Useful Commands

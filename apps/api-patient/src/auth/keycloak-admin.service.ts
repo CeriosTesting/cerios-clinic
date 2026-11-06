@@ -20,6 +20,30 @@ const REQUIRED_REALM_MGMT_ROLES = [
 	"view-realm",
 ] as const;
 
+/**
+ * When the API reaches Keycloak through a different address than the browser
+ * does (e.g. http://keycloak:8080 inside Docker vs http://localhost:8180),
+ * returns X-Forwarded-* headers describing the public URL. Returns no headers
+ * when both URLs are the same or the public URL is not set or invalid.
+ */
+function buildForwardedHeaders(internalUrl: string, publicUrl: string): Record<string, string> {
+	if (!publicUrl || publicUrl.replace(/\/+$/, "") === internalUrl.replace(/\/+$/, "")) {
+		return {};
+	}
+	let parsed: URL;
+	try {
+		parsed = new URL(publicUrl);
+	} catch {
+		return {};
+	}
+	const proto = parsed.protocol.replace(/:$/, "");
+	return {
+		"X-Forwarded-Host": parsed.host,
+		"X-Forwarded-Proto": proto,
+		"X-Forwarded-Port": parsed.port || (proto === "https" ? "443" : "80"),
+	};
+}
+
 @Injectable()
 export class KeycloakAdminService implements OnApplicationBootstrap {
 	private readonly logger = new Logger(KeycloakAdminService.name);
@@ -29,6 +53,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 	private readonly clientSecret: string;
 	private readonly patientClientId: string;
 	private readonly patientPortalUrl: string;
+	private readonly forwardedHeaders: Record<string, string>;
 
 	constructor() {
 		const env = getApiRuntimeEnv();
@@ -38,6 +63,21 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 		this.clientSecret = env.keycloak.adminClientSecret;
 		this.patientClientId = env.keycloak.clientId;
 		this.patientPortalUrl = readEnvOrDefault("PATIENT_PORTAL_URL", "http://localhost:5173");
+		this.forwardedHeaders = buildForwardedHeaders(this.baseUrl, readEnvOrDefault("KEYCLOAK_PUBLIC_URL", ""));
+	}
+
+	/**
+	 * fetch() wrapper for every Keycloak call. Adds X-Forwarded-* headers so
+	 * Keycloak builds links (e.g. the verification email) with the public URL
+	 * instead of the internal Docker hostname (issue #19). All calls must use
+	 * them, because Keycloak checks the admin token's issuer against the host
+	 * of each request.
+	 */
+	private kcFetch(url: string, init: RequestInit = {}): Promise<Response> {
+		return fetch(url, {
+			...init,
+			headers: { ...this.forwardedHeaders, ...(init.headers as Record<string, string> | undefined) },
+		});
 	}
 
 	/**
@@ -79,7 +119,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 		const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 		const realmEndpoint = `${this.baseUrl}/admin/realms/${this.realm}`;
 
-		const getRes = await fetch(realmEndpoint, { headers });
+		const getRes = await this.kcFetch(realmEndpoint, { headers });
 		if (!getRes.ok) {
 			await this.failKeycloak("read realm configuration", realmEndpoint, getRes);
 		}
@@ -89,7 +129,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 			return;
 		}
 
-		const putRes = await fetch(realmEndpoint, {
+		const putRes = await this.kcFetch(realmEndpoint, {
 			method: "PUT",
 			headers: { ...headers, "Content-Type": "application/json" },
 			body: JSON.stringify({ ...realm, verifyEmail: true }),
@@ -107,7 +147,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 		// 1. Find the service-account user for this client.
 		const saUsername = `service-account-${this.clientId}`;
 		const usersEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/users?username=${encodeURIComponent(saUsername)}&exact=true`;
-		const usersRes = await fetch(usersEndpoint, { headers });
+		const usersRes = await this.kcFetch(usersEndpoint, { headers });
 		if (!usersRes.ok) {
 			await this.failKeycloak("look up service account user", usersEndpoint, usersRes);
 		}
@@ -123,7 +163,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 
 		// 2. Find the realm-management client UUID.
 		const clientsEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/clients?clientId=realm-management`;
-		const clientsRes = await fetch(clientsEndpoint, { headers });
+		const clientsRes = await this.kcFetch(clientsEndpoint, { headers });
 		if (!clientsRes.ok) {
 			await this.failKeycloak("look up realm-management client", clientsEndpoint, clientsRes);
 		}
@@ -138,7 +178,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 		const mappingsEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${userId}/role-mappings/clients/${rmClientId}`;
 		const availableEndpoint = `${mappingsEndpoint}/available`;
 
-		const assignedRes = await fetch(mappingsEndpoint, { headers });
+		const assignedRes = await this.kcFetch(mappingsEndpoint, { headers });
 		if (!assignedRes.ok) {
 			await this.failKeycloak("read assigned realm-management roles", mappingsEndpoint, assignedRes);
 		}
@@ -151,7 +191,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 			return;
 		}
 
-		const availableRes = await fetch(availableEndpoint, { headers });
+		const availableRes = await this.kcFetch(availableEndpoint, { headers });
 		if (!availableRes.ok) {
 			await this.failKeycloak("read available realm-management roles", availableEndpoint, availableRes);
 		}
@@ -165,7 +205,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 			return;
 		}
 
-		const assignRes = await fetch(mappingsEndpoint, {
+		const assignRes = await this.kcFetch(mappingsEndpoint, {
 			method: "POST",
 			headers: { ...headers, "Content-Type": "application/json" },
 			body: JSON.stringify(toAssign.map(r => ({ id: r.id, name: r.name }))),
@@ -196,7 +236,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 			client_id: this.clientId,
 			client_secret: this.clientSecret,
 		});
-		const res = await fetch(endpoint, {
+		const res = await this.kcFetch(endpoint, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 			body: params.toString(),
@@ -218,7 +258,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 		// Create the user — emailVerified is false so login is gated until the
 		// user completes the VERIFY_EMAIL required action.
 		const createEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/users`;
-		const createRes = await fetch(createEndpoint, {
+		const createRes = await this.kcFetch(createEndpoint, {
 			method: "POST",
 			headers,
 			body: JSON.stringify({
@@ -256,7 +296,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 
 		// Look up the 'patient' role
 		const rolesEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/roles`;
-		const rolesRes = await fetch(rolesEndpoint, { headers });
+		const rolesRes = await this.kcFetch(rolesEndpoint, { headers });
 		if (!rolesRes.ok) {
 			await this.failKeycloak("fetch realm roles from Keycloak", rolesEndpoint, rolesRes);
 		}
@@ -269,7 +309,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 
 		// Assign the 'patient' role
 		const assignEndpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}/role-mappings/realm`;
-		const assignRes = await fetch(assignEndpoint, {
+		const assignRes = await this.kcFetch(assignEndpoint, {
 			method: "POST",
 			headers,
 			body: JSON.stringify([{ id: patientRole.id, name: patientRole.name }]),
@@ -295,7 +335,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 			redirect_uri: this.patientPortalUrl,
 		});
 		const endpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}/send-verify-email?${params.toString()}`;
-		const res = await fetch(endpoint, {
+		const res = await this.kcFetch(endpoint, {
 			method: "PUT",
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -314,7 +354,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 	async findUserByEmail(email: string): Promise<{ id: string; emailVerified: boolean } | null> {
 		const token = await this.getAdminToken();
 		const endpoint = `${this.baseUrl}/admin/realms/${this.realm}/users?email=${encodeURIComponent(email)}&exact=true`;
-		const res = await fetch(endpoint, {
+		const res = await this.kcFetch(endpoint, {
 			headers: { Authorization: `Bearer ${token}` },
 		});
 		if (!res.ok) {
@@ -328,7 +368,7 @@ export class KeycloakAdminService implements OnApplicationBootstrap {
 	async disableUser(keycloakId: string): Promise<void> {
 		const token = await this.getAdminToken();
 		const endpoint = `${this.baseUrl}/admin/realms/${this.realm}/users/${keycloakId}`;
-		const res = await fetch(endpoint, {
+		const res = await this.kcFetch(endpoint, {
 			method: "PUT",
 			headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
 			body: JSON.stringify({ enabled: false }),
