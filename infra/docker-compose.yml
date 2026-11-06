@@ -36,6 +36,10 @@ services:
       # forcing redirects back to localhost.
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      # Lets api-patient (which reaches Keycloak at keycloak:8080) ask for links
+      # using the public URL, so verification emails point to
+      # http://localhost:8180 instead of http://keycloak:8080. Local dev only.
+      KC_PROXY_HEADERS: "xforwarded"
     ports:
       - "8180:8080"
     volumes:

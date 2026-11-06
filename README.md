@@ -247,6 +247,10 @@ docker logs <container-name> --tail 50
 
 Another application is using one of the required ports (3001–3004, 5173–5176, 5432, 8025, 8180). Close that application or stop the service using the port.
 
+### Verification email link points to `http://keycloak:8080`
+
+Your compose file is older than the fix for this. Download the latest `docker-compose.prebuilt.yml`, then recreate the containers with `docker compose --profile apps up -d --pull always`. Old links can't be repaired by editing the URL. Use **Resend verification email** on the patient portal to get a new one.
+
 ### Rebuilding after code changes
 
 If you are using the pre-built images, pull the latest versions:
