@@ -8,7 +8,7 @@ on:
 
 jobs:
   checks:
-    name: Type-check, Lint & Format
+    name: Type-check, Lint, Format & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -39,3 +39,6 @@ jobs:
 
       - name: Type-check
         run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test

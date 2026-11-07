@@ -11,5 +11,6 @@
 			"@clinic/shared-types": ["../shared-types/dist/index.d.ts"]
 		}
 	},
-	"include": ["src/**/*"]
+	"include": ["src/**/*"],
+	"exclude": ["src/**/*.test.ts"]
 }

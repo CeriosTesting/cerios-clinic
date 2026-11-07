@@ -1,0 +1,31 @@
+{
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"strictPropertyInitialization": false,
+		"noEmit": true,
+		"declaration": false,
+		"declarationMap": false,
+		"types": ["node", "vite/client"],
+		"paths": {
+			"@clinic/api-common": ["./packages/api-common/src/index.ts"],
+			"@clinic/database": ["./packages/database/src/index.ts"],
+			"@clinic/portal-common": ["./packages/portal-common/src/index.ts"],
+			"@clinic/shared-types": ["./packages/shared-types/src/index.ts"],
+			"@clinic/test-utils": ["./test-utils/index.ts"]
+		}
+	},
+	"include": [
+		"vitest.config.ts",
+		"test-utils/**/*.ts",
+		"packages/*/src/**/*.test.ts",
+		"apps/api-*/src/**/*.test.ts",
+		"apps/*-portal/src/**/*.test.ts"
+	]
+}

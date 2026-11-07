@@ -33,9 +33,10 @@ import { Roles } from "../auth/roles.decorator";
 import { RolesGuard } from "../auth/roles.guard";
 import { PrismaService } from "../prisma/prisma.service";
 
+import { validateProfileDto } from "./profile.validation";
+
 const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_BYTES = 1 * 1024 * 1024; // 1 MB
-const PHONE_REGEX = /^[+\d\s\-().]{7,20}$/;
 
 class UpdateProfileDto {
 	@ApiPropertyOptional({ example: "Taylor" })
@@ -92,31 +93,6 @@ class PatientProfilePhotoDataDto {
 class PatientProfilePhotoResponseDto {
 	@ApiProperty({ type: () => PatientProfilePhotoDataDto })
 	data!: PatientProfilePhotoDataDto;
-}
-
-function isInvalidDateOfBirth(dateOfBirth: string): boolean {
-	const dob = new Date(dateOfBirth);
-	return isNaN(dob.getTime()) || dob >= new Date();
-}
-
-function validateProfileDto(dto: UpdateProfileDto): string[] {
-	const errors: string[] = [];
-	if (dto.firstName !== undefined && (dto.firstName.trim().length === 0 || dto.firstName.length > 50)) {
-		errors.push("First name is required and must be at most 50 characters");
-	}
-	if (dto.lastName !== undefined && (dto.lastName.trim().length === 0 || dto.lastName.length > 50)) {
-		errors.push("Last name is required and must be at most 50 characters");
-	}
-	if (dto.phone !== undefined && dto.phone !== "" && !PHONE_REGEX.test(dto.phone)) {
-		errors.push("Invalid phone number format");
-	}
-	if (dto.dateOfBirth !== undefined && dto.dateOfBirth !== "" && isInvalidDateOfBirth(dto.dateOfBirth)) {
-		errors.push("Date of birth must be a valid date in the past");
-	}
-	if (dto.insuranceNumber !== undefined && dto.insuranceNumber.length > 30) {
-		errors.push("Insurance number must be at most 30 characters");
-	}
-	return errors;
 }
 
 @ApiTags("profile")

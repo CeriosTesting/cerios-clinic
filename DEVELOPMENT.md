@@ -652,6 +652,38 @@ The verification link should start with `http://localhost:8180/realms/clinic/log
 
 ---
 
+## Unit Tests
+
+The project uses [Vitest](https://vitest.dev/) for fast unit tests. They need no Docker, database, Keycloak or SMTP: Prisma, email and the clock are mocked.
+
+```bash
+pnpm test           # everything once
+pnpm test:watch     # keep running while you work
+pnpm test:changed   # only tests affected by your uncommitted changes
+```
+
+CI runs `pnpm test` on every push and pull request to `main`.
+
+**What is tested:** business rules, not framework wiring. The suite is deliberately small (~190 cases, mostly table rows):
+
+- Scheduling rules (working hours, weekdays, slot grid, "tomorrow or later", status transitions) in `packages/shared-types/src/scheduling.test.ts`
+- Timezones in emails and in the portals' date inputs, and the `X-Client-Timezone` header
+- Appointment flows in the controllers (cancel, reschedule, conflicts, notifications) with a mocked Prisma
+- Profile validation, doctor time-off blocks, Prisma error mapping, the role guard
+
+**Conventions:**
+
+- Test files live next to the code: `foo.ts` → `foo.test.ts`, inside `src/` of a package or app.
+- Shared helpers are in [`test-utils/`](test-utils/index.ts) (import as `@clinic/test-utils`): `createPrismaMock()`, `mockToggles()`, `freezeTime()`, `createMailMock()`, `tokenFor()`.
+- Tests run with `TZ=Europe/Amsterdam`, so timezone mistakes show up (UTC would hide them). Use `freezeTime()` instead of depending on today's date.
+- **`bug:*` feature toggles are deliberate training bugs.** Every toggle a unit uses is tested in both modes: _toggle OFF_ asserts the correct behaviour, _toggle ON_ asserts the bug still reproduces.
+- Fixing a bug? Add a row to the existing `it.each` table that fails before the fix.
+- New business rule? Put it in a pure function (like `scheduling.ts`) and test it there, not through a controller.
+
+The React Native app (`apps/patient-mobile`) is not covered by these tests.
+
+---
+
 ## Useful Commands
 
 | Command                                    | Description                                                                             |
@@ -665,7 +697,11 @@ The verification link should start with `http://localhost:8180/realms/clinic/log
 | `pnpm run db:studio`                       | Open Prisma Studio (visual DB browser) at http://localhost:5555                         |
 | `pnpm run dev`                             | Start all 6 web apps in development mode (keep running while testing mobile)            |
 | `pnpm run build`                           | Build all packages and apps for production                                              |
-| `pnpm run typecheck`                       | Type-check all packages and apps without emitting files                                 |
+| `pnpm run typecheck`                       | Type-check all packages, apps and unit tests without emitting files                     |
+| `pnpm test`                                | Run all unit tests once (a few seconds, no Docker or database needed)                   |
+| `pnpm test:watch`                          | Re-run affected unit tests on every file save                                           |
+| `pnpm test:changed`                        | Run only the tests affected by uncommitted changes                                      |
+| `pnpm test:coverage`                       | Run unit tests with a coverage report in `coverage/index.html`                          |
 | `pnpm run docker:up`                       | Build and start everything via Docker (no Node.js required for testing)                 |
 | `pnpm run docker:down`                     | Stop all Docker containers (including apps)                                             |
 | `pnpm run docker:reset`                    | Wipe all data and rebuild everything from scratch                                       |

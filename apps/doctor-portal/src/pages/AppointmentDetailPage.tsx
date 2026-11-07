@@ -1,10 +1,10 @@
-import { fromDateTimeLocalValue, toDateTimeLocalValue } from "@clinic/portal-common";
 import type { Appointment, AppointmentStatusChange, Prescription } from "@clinic/shared-types";
 import { ALLOWED_TRANSITIONS as TRANSITIONS } from "@clinic/shared-types";
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
 import api from "../api";
+import { scheduledAtInputValue, scheduledAtPayload } from "../utils/scheduledAt";
 
 function badgeClass(status: string): string {
 	const map: Record<string, string> = {
@@ -14,14 +14,6 @@ function badgeClass(status: string): string {
 		CANCELLED: "badge-cancelled",
 	};
 	return map[status] ?? "badge-scheduled";
-}
-
-/**
- * Value for the "Scheduled at" input. With the `bug:appointment-timezone`
- * toggle on, it shows the UTC time as if it were local (deliberate bug).
- */
-function scheduledAtInputValue(scheduledAt: string, timezoneBug: boolean): string {
-	return timezoneBug ? new Date(scheduledAt).toISOString().slice(0, 16) : toDateTimeLocalValue(scheduledAt);
 }
 
 export default function AppointmentDetailPage(): React.ReactElement {
@@ -78,9 +70,7 @@ export default function AppointmentDetailPage(): React.ReactElement {
 		setSuccess(false);
 		setError("");
 		try {
-			// Bug toggle on: send the raw local value without timezone, so the server interprets it in its own timezone.
-			let scheduledAt: string | undefined = form.scheduledAt;
-			if (!timezoneBug) scheduledAt = form.scheduledAt ? fromDateTimeLocalValue(form.scheduledAt) : undefined;
+			const scheduledAt = scheduledAtPayload(form.scheduledAt, timezoneBug);
 			const updated = await api.put<{ data: Appointment }>(`/appointments/${id}`, { ...form, scheduledAt });
 			const histRes = await api.get<{ data: typeof history }>(`/appointments/${id}/history`);
 			setAppointment(updated.data.data);

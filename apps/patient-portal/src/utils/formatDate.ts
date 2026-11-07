@@ -1,3 +1,8 @@
+import { isUTCWeekday } from "@clinic/shared-types";
+
+// UTC day helpers shared with the API (same rules as the server).
+export { isSameUTCDay, isUTCWeekday, tomorrowUTC } from "@clinic/shared-types";
+
 /**
  * Locale-aware date/time formatting helpers.
  * Uses `undefined` as the locale so the browser's `navigator.language` is
@@ -35,30 +40,9 @@ export function toUTCDateString(date: Date): string {
 	return date.toISOString().slice(0, 10);
 }
 
-/** Returns tomorrow's UTC midnight as a Date */
-export function tomorrowUTC(): Date {
-	const now = new Date();
-	return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-}
-
 /** Advances a UTC date by one calendar day */
 export function addUTCDay(date: Date, days = 1): Date {
 	return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + days));
-}
-
-/** Returns true if two Dates represent the same UTC calendar day */
-export function isSameUTCDay(a: Date, b: Date): boolean {
-	return (
-		a.getUTCFullYear() === b.getUTCFullYear() &&
-		a.getUTCMonth() === b.getUTCMonth() &&
-		a.getUTCDate() === b.getUTCDate()
-	);
-}
-
-/** Returns true when a Date falls on a UTC weekday (Mon–Fri) */
-export function isUTCWeekday(date: Date): boolean {
-	const dow = date.getUTCDay();
-	return dow >= 1 && dow <= 5;
 }
 
 /** Advances a date to the next UTC weekday (skips Sat/Sun) */
