@@ -8,7 +8,7 @@ import {
 	UserCoreResponseDto,
 	ClientTimeZone,
 } from "@clinic/api-common";
-import { AppointmentStatus } from "@clinic/shared-types";
+import { AppointmentStatus, getSlotTimeError, isSameUTCDay } from "@clinic/shared-types";
 import {
 	Body,
 	ConflictException,
@@ -133,55 +133,6 @@ class PatientAppointmentMutationResponseDto {
 
 	@ApiProperty({ example: "Appointment cancelled" })
 	message!: string;
-}
-
-/** Slot configuration (UTC working hours, 30-min increments) */
-const SLOT_MINUTES = 30;
-const WORK_START_HOUR = 9;
-const WORK_END_HOUR = 17;
-
-/** Returns true when a Date falls on a UTC weekday */
-function isUTCWeekday(d: Date): boolean {
-	const dow = d.getUTCDay();
-	return dow >= 1 && dow <= 5;
-}
-
-/** Returns today's UTC date at midnight */
-function todayUTC(): Date {
-	const now = new Date();
-	return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-}
-
-/**
- * Validates that a given ISO datetime is a legal appointment slot:
- * - Must be tomorrow or later (UTC date comparison)
- * - Must fall on a UTC weekday
- * - Must be within working hours [WORK_START_HOUR, WORK_END_HOUR)
- * - Must align to a SLOT_MINUTES boundary
- */
-function validateSlotTime(iso: string): void {
-	const d = new Date(iso);
-	if (isNaN(d.getTime())) {
-		throw new BadRequestException("Invalid scheduledAt datetime.");
-	}
-	const tomorrow = new Date(todayUTC().getTime() + 86_400_000);
-	const utcMidnight = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-	if (utcMidnight < tomorrow) {
-		throw new BadRequestException("Appointments can only be rescheduled to tomorrow or later.");
-	}
-	if (!isUTCWeekday(d)) {
-		throw new BadRequestException("Appointments can only be scheduled on weekdays (Mon–Fri).");
-	}
-	const h = d.getUTCHours();
-	const m = d.getUTCMinutes();
-	if (h < WORK_START_HOUR || h >= WORK_END_HOUR) {
-		throw new BadRequestException(
-			`Appointments must be within working hours (${WORK_START_HOUR}:00–${WORK_END_HOUR}:00 UTC).`
-		);
-	}
-	if (m % SLOT_MINUTES !== 0 || d.getUTCSeconds() !== 0 || d.getUTCMilliseconds() !== 0) {
-		throw new BadRequestException(`Appointment time must align to a ${SLOT_MINUTES}-minute slot boundary.`);
-	}
 }
 
 @ApiTags("appointments")
@@ -321,14 +272,7 @@ export class AppointmentsController {
 		const sameDayBugToggle = await this.prisma.featureToggle
 			.findUnique({ where: { key: "bug:same-day-restriction" } })
 			.catch(() => null);
-		const apptUTCDate = new Date(
-			Date.UTC(
-				appointment.scheduledAt.getUTCFullYear(),
-				appointment.scheduledAt.getUTCMonth(),
-				appointment.scheduledAt.getUTCDate()
-			)
-		);
-		if (!sameDayBugToggle?.enabled && apptUTCDate.getTime() === todayUTC().getTime()) {
+		if (!sameDayBugToggle?.enabled && isSameUTCDay(appointment.scheduledAt, new Date())) {
 			throw new BadRequestException("Same-day cancellation is not possible online. Please call the clinic directly.");
 		}
 
@@ -391,7 +335,8 @@ export class AppointmentsController {
 		@CurrentUser() user: KeycloakTokenPayload
 	): Promise<{ data: ApptWithDoctorOnly; message: string }> {
 		// Validate the requested slot before hitting the DB
-		validateSlotTime(dto.scheduledAt);
+		const slotError = getSlotTimeError(dto.scheduledAt);
+		if (slotError) throw new BadRequestException(slotError);
 
 		const dbUser = await this.prisma.user.findUnique({
 			where: { keycloakId: user.sub, deletedAt: null },
@@ -413,14 +358,7 @@ export class AppointmentsController {
 		const sameDayBugToggle = await this.prisma.featureToggle
 			.findUnique({ where: { key: "bug:same-day-restriction" } })
 			.catch(() => null);
-		const apptUTCDate = new Date(
-			Date.UTC(
-				appointment.scheduledAt.getUTCFullYear(),
-				appointment.scheduledAt.getUTCMonth(),
-				appointment.scheduledAt.getUTCDate()
-			)
-		);
-		if (!sameDayBugToggle?.enabled && apptUTCDate.getTime() === todayUTC().getTime()) {
+		if (!sameDayBugToggle?.enabled && isSameUTCDay(appointment.scheduledAt, new Date())) {
 			throw new BadRequestException("Same-day rescheduling is not possible online. Please call the clinic directly.");
 		}
 

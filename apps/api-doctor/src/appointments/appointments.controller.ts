@@ -10,7 +10,7 @@ import {
 	UserCoreResponseDto,
 	ClientTimeZone,
 } from "@clinic/api-common";
-import { ALLOWED_TRANSITIONS, AppointmentStatus } from "@clinic/shared-types";
+import { AppointmentStatus, getStatusTransitionError } from "@clinic/shared-types";
 import {
 	Controller,
 	Get,
@@ -358,14 +358,8 @@ export class AppointmentsController {
 	}
 
 	private validateStatusTransition(dto: UpdateAppointmentDto, appointment: { status: string }): void {
-		if (dto.status && dto.status !== appointment.status) {
-			const allowed = ALLOWED_TRANSITIONS[appointment.status as AppointmentStatus];
-			if (!allowed.includes(dto.status)) {
-				throw new BadRequestException(
-					`Cannot transition from ${appointment.status} to ${dto.status}. Allowed: ${allowed.join(", ") || "none (terminal state)"}`
-				);
-			}
-		}
+		const error = getStatusTransitionError(appointment.status as AppointmentStatus, dto.status);
+		if (error) throw new BadRequestException(error);
 	}
 
 	private async recordStatusChangeAndNotify(

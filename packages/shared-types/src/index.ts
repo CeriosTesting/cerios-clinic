@@ -1,14 +1,9 @@
+import type { AppointmentStatus } from "./appointment-status";
+
+export * from "./appointment-status";
+export * from "./scheduling";
+
 export type UserRole = "patient" | "doctor" | "assistant" | "admin";
-
-export type AppointmentStatus = "SCHEDULED" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
-
-/** Valid status transitions. Terminal states (COMPLETED, CANCELLED) have empty arrays. */
-export const ALLOWED_TRANSITIONS: Record<AppointmentStatus, AppointmentStatus[]> = {
-	SCHEDULED: ["CONFIRMED", "CANCELLED"],
-	CONFIRMED: ["COMPLETED", "CANCELLED"],
-	COMPLETED: [],
-	CANCELLED: [],
-};
 
 export interface User {
 	id: string;
