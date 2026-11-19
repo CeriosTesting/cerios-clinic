@@ -103,7 +103,9 @@ export default function Layout(): React.ReactElement {
 								</NavLink>
 							))}
 							<div className="flex items-center gap-3 pl-3 border-l border-gray-200">
-								<span className="text-sm font-medium text-brand-navy">{displayName}</span>
+								<span data-testid="profile-name" className="text-sm font-medium text-brand-navy">
+									{displayName}
+								</span>
 								<button onClick={handleLogout} className="btn-outline text-sm px-4 py-2">
 									Sign out
 								</button>
@@ -142,7 +144,9 @@ export default function Layout(): React.ReactElement {
 							))}
 						</div>
 						<div className="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
-							<span className="text-sm font-medium text-brand-navy">{displayName}</span>
+							<span data-testid="profile-name" className="text-sm font-medium text-brand-navy">
+								{displayName}
+							</span>
 							<button onClick={handleLogout} className="btn-outline text-sm px-4 py-2">
 								Sign out
 							</button>
